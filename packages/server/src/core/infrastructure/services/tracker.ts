@@ -12,21 +12,27 @@ export interface LocationInfo {
 }
 
 interface IpApiResponse {
-	countryCode: string;
-	country: string;
-	city: string;
+	status?: string;
+	countryCode?: string;
+	country?: string;
+	city?: string;
 }
 
 interface WorldTimeApiResponse {
-	datetime: string;
-	utc_offset: string;
-	utc_datetime: string;
-	unixtime: number;
-	timezone: string;
+	datetime?: string;
+	utc_offset?: string;
+	utc_datetime?: string;
+	unixtime?: number;
+	timezone?: string;
 }
 
 export function isPublicIPv4(ip: string): boolean {
-	const parts = ip.split('.').map(Number);
+	const normalizedIp = normalizeClientIp(ip);
+	if (!normalizedIp) {
+		return false;
+	}
+
+	const parts = normalizedIp.split('.').map(Number);
 	if (parts.length !== 4 || parts.some(Number.isNaN)) {
 		return false;
 	}
@@ -39,6 +45,19 @@ export function isPublicIPv4(ip: string): boolean {
 	return true;
 }
 
+function normalizeClientIp(ip: string | null | undefined): string | null {
+	const forwardedIp = ip?.split(',')[0]?.trim();
+	if (!forwardedIp) {
+		return null;
+	}
+
+	return forwardedIp.startsWith('::ffff:') ? forwardedIp.replace('::ffff:', '') : forwardedIp;
+}
+
+function normalizeCountryCode(countryCode: string | null | undefined): string | null {
+	return typeof countryCode === 'string' && countryCode.trim() ? countryCode.trim().toUpperCase() : null;
+}
+
 async function getPublicIpAddress(): Promise<string | null> {
 	return await fetchResponseWithTimeout<{ ip: string }>('https://api.ipify.org?format=json', undefined, 5000)
 		.then((response) => response.ip)
@@ -49,7 +68,12 @@ export async function getClientLocalTime(ip: string): Promise<LocationInfo> {
 	const locationInfo: LocationInfo = {};
 
 	// If in development mode, use interlal IP for testing
-	const usedIp = isDevelopment() ? await getPublicIpAddress() : ip;
+	const usedIp = isDevelopment() ? await getPublicIpAddress() : normalizeClientIp(ip);
+
+	if (!usedIp) {
+		logger.debug('Location Service', 'Skipped location lookup because no client IP was available');
+		return locationInfo;
+	}
 
 	// Fetch location data from ipapi.com and ipgeolocation.io
 	const [locationResponse, timeResponse] = await Promise.allSettled([
@@ -73,7 +97,7 @@ export async function getClientLocalTime(ip: string): Promise<LocationInfo> {
 
 	if (locationResponse.status === 'fulfilled' && locationResponse.value) {
 		locationInfo.country = locationResponse.value.country;
-		locationInfo.countryCode = locationResponse.value.countryCode.toUpperCase();
+		locationInfo.countryCode = normalizeCountryCode(locationResponse.value.countryCode);
 		locationInfo.city = locationResponse.value.city;
 	}
 
@@ -83,11 +107,11 @@ export async function getClientLocalTime(ip: string): Promise<LocationInfo> {
 	}
 
 	// For last if Country|Code|City is missing, try to get from ipgeolocation.io
-	if ((!locationInfo.country || !locationInfo.countryCode || !locationInfo.city) && usedIp) {
+	if ((!locationInfo.country || !locationInfo.countryCode || !locationInfo.city) && appConfig.IpgeoApiKey !== 'undefined') {
 		const geoResponse = await fetchResponseWithTimeout<{
-			country_name: string;
-			country_code2: string;
-			city: string;
+			country_name?: string;
+			country_code2?: string;
+			city?: string;
 		}>(
 			`https://api.ipgeolocation.io/ipgeo?apiKey=${appConfig.IpgeoApiKey}&ip=${usedIp}`,
 			{
@@ -98,7 +122,7 @@ export async function getClientLocalTime(ip: string): Promise<LocationInfo> {
 		).catch(null);
 		if (geoResponse) {
 			locationInfo.country = locationInfo.country || geoResponse.country_name;
-			locationInfo.countryCode = locationInfo.countryCode || geoResponse.country_code2;
+			locationInfo.countryCode = locationInfo.countryCode || normalizeCountryCode(geoResponse.country_code2);
 			locationInfo.city = locationInfo.city || geoResponse.city;
 		}
 	}

@@ -182,9 +182,9 @@ export const validateDevice = (data: DevicePayload, t: TFunction): ValidationRes
 			.messages({
 				'any.required': t('VALIDATION_DEVICE_TYPE_REQUIRED'),
 			}),
-		country: Joi.string().trim().min(3).max(30),
-		countryCode: Joi.string().trim().max(3),
-		city: Joi.string().trim().min(3).max(30),
+		country: Joi.string().trim().min(3).max(30).allow(''),
+		countryCode: Joi.string().trim().max(3).allow(''),
+		city: Joi.string().trim().min(3).max(30).allow(''),
 		loggedAt: Joi.date()
 			.required()
 			.allow(null)

@@ -9,7 +9,6 @@ import logger from '../../../../utils/logger';
 // Components
 import Page from '../../../../components/main/Page';
 
-
 CNPLogger.enableDebugging(true);
 // ProxyLogger.enableDebugging(true);
 
@@ -65,7 +64,7 @@ export default function Play() {
 		if (['/watchlist', '/search', '/movies'].includes(previousPathName || '')) window.application.navigate.back();
 		else window.application.navigate.navigate('/(tabs)/movies');
 	};
- 
+
 	return (
 		<Page
 			optimized
@@ -75,7 +74,6 @@ export default function Play() {
 			className={'app-player-page'}
 			contentContainerClassName="w-100 h-100"
 		>
-		
 			<VideoPlayer
 				ref={playerRef}
 				videoTitle="Sample Video"
@@ -91,7 +89,8 @@ export default function Play() {
 						{
 							id: 'en-1',
 							playerId: SAMPLE_PLAYER_ID,
-							source: 'https://tears-of-steel-subtitles.s3.amazonaws.com/tears-en.vtt',
+							source:
+								'https://raw.githubusercontent.com/ImRoodyDev/react-native-cross-player/refs/heads/alpha-1/workspaces/docs/public/media/tears-en.vtt',
 							langISO: 'en',
 							label: 'English Subtitle',
 							type: 'vtt',
@@ -99,7 +98,8 @@ export default function Play() {
 						{
 							id: 'fr-1',
 							playerId: SAMPLE_PLAYER_ID,
-							source: 'https://tears-of-steel-subtitles.s3.amazonaws.com/tears-fr.vtt',
+							source:
+								'https://raw.githubusercontent.com/ImRoodyDev/react-native-cross-player/refs/heads/alpha-1/workspaces/docs/public/media/tears-fr.vtt',
 							langISO: 'fr',
 							label: 'French Subtitle',
 							type: 'vtt',
