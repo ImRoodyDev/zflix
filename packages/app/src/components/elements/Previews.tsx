@@ -10,7 +10,6 @@ import { MovieDetails, TvDetails } from '../../types/Medias';
 // Components
 import { PreviewSection, PreviewSectionRef, YTPreviewSection } from '../sections/Preview';
 
-
 type PreviewsProps = {
 	previews: MovieDetails[] | TvDetails[];
 	useYoutubePreviews?: boolean;
@@ -38,10 +37,11 @@ function Previews(props: PreviewsProps) {
 		let initTimeout: NodeJS.Timeout | number | null = null;
 		if (!initializedRef.current) {
 			initTimeout = setTimeout(() => {
+				console.log('Starting initial preview');
 				// Play the preview at the current index
 				previewListRef.current[currentPreviewRef.current]?.startPreview();
 				initializedRef.current = true;
-			}, 1000);
+			}, 1250);
 		} else {
 			// If already initialized, start the current preview immediately
 			previewListRef.current[currentPreviewRef.current]?.startPreview();
