@@ -1,25 +1,24 @@
 // External imports
-import clsx from "clsx";
-import React, {useCallback} from 'react';
+import clsx from 'clsx';
+import React, { useCallback } from 'react';
 
 // Internal imports
-import {Colors, IconType} from '../../constants';
-import {useResponsiveSize} from '../../contexts/ResponsiveContext';
-import {useTheme} from "../../contexts/ThemeContext";
+import { Colors, IconType } from '../../constants';
+import { useResponsiveSize } from '../../contexts/ResponsiveContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import ShadowStyles from '../../styles/shadow.style';
 
 // Components
 import Button from './Button';
 
-
 const SchemeMapper = ['light', 'dark', 'system'] as const;
-const IconMapper: IconType[] = ['sun', 'moon', 'devices']
+const IconMapper: IconType[] = ['sun', 'moon', 'devices'];
 const ColorMapper = [Colors.yellow[400], Colors.blue[600], Colors.green[600]];
 
-function SwitchTheme({className, isDisabled}: { className?: string, isDisabled?: boolean }) {
+function SwitchTheme({ className, isDisabled }: { className?: string; isDisabled?: boolean }) {
 	// Hook to get responsive sizes
 	const sizes = useResponsiveSize();
-	const {themeColors, themeScheme, schemeRule, switchColorScheme} = useTheme();
+	const { themeColors, themeScheme, schemeRule, switchColorScheme } = useTheme();
 	let index = (SchemeMapper.indexOf(schemeRule) + 1) % SchemeMapper.length;
 
 	const switcher = useCallback(() => {
@@ -33,14 +32,13 @@ function SwitchTheme({className, isDisabled}: { className?: string, isDisabled?:
 			//Navigate
 			onPress={switcher}
 			// Props
-			className={clsx("theme-btn", className)}
+			className={clsx('theme-switch-btn', className)}
 			icon={IconMapper[index]}
 			// Styling
 			iconSize={sizes.span2}
 			iconVariant="Bold"
 			textColor={ColorMapper[index]}
 			focusedTextColor={ColorMapper[index]}
-
 			pressedScale={0.7}
 			borderRadius={999999}
 			backgroundColor={themeColors.whiteButton}

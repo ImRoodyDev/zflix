@@ -353,9 +353,12 @@ input[data-autocompleted] {
 	z-index: 5;
 }
 
-.theme-btn {
+.theme-switch-btn {
 	aspect-ratio: 1;
-	padding: var(--span4-size);
+	padding-left: var(--span4-size);
+	padding-right: var(--span4-size);
+	padding-top: var(--span4-size);
+	padding-bottom: var(--span4-size);
 	z-index: 5;
 }
 
