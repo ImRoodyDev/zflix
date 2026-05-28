@@ -16,7 +16,6 @@ import ShadowStyles from '../../styles/shadow.style';
 // Components
 import Button from '../interactables/Button';
 
-
 const AppHome = () => {
 	const { t } = useTranslation();
 	const { loggedIn } = useRootContext();
@@ -48,14 +47,16 @@ const AppHome = () => {
 				contentFit="cover"
 				priority="high"
 				cachePolicy="memory-disk"
+				transition={0}
 			/>
 			<ExpoImage
-				source={Images.gradient}
+				source={Images.homeGradient}
 				// className={'app-home-image'}
 				style={{ position: 'absolute', width: '100%', height: '100%', zIndex: 0, opacity: 0.85 }}
 				contentFit="cover"
 				priority="high"
-				// cachePolicy="memory-disk"
+				cachePolicy="memory-disk"
+				transition={0}
 			/>
 
 			<View className="image-tint" />
