@@ -91,6 +91,9 @@ Set CORS variables:
 ```env
 SERVER_DOMAIN=https://zflix-api.onrender.com
 FRONTEND_DOMAINS=https://your-github-username.github.io,https://your-github-username.github.io/zflix
+COOKIE_SAME_SITE=none
+COOKIE_SECURE=true
+COOKIE_PARTITIONED=true
 ```
 
 ## 4. Configure GitHub Pages

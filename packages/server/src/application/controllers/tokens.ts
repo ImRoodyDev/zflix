@@ -497,11 +497,12 @@ export const verifyResetToken = async function (resetToken: string, resetId: str
 
 // Cookie options derived from env — used for both setting and clearing cookies.
 // Browsers only delete a cookie when clearCookie is called with the same
-// path/sameSite/secure attributes that were used when the cookie was set.
+// path/sameSite/secure/partitioned attributes that were used when the cookie was set.
 const COOKIE_OPTIONS = {
 	path: '/',
 	sameSite: config.CookieSameSite as 'lax' | 'strict' | 'none',
 	secure: config.CookieSecure,
+	partitioned: config.CookiePartitioned,
 };
 
 /**

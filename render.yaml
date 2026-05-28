@@ -38,6 +38,8 @@ services:
         sync: false
       - key: COOKIE_SECURE
         sync: false
+      - key: COOKIE_PARTITIONED
+        sync: false
       - key: ADMIN_ID
         sync: false
       - key: ADMIN_HASH

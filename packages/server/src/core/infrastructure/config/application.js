@@ -14,6 +14,7 @@ const config = {
 	// Set COOKIE_SAME_SITE=none and COOKIE_SECURE=true for cross-domain production deployments.
 	CookieSameSite: process.env.COOKIE_SAME_SITE ?? 'undefined',
 	CookieSecure: process.env.COOKIE_SECURE === 'true',
+	CookiePartitioned: process.env.COOKIE_PARTITIONED === 'true',
 
 	// IP Geolocation API configuration
 	IpgeoApiKey: process.env.IPGEO_API_KEY ?? 'undefined',
@@ -55,10 +56,17 @@ if (Object.values(config).some((value) => value === 'undefined')) {
 	);
 } else if (!['lax', 'strict', 'none'].includes(config.CookieSameSite)) {
 	throw new Error(`Invalid COOKIE_SAME_SITE value "${config.CookieSameSite}". Must be one of: lax, strict, none`);
+} else if (
+	process.env.COOKIE_PARTITIONED !== undefined &&
+	!['true', 'false'].includes(process.env.COOKIE_PARTITIONED)
+) {
+	throw new Error('Invalid COOKIE_PARTITIONED value. Must be "true" or "false"');
 } else if (config.CookieSameSite === 'none' && !config.CookieSecure) {
 	throw new Error(
 		'COOKIE_SECURE must be "true" when COOKIE_SAME_SITE is "none" (browsers reject SameSite=None without Secure)',
 	);
+} else if (config.CookiePartitioned && (!config.CookieSecure || config.CookieSameSite !== 'none')) {
+	throw new Error('COOKIE_PARTITIONED requires COOKIE_SAME_SITE=none and COOKIE_SECURE=true');
 }
 
 module.exports = config;
