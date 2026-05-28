@@ -24,6 +24,7 @@
 
 	--header-size-h: calc(var(--top-padding) + var(--top-padding) + var(--avatar-size));
 	--sm-logo-ratio: calc(44 / 51);
+	--wd-logo-ratio: calc(113 / 41);
 	--outline-width: 2px;
 	--preview-cut-margin: 0.7;
 	--previews-cut-size: calc(var(--carousel-scroll-h) * var(--preview-cut-margin));
