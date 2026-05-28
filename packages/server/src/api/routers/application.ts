@@ -44,7 +44,7 @@ import filmsDetails from '@app/routes/films/details';
 import filmsDiscover from '@app/routes/films/discover';
 import filmsEpisodes from '@app/routes/films/episodes';
 import filmsGenres from '@app/routes/films/genres';
- import filmsPopular from '@app/routes/films/popular';
+import filmsPopular from '@app/routes/films/popular';
 import filmsRecently from '@app/routes/films/recently';
 import filmsRecommendation from '@app/routes/films/recommendation';
 import filmsSearch from '@app/routes/films/search';
@@ -59,7 +59,7 @@ import channelsCategories from '@app/routes/channels/categories';
 import channelsCountries from '@app/routes/channels/countries';
 import channelsSearch from '@app/routes/channels/search';
 import channelDetails from '@app/routes/channels/details';
- 
+
 // Personalized
 // import personalizedActivities from '@app/routes/personalized/activities/activities';
 import addMovieActivity from '@app/routes/personalized/activities/add-movie-activity';
@@ -84,7 +84,7 @@ import { rateLimiterMiddleware } from '@api/middlewares/rate-limiters';
 import { SubscriptionMiddleware } from '@api/middlewares/subscription';
 import { AuthorizationMiddleware } from '@api/middlewares/authentications';
 import { ValidateMediaType } from '@api/middlewares/media-type';
- 
+
 // Initialize router
 const router = Router();
 
@@ -101,6 +101,7 @@ router.use(rateLimiterMiddleware(apiLimiter));
 //// Public Routes
 ////
 router.use('/init', init);
+router.use('/personalized/profiles/avatars', avatars);
 router.use('/auth/login', login);
 router.use('/auth/send-reset', sendReset);
 router.use('/auth/logout', logout);
@@ -150,10 +151,10 @@ router.use('/channels/categories', channelsCategories);
 router.use('/channels/countries', channelsCountries);
 router.use('/channels/search', channelsSearch);
 router.use('/channels/details', channelDetails);
- 
+
 // Films Routes (/:type pattern - movies|series)
- router.use('/:type/search', ValidateMediaType, SubscriptionMiddleware, filmsSearch);
- router.use('/:type/trailer', ValidateMediaType, filmsTrailer);
+router.use('/:type/search', ValidateMediaType, SubscriptionMiddleware, filmsSearch);
+router.use('/:type/trailer', ValidateMediaType, filmsTrailer);
 router.use('/:type/watching', ValidateMediaType, filmsActivities);
 router.use('/:type/bookmarked', ValidateMediaType, filmsBookmarks);
 router.use('/:type/categories', ValidateMediaType, filmsCategories);
@@ -169,7 +170,6 @@ router.use('/:type/trending', ValidateMediaType, filmsTrending);
 
 // Personalized Routes
 // router.use('/personalized/activities', Sub.scriptionMiddleware, personalizedActivities); => Not optimized will loop through all bookmarks and fetch details via TMDB API
-router.use('/personalized/profiles/avatars', avatars);
 router.use('/personalized/activities/movie', SubscriptionMiddleware, addMovieActivity);
 router.use('/personalized/activities/serie', SubscriptionMiddleware, addSerieActivity);
 router.use('/personalized/activities/add-channel', SubscriptionMiddleware, addChannelActivity);
