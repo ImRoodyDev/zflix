@@ -28,7 +28,7 @@ const SplashScreen = () => {
 				<View className="app-splash-screen-logo-ctn">
 					<Image
 						className="app-splash-screen-logo-img"
-						source={Images.appLogo}
+						source={Images.appLogoFull}
 						resizeMode="contain"
 						style={{ height: '100%', width: 'auto' }}
 					/>
