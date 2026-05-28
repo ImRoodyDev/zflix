@@ -495,6 +495,15 @@ export const verifyResetToken = async function (resetToken: string, resetId: str
 	}
 };
 
+// Cookie options derived from env — used for both setting and clearing cookies.
+// Browsers only delete a cookie when clearCookie is called with the same
+// path/sameSite/secure attributes that were used when the cookie was set.
+const COOKIE_OPTIONS = {
+	path: '/',
+	sameSite: config.CookieSameSite as 'lax' | 'strict' | 'none',
+	secure: config.CookieSecure,
+};
+
 /**
  * Sets the refresh and session tokens as httpOnly cookies, and access token as a regular cookie.
  */
@@ -503,18 +512,14 @@ export const saveProtectedTokens = function (
 	{ refreshToken, sessionToken }: { refreshToken: string; sessionToken: string },
 ) {
 	response.cookie(REFRESH_TOKEN, refreshToken, {
-		path: '/',
+		...COOKIE_OPTIONS,
 		httpOnly: true,
-		secure: !isDevelopment(), // Set to false for development environment
-		sameSite: isDevelopment() ? 'lax' : 'none', // Use 'lax' for better compatibility with same-origin requests // Change this to 'none' even in development strict => If your frontend and backend are on the same domain
 		expires: new Date(Date.now() + 1 * 365 * 24 * 60 * 60 * 1000),
 	});
 
 	response.cookie(SESSION_TOKEN, sessionToken, {
-		path: '/',
+		...COOKIE_OPTIONS,
 		httpOnly: true,
-		secure: !isDevelopment(), // Set to false for development environment
-		sameSite: isDevelopment() ? 'lax' : 'none', // Use 'lax' for better compatibility with same-origin requests // Change this to 'none' even in development strict => If your frontend and backend are on the same domain
 		expires: new Date(Date.now() + 1 * 365 * 24 * 60 * 60 * 1000),
 	});
 };
@@ -527,19 +532,19 @@ export const saveAccessToken = function (response: Response, accessToken: string
 	// INTENTIONAL: httpOnly is false so the client can read the access token via JavaScript
 	// to include it in Authorization headers for API calls (e.g. image requests, fetch calls).
 	response.cookie(ACCESS_TOKEN, accessToken, {
-		path: '/',
+		...COOKIE_OPTIONS,
 		httpOnly: false,
-		secure: !isDevelopment(),
-		sameSite: isDevelopment() ? 'lax' : 'none',
 		expires: new Date(Date.now() + 1 * 60 * 60 * 1000), // 1 hour (access tokens are short-lived)
 	});
 };
 
 /**
  * Clears authentication cookies.
+ * Must pass the same options used when setting the cookies so the browser
+ * can match and delete them (critical for SameSite=None; Secure cross-domain cookies).
  */
 export const clearCookies = function (response: Response) {
-	response.clearCookie(REFRESH_TOKEN);
-	response.clearCookie(SESSION_TOKEN);
-	response.clearCookie(ACCESS_TOKEN);
+	response.clearCookie(REFRESH_TOKEN, COOKIE_OPTIONS);
+	response.clearCookie(SESSION_TOKEN, COOKIE_OPTIONS);
+	response.clearCookie(ACCESS_TOKEN, COOKIE_OPTIONS);
 };

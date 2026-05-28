@@ -10,6 +10,11 @@ const config = {
 	WebhooksOrigins: process.env.WEBHOOK_ORIGINS ? commaSplitter(process.env.WEBHOOK_ORIGINS) : 'undefined',
 	NoReplyEmail: process.env.NOREPLY_EMAIL ?? process.env.MAILER_EMAIL ?? 'undefined',
 
+	// Cookie configuration — required when server and frontend are on different domains.
+	// Set COOKIE_SAME_SITE=none and COOKIE_SECURE=true for cross-domain production deployments.
+	CookieSameSite: process.env.COOKIE_SAME_SITE ?? 'undefined',
+	CookieSecure: process.env.COOKIE_SECURE === 'true',
+
 	// IP Geolocation API configuration
 	IpgeoApiKey: process.env.IPGEO_API_KEY ?? 'undefined',
 
@@ -47,6 +52,12 @@ if (Object.values(config).some((value) => value === 'undefined')) {
 		)
 			.filter(Boolean)
 			.join(', ')}`,
+	);
+} else if (!['lax', 'strict', 'none'].includes(config.CookieSameSite)) {
+	throw new Error(`Invalid COOKIE_SAME_SITE value "${config.CookieSameSite}". Must be one of: lax, strict, none`);
+} else if (config.CookieSameSite === 'none' && !config.CookieSecure) {
+	throw new Error(
+		'COOKIE_SECURE must be "true" when COOKIE_SAME_SITE is "none" (browsers reject SameSite=None without Secure)',
 	);
 }
 
