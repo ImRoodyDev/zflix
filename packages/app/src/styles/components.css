@@ -74,7 +74,7 @@ body {
 
 .app-splash-screen-logo-img {
 	width: auto !important;
-	height: var(--h3-size) !important;
+	height: var(--h1-size) !important;
 	aspect-ratio: var(--wd-logo-ratio);
 
 	display: flex;
@@ -448,14 +448,13 @@ body {
 	}
 
 	.app-home-header-contents {
-		padding-bottom: 0;
+		/* padding-bottom: 0; */
 	}
 }
 
 /* Mobile Landscape */
 @media only screen and (max-width: 1023px) and (max-height: 480px) {
 }
-
 /*#endregion */
 
 /*#region App Download */
@@ -1262,21 +1261,21 @@ body {
 
 .component-status-title-txt,
 .app-processing-title-txt {
-	max-width: 40vw;
+	max-width: 46vw;
 
 	margin-top: 20px;
 	font-size: var(--span2-size);
-	font-family: 'Montserrat-Regular', serif;
+	font-family: 'Montserrat-Medium', serif;
 	text-align: center;
 }
 
 .component-status-txt,
 .app-processing-txt {
-	max-width: 40vw;
+	max-width: 46vw;
 
 	margin-top: 20px;
 	font-size: var(--span2-size);
-	font-family: 'Montserrat-Medium', serif;
+	font-family: 'Montserrat-Regular', serif;
 	text-align: center;
 }
 
