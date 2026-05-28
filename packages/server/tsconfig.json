@@ -1,0 +1,53 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "CommonJS",
+		"moduleResolution": "Node",
+		"types": ["node"],
+		"strict": true,
+		"noImplicitOverride": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"forceConsistentCasingInFileNames": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"allowJs": true,
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"skipLibCheck": true,
+		"sourceMap": true,
+		"outDir": "dist",
+		"rootDir": ".",
+		"baseUrl": ".",
+		"paths": {
+			// API layer
+			"@api/*": ["src/api/*"],
+			"@api/middlewares/*": ["src/api/middlewares/*"],
+			"@api/routers/*": ["src/api/routers/*"],
+
+			// Application layer
+			"@app/*": ["src/application/*"],
+			"@app/locales/*": ["src/application/locales/*"],
+			"@app/controllers/*": ["src/application/controllers/*"],
+			"@app/routes/*": ["src/application/routes/*"],
+			"@app/views/*": ["src/application/views/*"],
+			"@app/workers/*": ["src/application/workers/*"],
+
+			// Core layer
+			"@core/*": ["src/core/*"],
+			"@core/constants/*": ["src/core/constants/*"],
+			"@core/models/*": ["src/core/models/*"],
+			"@core/infrastructure/config/*": ["src/core/infrastructure/config/*"],
+			"@core/infrastructure/services/*": ["src/core/infrastructure/services/*"],
+			"@core/infrastructure/data/*": ["src/core/infrastructure/data/*"],
+
+			// Shared
+			"@/*": ["src/*"],
+			"@utils/*": ["src/utils/*"],
+			"@types/*": ["src/types/*"],
+			"@generated/*": ["generated/*"]
+		}
+	},
+	"include": ["index.ts", "src/**/*.ts", "src/**/*.d.ts", "types/**/*.ts", "types/**/*.d.ts"],
+	"exclude": ["dist", "node_modules"]
+}

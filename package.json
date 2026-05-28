@@ -1,0 +1,32 @@
+{
+	"name": "zflix-workspace",
+	"private": true,
+	"version": "1.0.0",
+	"author": "ImRoodyDev",
+	"license": "CC-BY-NC-4.0",
+	"workspaces": [
+		"packages/*"
+	],
+	"scripts": {
+		"stop:redis": "wsl redis-cli shutdown",
+		"start:redis": "wsl redis-server",
+		"start": "run-p start:server start:app",
+		"start:dev": "run-p start:dev:server start:dev:app",
+ 		"start:server": "npm --workspace server run start",
+ 		"start:dev:server": "npm --workspace server run start:dev",
+ 		"start:app": "npm --workspace app run start",
+ 		"build": "npm run build --workspaces --if-present",
+		"build:server": "npm --workspace server run build",
+ 		"build:app:web": "npm --workspace app run build:web",
+		"lint": "npm run lint --workspaces --if-present",
+		"lint:fix": "npm run lint:fix --workspaces --if-present",
+		"typecheck": "npm run typecheck --workspaces --if-present"
+	},
+	"overrides": {
+		"react": "19.0.0",
+		"react-dom": "19.0.0"
+	},
+	"devDependencies": {
+		"npm-run-all": "^4.1.5"
+	}
+}

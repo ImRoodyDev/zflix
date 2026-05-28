@@ -1,0 +1,100 @@
+services:
+  - type: web
+    name: zflix-api
+    runtime: node
+    plan: free
+    rootDir: packages/server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - packages/server/**
+        - package.json
+        - package-lock.json
+        - render.yaml
+    envVars:
+      - key: NODE_ENV
+        sync: false
+      - key: ENV
+        sync: false
+      - key: REDIS_MODE
+        sync: false
+      - key: SEQUELIZE_DIALECT
+        sync: false
+      - key: SEQUELIZE_LOGGING
+        sync: false
+      - key: APP_NAME
+        sync: false
+      - key: APP_LOGO_URL
+        sync: false
+      - key: SERVER_DOMAIN
+        sync: false
+      - key: FRONTEND_DOMAINS
+        sync: false
+      - key: WEBHOOK_ORIGINS
+        sync: false
+      - key: ADMIN_ID
+        sync: false
+      - key: ADMIN_HASH
+        sync: false
+      - key: SEQUELIZE_DB
+        sync: false
+      - key: SEQUELIZE_USER
+        sync: false
+      - key: SEQUELIZE_PASS
+        sync: false
+      - key: SEQUELIZE_HOST
+        sync: false
+      - key: SEQUELIZE_PORT
+        sync: false
+      - key: REDIS_EXTERNAL_URL
+        sync: false
+      - key: TMDB_ACCESS_TOKEN
+        sync: false
+      - key: IPGEO_API_KEY
+        sync: false
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_APP_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: PAYPAL_HOOK_PORT
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: MAILER_HOST
+        sync: false
+      - key: MAILER_PORT
+        sync: false
+      - key: MAILER_EMAIL
+        sync: false
+      - key: MAILER_PASS
+        sync: false
+      - key: MAILER_SECURE
+        sync: false
+      - key: NOREPLY_EMAIL
+        sync: false
+      - key: SESSION_SECRET_KEY
+        sync: false
+      - key: ACCESS_TOKEN_EXPIRY
+        sync: false
+      - key: ACCESS_CODE_PUBLIC_KEY
+        sync: false
+      - key: ACCESS_CODE_PRIVATE_KEY
+        sync: false
+      - key: REFRESH_TOKEN_EXPIRY
+        sync: false
+      - key: REFRESH_TOKEN_PUBLIC_KEY
+        sync: false
+      - key: REFRESH_TOKEN_PRIVATE_KEY
+        sync: false
+      - key: RESET_TOKEN_EXPIRY
+        sync: false
+      - key: RESET_TOKEN_PUBLIC_KEY
+        sync: false
+      - key: RESET_TOKEN_PRIVATE_KEY
+        sync: false

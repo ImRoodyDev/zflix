@@ -1,0 +1,9 @@
+npx expo install clsx expo-blur expo-device expo-secure-store @react-native-async-storage/async-storage @react-navigation/drawer iconsax-react-native
+npx expo install react-native-drawer-layout react-native-image-color toastify-react-native expo-linear-gradient hls.js react-i18next
+npx expo install nativewind react-native-reanimated@~3.17.4 react-native-safe-area-context@5.4.0
+npx expo install react-native-worklets @imroodydev/rn-intersection-observer react-native-bouncy-checkbox expo-video react-native-video
+
+npm install --save-dev react-native-svg-transformer
+npx expo install --dev tailwindcss@^3.4.17 prettier-plugin-tailwindcss@^0.5.11
+npm install @types/react-native-vector-icons --save-dev
+npm i react-native-cross-elements

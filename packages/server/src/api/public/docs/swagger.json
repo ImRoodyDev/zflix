@@ -1,0 +1,4188 @@
+{
+	"openapi": "3.0.3",
+	"info": {
+		"title": "appName API",
+		"description": "Official backend surface for the appName media experience. Routes are grouped under `/v1/api` for client-facing functions and `/v1/admin` for back-office operations.",
+		"version": "1.0.0",
+		"contact": {
+			"name": "App Support",
+			"url": "https://appName.io",
+			"email": "support@appName.io"
+		}
+	},
+	"servers": [
+		{
+			"url": "https://api.appName.io/v1/api",
+			"description": "Production"
+		},
+		{
+			"url": "http://localhost:3000/v1/api",
+			"description": "Local development"
+		}
+	],
+	"tags": [
+		{
+			"name": "Application",
+			"description": "Application initialization and configuration"
+		},
+		{
+			"name": "Authentication",
+			"description": "Login, registration and profile operations"
+		},
+		{
+			"name": "Subscription",
+			"description": "Plan, billing and activation flows"
+		},
+		{
+			"name": "Media",
+			"description": "Browse, search and stream movies or series"
+		},
+		{
+			"name": "Personalized",
+			"description": "User profiles, bookmarks and activities"
+		}
+	],
+	"paths": {
+		"/v1/api/auth/login": {
+			"post": {
+				"tags": [
+					"Authentication"
+				],
+				"summary": "Log in with email and password",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/LoginRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Authentication succeeded",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/LoginResponseData"
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Invalid credentials",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/auth/register": {
+			"post": {
+				"tags": [
+					"Authentication"
+				],
+				"summary": "Create a new user",
+				"parameters": [
+					{
+						"$ref": "#/components/parameters/Language"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/RegisterRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "Registration successful",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/RegisterResponseData"
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Email already in use",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/auth/send-reset": {
+			"post": {
+				"tags": [
+					"Authentication"
+				],
+				"summary": "Send password reset email",
+				"parameters": [
+					{
+						"$ref": "#/components/parameters/Language"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": [
+									"email"
+								],
+								"properties": {
+									"email": {
+										"type": "string",
+										"format": "email"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Reset email sent",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpSuccess"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/auth/reset/{resetId}": {
+			"post": {
+				"tags": [
+					"Authentication"
+				],
+				"summary": "Reset password using token",
+				"parameters": [
+					{
+						"name": "resetId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": [
+									"token",
+									"password"
+								],
+								"properties": {
+									"token": {
+										"type": "string"
+									},
+									"password": {
+										"type": "string",
+										"format": "password"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Password reset successful",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpSuccess"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid token or password",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/auth/logout": {
+			"post": {
+				"tags": [
+					"Authentication"
+				],
+				"summary": "Log out user",
+				"responses": {
+					"200": {
+						"description": "Logged out successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpSuccess"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/auth/user-info": {
+			"get": {
+				"tags": [
+					"Authentication"
+				],
+				"summary": "Get current user info",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "User info",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/UserOutputInformation"
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "User not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/auth/profile-info/{profileId}": {
+			"get": {
+				"tags": [
+					"Authentication"
+				],
+				"summary": "Get profile info",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "profileId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Profile info",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/ProfileOutputInformation"
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Profile not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/auth/user-update": {
+			"post": {
+				"tags": [
+					"Authentication"
+				],
+				"summary": "Update user account",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/AccountUpdatePayload"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Account updated",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpSuccess"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/init": {
+			"get": {
+				"tags": [
+					"Application"
+				],
+				"summary": "Initialize application with plans by country",
+				"parameters": [
+					{
+						"name": "country",
+						"in": "query",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Country code to filter plans"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Plans retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"type": "object",
+													"properties": {
+														"paymentProcessors": {
+															"type": "array",
+															"items": {
+																"type": "object",
+																"properties": {
+																	"enabled": {
+																		"type": "boolean",
+																		"example": true
+																	},
+																	"source": {
+																		"type": "string",
+																		"example": "STRIPE"
+																	},
+																	"img": {
+																		"type": "string",
+																		"example": "payments/stripe.png"
+																	},
+																	"width": {
+																		"oneOf": [
+																			{
+																				"type": "number"
+																			},
+																			{
+																				"type": "string"
+																			}
+																		]
+																	},
+																	"height": {
+																		"oneOf": [
+																			{
+																				"type": "number"
+																			},
+																			{
+																				"type": "string"
+																			}
+																		]
+																	},
+																	"ratio": {
+																		"oneOf": [
+																			{
+																				"type": "number"
+																			},
+																			{
+																				"type": "string"
+																			}
+																		]
+																	},
+																	"type": {
+																		"type": "string",
+																		"enum": [
+																			"link-approval",
+																			"direct"
+																		]
+																	}
+																}
+															},
+															"description": "Available payment processors"
+														},
+														"certifications": {
+															"type": "array",
+															"items": {
+																"$ref": "#/components/schemas/CertificationOutputInformation"
+															},
+															"description": "Available content certifications"
+														},
+														"plans": {
+															"type": "array",
+															"items": {
+																"$ref": "#/components/schemas/PlanOutputInformation"
+															},
+															"description": "Available subscription plans for the country"
+														}
+													}
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Bad request - country parameter missing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/subscription/plans": {
+			"get": {
+				"tags": [
+					"Subscription"
+				],
+				"summary": "List all available plans",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Available subscription plans",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"type": "array",
+													"items": {
+														"$ref": "#/components/schemas/PlanOutputInformation"
+													}
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "No plans found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/subscription/activate-code": {
+			"post": {
+				"tags": [
+					"Subscription"
+				],
+				"summary": "Activate an access code for a plan",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ActivateCodeRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Code accepted and subscription updated",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/SubscriptionOutputInformation"
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid code or already subscribed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Code not found or user not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/subscription/billings": {
+			"get": {
+				"tags": [
+					"Subscription"
+				],
+				"summary": "Get billing history",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Billing history",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"type": "array",
+													"description": "Array of billing information objects"
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "No billing history found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/subscription/revalidate": {
+			"get": {
+				"tags": [
+					"Subscription"
+				],
+				"summary": "Revalidate subscription",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Subscription revalidated successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/SubscriptionOutputInformation"
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Bad request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/subscription/info": {
+			"get": {
+				"tags": [
+					"Subscription"
+				],
+				"summary": "Get subscription details",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Subscription details",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/SubscriptionOutputInformation"
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Bad request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Subscription not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/{type}/search": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Search movies or series",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"$ref": "#/components/parameters/MediaType"
+					},
+					{
+						"$ref": "#/components/parameters/Language"
+					},
+					{
+						"name": "query",
+						"in": "query",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"example": "avengers"
+						},
+						"description": "Search term to send to the media provider"
+					},
+					{
+						"name": "profileId",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Profile ID for filtering content"
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 1,
+							"minimum": 1
+						},
+						"description": "Page number for pagination"
+					},
+					{
+						"name": "srtg",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer"
+						},
+						"description": "Sort by genre ID"
+					},
+					{
+						"name": "maxResults",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 50,
+							"default": 25
+						},
+						"description": "Optional page size limit"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Media search results",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"type": "array",
+													"items": {
+														"oneOf": [
+															{
+																"$ref": "#/components/schemas/MovieSearchResult"
+															},
+															{
+																"$ref": "#/components/schemas/TvSearchResult"
+															}
+														]
+													}
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid search query or profile not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "No search results found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/{type}/details/{mediaId}": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get media details",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"$ref": "#/components/parameters/MediaType"
+					},
+					{
+						"$ref": "#/components/parameters/Language"
+					},
+					{
+						"name": "mediaId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Media details",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"$ref": "#/components/schemas/MovieDetails"
+										},
+										{
+											"$ref": "#/components/schemas/TvDetails"
+										}
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/{type}/popular": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get popular media",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"$ref": "#/components/parameters/MediaType"
+					},
+					{
+						"$ref": "#/components/parameters/Language"
+					},
+					{
+						"name": "profileId",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Profile ID for filtering content"
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 1,
+							"minimum": 1
+						},
+						"description": "Page number for pagination"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Popular media list",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/SimpleMediaList"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/{type}/top-rated": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get top rated media",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"$ref": "#/components/parameters/MediaType"
+					},
+					{
+						"$ref": "#/components/parameters/Language"
+					},
+					{
+						"name": "profileId",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Profile ID for filtering content"
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 1,
+							"minimum": 1
+						},
+						"description": "Page number for pagination"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Top rated media list",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/SimpleMediaList"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/{type}/trending": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get trending media",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"$ref": "#/components/parameters/MediaType"
+					},
+					{
+						"$ref": "#/components/parameters/Language"
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 1,
+							"minimum": 1
+						},
+						"description": "Page number for pagination"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Trending media list",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/SimpleMediaList"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/{type}/discover": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Discover media",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"$ref": "#/components/parameters/MediaType"
+					},
+					{
+						"$ref": "#/components/parameters/Language"
+					},
+					{
+						"name": "profileId",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Profile ID for filtering content"
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 1,
+							"minimum": 1
+						},
+						"description": "Page number for pagination"
+					},
+					{
+						"name": "srtc",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Sort criteria"
+					},
+					{
+						"name": "srtg",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Sort by genre"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Discovered media list",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/SimpleMediaList"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/{type}/categories": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get media categories",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"$ref": "#/components/parameters/MediaType"
+					},
+					{
+						"$ref": "#/components/parameters/Language"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Categories list"
+					}
+				}
+			}
+		},
+		"/v1/api/{type}/genres": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get media genres",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"$ref": "#/components/parameters/MediaType"
+					},
+					{
+						"$ref": "#/components/parameters/Language"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Genres list"
+					}
+				}
+			}
+		},
+		"/v1/api/{type}/trailer/{mediaId}": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get trailer",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"$ref": "#/components/parameters/MediaType"
+					},
+					{
+						"$ref": "#/components/parameters/Language"
+					},
+					{
+						"name": "mediaId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Trailer URL"
+					}
+				}
+			}
+		},
+		"/v1/api/personalized/profiles/add": {
+			"post": {
+				"tags": [
+					"Personalized"
+				],
+				"summary": "Add a new profile",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ProfilePayload"
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "Profile created",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/ProfileOutputInformation"
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Bad request - validation error or profile already exists",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/personalized/profiles/update/{profileId}": {
+			"post": {
+				"tags": [
+					"Personalized"
+				],
+				"summary": "Update a profile",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "profileId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ProfilePayload"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Profile updated"
+					}
+				}
+			}
+		},
+		"/v1/api/personalized/profiles/remove/{profileId}": {
+			"delete": {
+				"tags": [
+					"Personalized"
+				],
+				"summary": "Remove a profile",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "profileId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Profile removed"
+					}
+				}
+			}
+		},
+		"/v1/api/personalized/profiles/avatars": {
+			"get": {
+				"tags": [
+					"Personalized"
+				],
+				"summary": "Get available avatars",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "List of avatars"
+					}
+				}
+			}
+		},
+		"/v1/api/channels/activities": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get user channel activities",
+				"description": "Returns watched channels for the authenticated user. Each channel can include logoInfo from iptv-logo-colors.json.",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "page",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 1,
+							"minimum": 1
+						},
+						"description": "Page number for pagination"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Channel activities retrieved",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"type": "array",
+													"items": {
+														"$ref": "#/components/schemas/IPTVChannel"
+													}
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/channels/bookmarks": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get user channel bookmarks",
+				"description": "Returns bookmarked channels for the authenticated user, ordered by bookmark creation date (latest first). Results are paginated by page parameter.",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "page",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 1,
+							"minimum": 1
+						},
+						"description": "Page number for pagination"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Channel bookmarks retrieved",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"type": "array",
+													"items": {
+														"$ref": "#/components/schemas/IPTVChannel"
+													}
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/channels/categories": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get available channel categories",
+				"description": "Returns all available TV channel categories (sports, news, entertainment, etc.) supported by IPTV.org. Results are localized based on user language preference.",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Channel categories retrieved",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"description": "Array of available category names"
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "No categories found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/channels/countries": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get countries with available channels",
+				"description": "Returns list of all countries that have available TV channels. Each country includes country code, name, flag emoji, and supported languages.",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Countries list retrieved",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"type": "array",
+													"items": {
+														"type": "object",
+														"properties": {
+															"code": {
+																"type": "string",
+																"description": "ISO 3166-1 alpha-2 country code"
+															},
+															"name": {
+																"type": "string"
+															},
+															"flag": {
+																"type": "string"
+															},
+															"languages": {
+																"type": "array",
+																"items": {
+																	"type": "string"
+																}
+															}
+														}
+													}
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "No countries found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/channels/search": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Search channels by query",
+				"description": "Search for TV channels by name, category, country, or language. If q is empty, country or category can be provided to return filtered channels. Returns channels sorted by relevance when q is present.",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "q",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Search query string. Optional when country or category is provided."
+					},
+					{
+						"name": "country",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Optional ISO 3166-1 alpha-2 country code filter"
+					},
+					{
+						"name": "category",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Optional category filter"
+					},
+					{
+						"name": "language",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Optional language filter"
+					},
+					{
+						"name": "include_nsfw",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "boolean",
+							"default": false
+						},
+						"description": "Include NSFW channels in results"
+					},
+					{
+						"name": "limit",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 20,
+							"maximum": 100
+						},
+						"description": "Maximum results per page (max 100)"
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 1,
+							"minimum": 1
+						},
+						"description": "Page number for pagination"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Search results retrieved",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"type": "array",
+													"items": {
+														"$ref": "#/components/schemas/IPTVChannel"
+													}
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid search query",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "No channels found matching the query",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/channels/details/{id}": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get channel details",
+				"description": "Returns the channel metadata for a specific IPTV.org channel. The channel ID must be URI-encoded (e.g. `encodeURIComponent('France3.fr')`).",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "URI-encoded IPTV.org channel ID"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Channel details retrieved",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"type": "object",
+													"properties": {
+														"id": {
+															"type": "string"
+														},
+														"name": {
+															"type": "string"
+														},
+														"alt_names": {
+															"type": "array",
+															"items": {
+																"type": "string"
+															}
+														},
+														"network": {
+															"type": "string",
+															"nullable": true
+														},
+														"country": {
+															"type": "string"
+														},
+														"categories": {
+															"type": "array",
+															"items": {
+																"type": "string"
+															}
+														},
+														"is_nsfw": {
+															"type": "boolean"
+														},
+														"launched": {
+															"type": "string",
+															"nullable": true
+														},
+														"closed": {
+															"type": "string",
+															"nullable": true
+														},
+														"website": {
+															"type": "string",
+															"nullable": true
+														}
+													}
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid or malformed channel ID",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Channel not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/{type}/recently": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get recently updated media",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"$ref": "#/components/parameters/MediaType"
+					},
+					{
+						"$ref": "#/components/parameters/Language"
+					},
+					{
+						"name": "profileId",
+						"in": "query",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 1
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Recently updated media list",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/SimpleMediaList"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/{type}/episodes/{mediaId}/{season}": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get episodes for a series season",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"$ref": "#/components/parameters/MediaType"
+					},
+					{
+						"$ref": "#/components/parameters/Language"
+					},
+					{
+						"name": "mediaId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "season",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "integer"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Episodes list",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"type": "array",
+													"items": {
+														"$ref": "#/components/schemas/TvEpisode"
+													}
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Episodes not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/{type}/recommendation/{mediaId}": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get recommended media based on a media item",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"$ref": "#/components/parameters/MediaType"
+					},
+					{
+						"$ref": "#/components/parameters/Language"
+					},
+					{
+						"name": "mediaId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 1,
+							"minimum": 1
+						},
+						"description": "Page number for pagination"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Recommended media list",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/SimpleMediaList"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/personalized/activities/movie/{mediaId}": {
+			"post": {
+				"tags": [
+					"Personalized"
+				],
+				"summary": "Add movie activity",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "mediaId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "profileId",
+						"in": "query",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Profile ID for the activity"
+					},
+					{
+						"name": "seconds",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 0,
+							"minimum": 0
+						},
+						"description": "Runtime in seconds"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Activity created"
+					}
+				}
+			}
+		},
+		"/v1/api/personalized/activities/serie/{mediaId}": {
+			"post": {
+				"tags": [
+					"Personalized"
+				],
+				"summary": "Add series activity",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "mediaId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Encrypted media ID"
+					},
+					{
+						"name": "profileId",
+						"in": "query",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Profile ID for the activity"
+					},
+					{
+						"name": "season",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 1,
+							"minimum": 1
+						},
+						"description": "Season number"
+					},
+					{
+						"name": "episode",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 1,
+							"minimum": 1
+						},
+						"description": "Episode number"
+					},
+					{
+						"name": "seconds",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 0,
+							"minimum": 0
+						},
+						"description": "Runtime in seconds"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Activity created"
+					}
+				}
+			}
+		},
+		"/v1/api/personalized/bookmarks/add/{type}/{mediaId}": {
+			"post": {
+				"tags": [
+					"Personalized"
+				],
+				"summary": "Add a bookmark",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "type",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"movies",
+								"series"
+							]
+						}
+					},
+					{
+						"name": "mediaId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "profileId",
+						"in": "query",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Profile ID for the bookmark"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Bookmark added"
+					}
+				}
+			}
+		},
+		"/v1/api/personalized/bookmarks/remove/{type}/{mediaId}": {
+			"post": {
+				"tags": [
+					"Personalized"
+				],
+				"summary": "Remove a bookmark",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "type",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"movies",
+								"series"
+							]
+						}
+					},
+					{
+						"name": "mediaId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "profileId",
+						"in": "query",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Profile ID for the bookmark"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Bookmark removed"
+					}
+				}
+			}
+		},
+		"/v1/api/personalized/bookmarks/add/channels/{channelId}": {
+			"post": {
+				"tags": [
+					"Personalized"
+				],
+				"summary": "Add a channel bookmark",
+				"description": "Adds a live TV channel from IPTV.org to the authenticated user's bookmarks.",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "channelId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "IPTV.org channel ID to bookmark"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Channel bookmarked successfully or already bookmarked"
+					},
+					"400": {
+						"description": "Invalid channel ID"
+					},
+					"401": {
+						"description": "Unauthorized"
+					},
+					"403": {
+						"description": "Subscription required"
+					},
+					"404": {
+						"description": "Channel not found in IPTV.org"
+					}
+				}
+			}
+		},
+		"/v1/api/personalized/bookmarks/remove/channels/{channelId}": {
+			"post": {
+				"tags": [
+					"Personalized"
+				],
+				"summary": "Remove a channel bookmark",
+				"description": "Removes a live TV channel from the authenticated user's bookmarks.",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "channelId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "IPTV.org channel ID to remove from bookmarks"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Channel bookmark removed or not found in bookmarks"
+					},
+					"400": {
+						"description": "Invalid channel ID"
+					},
+					"401": {
+						"description": "Unauthorized"
+					},
+					"403": {
+						"description": "Subscription required"
+					}
+				}
+			}
+		},
+		"/v1/api/subscription/capture": {
+			"get": {
+				"tags": [
+					"Subscription"
+				],
+				"summary": "Capture subscription payment",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Subscription captured",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"type": "object",
+													"properties": {
+														"url": {
+															"type": "string",
+															"format": "uri",
+															"description": "Frontend URL to redirect to"
+														}
+													}
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Bad request or no active subscription found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "User or subscription not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/subscription/paypal/create/{planId}": {
+			"post": {
+				"tags": [
+					"Subscription"
+				],
+				"summary": "Create PayPal subscription",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "planId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": [
+									"redirectURI",
+									"cancelURI"
+								],
+								"properties": {
+									"redirectURI": {
+										"type": "string",
+										"format": "uri"
+									},
+									"cancelURI": {
+										"type": "string",
+										"format": "uri"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Subscription created or approval URL returned",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"type": "object",
+													"properties": {
+														"url": {
+															"type": "string",
+															"format": "uri",
+															"description": "PayPal approval URL or frontend redirect URL"
+														}
+													}
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Bad request or subscription creation failed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "User or plan not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/subscription/paypal/cancel/{subscriptionId}": {
+			"get": {
+				"tags": [
+					"Subscription"
+				],
+				"summary": "Cancel PayPal subscription",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "subscriptionId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Subscription cancelled",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/SubscriptionOutputInformation"
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Subscription cancellation failed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Subscription not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/subscription/paypal/suspend/{subscriptionId}": {
+			"get": {
+				"tags": [
+					"Subscription"
+				],
+				"summary": "Suspend PayPal subscription",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "subscriptionId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Subscription suspended",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/SubscriptionOutputInformation"
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Subscription suspension failed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Subscription not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/subscription/paypal/update/{subscriptionId}": {
+			"post": {
+				"tags": [
+					"Subscription"
+				],
+				"summary": "Update PayPal subscription plan",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "subscriptionId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": [
+									"planId",
+									"redirectURI",
+									"cancelURI"
+								],
+								"properties": {
+									"planId": {
+										"type": "string"
+									},
+									"redirectURI": {
+										"type": "string",
+										"format": "uri"
+									},
+									"cancelURI": {
+										"type": "string",
+										"format": "uri"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Subscription updated",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"type": "object",
+													"properties": {
+														"url": {
+															"type": "string",
+															"format": "uri",
+															"description": "PayPal approval URL for the updated subscription"
+														}
+													}
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Bad request or subscription update failed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Subscription or plan not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/subscription/paypal/activate/{subscriptionId}": {
+			"get": {
+				"tags": [
+					"Subscription"
+				],
+				"summary": "Activate PayPal subscription",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "subscriptionId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Subscription activated",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpSuccess"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Subscription activation failed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Subscription not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/api/subscription/paypal/one-time/create/{planId}": {
+			"post": {
+				"tags": [
+					"Subscription"
+				],
+				"summary": "Create a one-time PayPal payment order",
+				"description": "Creates a PayPal Order for a one-time payment using the Orders v2 API. The user pays once and gets 30 days of access — no recurring billing. A local Subscription record (CREATED status) is persisted before returning the approval link. After the user approves on PayPal, the existing capture-subscription endpoint (`GET /subscription/capture`) will capture and activate the subscription via revalidation.",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "planId",
+						"in": "path",
+						"required": true,
+						"description": "Public ID of the plan to subscribe to",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": [
+									"redirectURI",
+									"cancelURI"
+								],
+								"properties": {
+									"redirectURI": {
+										"type": "string",
+										"format": "uri",
+										"description": "URL to redirect the user to after payment approval"
+									},
+									"cancelURI": {
+										"type": "string",
+										"format": "uri",
+										"description": "URL to redirect the user to if they cancel the payment"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "PayPal approval URL returned",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/HttpSuccess"
+										},
+										{
+											"type": "object",
+											"properties": {
+												"data": {
+													"type": "object",
+													"properties": {
+														"url": {
+															"type": "string",
+															"format": "uri",
+															"description": "PayPal approval URL — redirect the user here to complete payment"
+														}
+													}
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Bad request, subscription creation failed, or user already subscribed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "User or plan not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HttpError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/media/images/{path}": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get image by path",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "path",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Image file"
+					}
+				}
+			}
+		},
+		"/v1/media/optimized-images/{path}": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get optimized image by path",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "path",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Optimized image file"
+					}
+				}
+			}
+		},
+		"/v1/media/teasers/{path}": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get teaser video by path",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "path",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Teaser video file"
+					}
+				}
+			}
+		},
+		"/v1/api/{type}/watching/{profileId}": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get watch history for a profile by media type",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"$ref": "#/components/parameters/MediaType"
+					},
+					{
+						"name": "profileId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 1,
+							"minimum": 1
+						},
+						"description": "Page number for pagination"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Activities list"
+					}
+				}
+			}
+		},
+		"/v1/api/{type}/bookmarked/{profileId}": {
+			"get": {
+				"tags": [
+					"Media"
+				],
+				"summary": "Get bookmarks for a profile by media type",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"$ref": "#/components/parameters/MediaType"
+					},
+					{
+						"name": "profileId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 1,
+							"minimum": 1
+						},
+						"description": "Page number for pagination"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Bookmarks list"
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"securitySchemes": {
+			"bearerAuth": {
+				"type": "http",
+				"scheme": "bearer",
+				"bearerFormat": "JWT"
+			}
+		},
+		"parameters": {
+			"MediaType": {
+				"name": "type",
+				"in": "path",
+				"required": true,
+				"schema": {
+					"type": "string",
+					"enum": [
+						"movies",
+						"series"
+					],
+					"description": "Choose `movies` or `series` depending on the media catalog you need."
+				}
+			},
+			"Language": {
+				"name": "lang",
+				"in": "query",
+				"required": false,
+				"schema": {
+					"type": "string",
+					"enum": [
+						"en",
+						"es",
+						"nl",
+						"fr"
+					],
+					"default": "en"
+				},
+				"description": "Preferred language code. Falls back to Accept-Language header if not provided. Supported: en (English), es (Español), nl (Nederlands), fr (Français)"
+			}
+		},
+		"schemas": {
+			"HttpSuccess": {
+				"type": "object",
+				"required": [
+					"success",
+					"message"
+				],
+				"properties": {
+					"success": {
+						"type": "boolean",
+						"example": true
+					},
+					"message": {
+						"type": "string"
+					},
+					"data": {
+						"description": "Response data (optional)"
+					}
+				}
+			},
+			"HttpError": {
+				"type": "object",
+				"required": [
+					"code",
+					"message"
+				],
+				"properties": {
+					"code": {
+						"type": "string"
+					},
+					"message": {
+						"type": "string"
+					},
+					"details": {
+						"description": "Additional error details (optional)"
+					}
+				}
+			},
+			"LoginRequest": {
+				"type": "object",
+				"required": [
+					"email",
+					"password"
+				],
+				"properties": {
+					"email": {
+						"type": "string",
+						"format": "email"
+					},
+					"password": {
+						"type": "string",
+						"format": "password",
+						"default": "Password123"
+					}
+				}
+			},
+			"RegisterRequest": {
+				"type": "object",
+				"required": [
+					"email",
+					"password",
+					"fullName"
+				],
+				"properties": {
+					"email": {
+						"type": "string",
+						"format": "email",
+						"maxLength": 80
+					},
+					"password": {
+						"type": "string",
+						"format": "password",
+						"default": "Password123",
+						"minLength": 4,
+						"maxLength": 30,
+						"description": "Should meet configured complexity rules (min 4 chars, lowercase, uppercase, numeric)"
+					},
+					"fullName": {
+						"type": "string",
+						"minLength": 4,
+						"maxLength": 25,
+						"pattern": "^[a-zA-Z `,'.-]*$",
+						"description": "Full name of the user"
+					}
+				}
+			},
+			"AccountUpdatePayload": {
+				"type": "object",
+				"required": [
+					"password"
+				],
+				"properties": {
+					"name": {
+						"type": "string",
+						"minLength": 3,
+						"maxLength": 30,
+						"pattern": "^[a-zA-Z ,.'-]*$",
+						"description": "Account holder name (optional if updating password)"
+					},
+					"newPassword": {
+						"type": "string",
+						"format": "password",
+						"minLength": 4,
+						"maxLength": 30,
+						"description": "New password (optional if updating name only). Should meet complexity rules."
+					},
+					"password": {
+						"type": "string",
+						"format": "password",
+						"description": "Current password (required for verification)"
+					}
+				},
+				"description": "At least one of 'name' or 'newPassword' must be provided. 'password' is always required for verification."
+			},
+			"ProfilePayload": {
+				"type": "object",
+				"required": [
+					"profileName"
+				],
+				"properties": {
+					"profileName": {
+						"type": "string",
+						"minLength": 4,
+						"maxLength": 18,
+						"pattern": "^[a-zA-Z -]*$"
+					},
+					"avatarId": {
+						"type": "string",
+						"minLength": 14,
+						"maxLength": 22
+					},
+					"languageCode": {
+						"type": "string",
+						"minLength": 2,
+						"maxLength": 10
+					},
+					"certificationId": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 8
+					},
+					"autoPlay": {
+						"type": "boolean"
+					},
+					"defaultSubtitle": {
+						"type": "boolean"
+					}
+				}
+			},
+			"LoginResponseData": {
+				"type": "object",
+				"properties": {
+					"redirect": {
+						"type": "string",
+						"description": "Redirect path after login"
+					},
+					"access": {
+						"type": "string",
+						"description": "JWT access token"
+					}
+				}
+			},
+			"RegisterResponseData": {
+				"type": "object",
+				"properties": {
+					"access": {
+						"type": "string",
+						"description": "JWT access token"
+					}
+				}
+			},
+			"ProfileOutputInformation": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"format": "uuid"
+					},
+					"primary": {
+						"type": "boolean"
+					},
+					"profileName": {
+						"type": "string"
+					},
+					"avatarId": {
+						"type": "string",
+						"nullable": true
+					},
+					"certificationId": {
+						"type": "string"
+					},
+					"languageCode": {
+						"type": "string"
+					},
+					"autoPlay": {
+						"type": "boolean"
+					},
+					"defaultSubtitle": {
+						"type": "boolean"
+					},
+					"bookmarks": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": {
+									"type": "string"
+								},
+								"type": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					"activities": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": {
+									"type": "string"
+								},
+								"type": {
+									"type": "string"
+								},
+								"runtimes": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			},
+			"UserOutputInformation": {
+				"type": "object",
+				"properties": {
+					"setupFinish": {
+						"type": "boolean"
+					},
+					"name": {
+						"type": "string"
+					},
+					"email": {
+						"type": "string",
+						"format": "email"
+					},
+					"subscription": {
+						"type": "boolean"
+					},
+					"profiles": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/ProfileOutputInformation"
+						}
+					},
+					"country": {
+						"type": "string"
+					},
+					"countryCode": {
+						"type": "string"
+					},
+					"tr": {
+						"type": "integer",
+						"description": "Target streaming resolution for the current user's plan"
+					}
+				}
+			},
+			"PlanOutputInformation": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "Public ID of the plan"
+					},
+					"index": {
+						"type": "integer"
+					},
+					"names": {
+						"type": "object",
+						"additionalProperties": {
+							"type": "string"
+						},
+						"description": "Plan names by language"
+					},
+					"descriptions": {
+						"type": "object",
+						"additionalProperties": {
+							"type": "array",
+							"items": {
+								"type": "string"
+							}
+						},
+						"description": "Plan descriptions by language"
+					},
+					"autoRenewal": {
+						"type": "boolean"
+					},
+					"price": {
+						"type": "number",
+						"format": "float"
+					},
+					"currency": {
+						"type": "string",
+						"example": "USD"
+					},
+					"maxScreen": {
+						"type": "integer"
+					}
+				}
+			},
+			"CertificationOutputInformation": {
+				"type": "object",
+				"properties": {
+					"code": {
+						"type": "string",
+						"description": "Certification code (e.g., PG, PG-13, R, NC-17)",
+						"example": "PG-13"
+					},
+					"name": {
+						"type": "object",
+						"properties": {
+							"en": {
+								"type": "string",
+								"description": "English name"
+							},
+							"es": {
+								"type": "string",
+								"description": "Spanish name"
+							},
+							"nl": {
+								"type": "string",
+								"description": "Dutch name"
+							},
+							"fr": {
+								"type": "string",
+								"description": "French name"
+							}
+						},
+						"required": [
+							"en",
+							"es",
+							"nl",
+							"fr"
+						],
+						"description": "Certification name in multiple languages"
+					},
+					"level": {
+						"type": "integer",
+						"description": "Age level restriction (0, 7, 14, or 17)",
+						"example": 7
+					},
+					"shortName": {
+						"type": "string",
+						"description": "Short name for the certification",
+						"example": "Young Teens"
+					},
+					"defaultAvatarId": {
+						"type": "string",
+						"description": "Default avatar ID for this certification level",
+						"example": "AV-A12-X200-H200"
+					}
+				},
+				"required": [
+					"code",
+					"name",
+					"level",
+					"shortName",
+					"defaultAvatarId"
+				]
+			},
+			"SubscriptionLink": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"type": "string"
+					},
+					"url": {
+						"type": "string"
+					},
+					"method": {
+						"type": "string"
+					}
+				}
+			},
+			"SubscriptionProviderInfo": {
+				"type": "object",
+				"properties": {
+					"code": {
+						"type": "string"
+					},
+					"email": {
+						"type": "string"
+					},
+					"provider": {
+						"type": "string"
+					},
+					"payerId": {
+						"type": "string"
+					}
+				}
+			},
+			"SubscriptionOutputInformation": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"planId": {
+						"type": "string"
+					},
+					"active": {
+						"type": "boolean"
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"ACTIVE",
+							"APPROVED",
+							"CREATED",
+							"SUSPENDED",
+							"CANCELLED",
+							"EXPIRED"
+						]
+					},
+					"startAt": {
+						"type": "string",
+						"format": "date-time",
+						"nullable": true
+					},
+					"expiredAt": {
+						"type": "string",
+						"format": "date-time",
+						"nullable": true
+					},
+					"nextBillingAt": {
+						"type": "string",
+						"format": "date-time",
+						"nullable": true
+					},
+					"cancelledAt": {
+						"type": "string",
+						"format": "date-time",
+						"nullable": true
+					},
+					"pausedAt": {
+						"type": "string",
+						"format": "date-time",
+						"nullable": true
+					},
+					"lastPaymentAt": {
+						"type": "string",
+						"format": "date-time",
+						"nullable": true
+					},
+					"failedPayments": {
+						"type": "integer"
+					},
+					"links": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/SubscriptionLink"
+						},
+						"nullable": true
+					},
+					"source": {
+						"type": "string",
+						"enum": [
+							"STRIPE",
+							"PAYPAL",
+							"MANUAL",
+							"CODE",
+							"OTHER"
+						]
+					},
+					"subscriber": {
+						"$ref": "#/components/schemas/SubscriptionProviderInfo"
+					}
+				}
+			},
+			"ActivateCodeRequest": {
+				"type": "object",
+				"required": [
+					"code"
+				],
+				"properties": {
+					"code": {
+						"type": "string",
+						"description": "Single-use activation code"
+					}
+				}
+			},
+			"SimpleMedia": {
+				"type": "object",
+				"properties": {
+					"title": {
+						"type": "string"
+					},
+					"tmdbId": {
+						"type": "integer"
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"movie",
+							"series"
+						]
+					}
+				}
+			},
+			"IPTVLogoColors": {
+				"type": "object",
+				"properties": {
+					"Vibrant": {
+						"type": "string",
+						"nullable": true
+					},
+					"DarkVibrant": {
+						"type": "string",
+						"nullable": true
+					},
+					"LightVibrant": {
+						"type": "string",
+						"nullable": true
+					},
+					"Muted": {
+						"type": "string",
+						"nullable": true
+					},
+					"DarkMuted": {
+						"type": "string",
+						"nullable": true
+					},
+					"LightMuted": {
+						"type": "string",
+						"nullable": true
+					}
+				}
+			},
+			"IPTVLogoInfo": {
+				"type": "object",
+				"properties": {
+					"width": {
+						"type": "number"
+					},
+					"height": {
+						"type": "number"
+					},
+					"aspectRatio": {
+						"type": "number"
+					},
+					"url": {
+						"type": "string"
+					},
+					"colors": {
+						"$ref": "#/components/schemas/IPTVLogoColors"
+					},
+					"bestBackground": {
+						"type": "string",
+						"enum": [
+							"light",
+							"dark"
+						]
+					}
+				},
+				"required": [
+					"width",
+					"height",
+					"aspectRatio",
+					"url",
+					"colors",
+					"bestBackground"
+				]
+			},
+			"IPTVChannel": {
+				"type": "object",
+				"description": "IPTV channel payload enriched by getChannels with optional logoInfo metadata from iptv-logo-colors.json.",
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"alt_names": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"network": {
+						"type": "string",
+						"nullable": true
+					},
+					"owners": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"country": {
+						"type": "string",
+						"description": "ISO 3166-1 alpha-2 country code."
+					},
+					"categories": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"is_nsfw": {
+						"type": "boolean"
+					},
+					"launched": {
+						"type": "string",
+						"nullable": true
+					},
+					"closed": {
+						"type": "string",
+						"nullable": true
+					},
+					"replaced_by": {
+						"type": "string",
+						"nullable": true
+					},
+					"website": {
+						"type": "string",
+						"nullable": true
+					},
+					"logoInfo": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/IPTVLogoInfo"
+							}
+						],
+						"nullable": true,
+						"description": "Attached in getChannels when logo color metadata exists for the channel id."
+					}
+				},
+				"required": [
+					"id",
+					"name",
+					"country",
+					"categories",
+					"is_nsfw"
+				]
+			},
+			"SimpleMediaList": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"movies",
+							"series"
+						]
+					},
+					"items": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/SimpleMedia"
+						}
+					}
+				}
+			},
+			"MovieSearchResult": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "Encrypted media ID"
+					},
+					"title": {
+						"type": "string"
+					},
+					"summary": {
+						"type": "string"
+					},
+					"vote": {
+						"type": "number"
+					},
+					"genres": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"poster": {
+						"type": "string",
+						"nullable": true
+					},
+					"backdrop": {
+						"type": "string",
+						"nullable": true
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"movies"
+						]
+					},
+					"externalTmdbId": {
+						"type": "integer",
+						"nullable": true
+					},
+					"externalImdbId": {
+						"type": "string",
+						"nullable": true
+					},
+					"minutes": {
+						"type": "integer",
+						"description": "Movie duration in minutes"
+					},
+					"releaseDate": {
+						"type": "string",
+						"format": "date"
+					},
+					"certification": {
+						"type": "string",
+						"nullable": true
+					}
+				},
+				"required": [
+					"id",
+					"title",
+					"summary",
+					"vote",
+					"type",
+					"releaseDate",
+					"minutes"
+				]
+			},
+			"TvSearchResult": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "Encrypted media ID"
+					},
+					"title": {
+						"type": "string"
+					},
+					"summary": {
+						"type": "string"
+					},
+					"vote": {
+						"type": "number"
+					},
+					"genres": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"poster": {
+						"type": "string",
+						"nullable": true
+					},
+					"backdrop": {
+						"type": "string",
+						"nullable": true
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"series"
+						]
+					},
+					"externalTmdbId": {
+						"type": "integer",
+						"nullable": true
+					},
+					"externalImdbId": {
+						"type": "string",
+						"nullable": true
+					},
+					"minutes": {
+						"type": "integer",
+						"description": "Average episode duration in minutes"
+					},
+					"releaseDate": {
+						"type": "string",
+						"format": "date"
+					},
+					"certification": {
+						"type": "string",
+						"nullable": true
+					}
+				},
+				"required": [
+					"id",
+					"title",
+					"summary",
+					"vote",
+					"type",
+					"releaseDate",
+					"minutes"
+				]
+			},
+			"MovieDetails": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"movies"
+						]
+					},
+					"id": {
+						"type": "string"
+					},
+					"officialLanguage": {
+						"type": "string"
+					},
+					"quality": {
+						"type": "string"
+					},
+					"title": {
+						"type": "string"
+					},
+					"summary": {
+						"type": "string"
+					},
+					"releaseDate": {
+						"type": "string",
+						"format": "date"
+					},
+					"vote": {
+						"type": "number"
+					},
+					"minutes": {
+						"type": "integer",
+						"description": "Movie duration in minutes"
+					},
+					"genres": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"poster": {
+						"type": "string",
+						"nullable": true
+					},
+					"backdrop": {
+						"type": "string",
+						"nullable": true
+					},
+					"teaser": {
+						"type": "string",
+						"nullable": true
+					},
+					"ytKey": {
+						"type": "string",
+						"nullable": true
+					},
+					"logo": {
+						"$ref": "#/components/schemas/MediaLogo"
+					},
+					"certification": {
+						"type": "string",
+						"nullable": true
+					},
+					"externalTmdbId": {
+						"type": "integer",
+						"nullable": true
+					},
+					"externalImdbId": {
+						"type": "string",
+						"nullable": true
+					}
+				}
+			},
+			"TvDetails": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"series"
+						]
+					},
+					"id": {
+						"type": "string"
+					},
+					"officialLanguage": {
+						"type": "string"
+					},
+					"title": {
+						"type": "string"
+					},
+					"summary": {
+						"type": "string"
+					},
+					"releaseDate": {
+						"type": "string",
+						"format": "date"
+					},
+					"genres": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"minutes": {
+						"type": "integer",
+						"description": "Average episode duration in minutes"
+					},
+					"seasons": {
+						"type": "number"
+					},
+					"episodes": {
+						"type": "number"
+					},
+					"vote": {
+						"type": "number"
+					},
+					"quality": {
+						"type": "string"
+					},
+					"certification": {
+						"type": "string",
+						"nullable": true
+					},
+					"teaser": {
+						"type": "string",
+						"nullable": true
+					},
+					"ytKey": {
+						"type": "string",
+						"nullable": true
+					},
+					"poster": {
+						"type": "string",
+						"nullable": true
+					},
+					"backdrop": {
+						"type": "string",
+						"nullable": true
+					},
+					"logo": {
+						"$ref": "#/components/schemas/MediaLogo"
+					},
+					"externalTmdbId": {
+						"type": "integer",
+						"nullable": true
+					},
+					"externalImdbId": {
+						"type": "string",
+						"nullable": true
+					}
+				}
+			},
+			"MediaLogo": {
+				"type": "object",
+				"nullable": true,
+				"properties": {
+					"src": {
+						"type": "string"
+					},
+					"aspectRatio": {
+						"type": "number"
+					}
+				},
+				"required": [
+					"src",
+					"aspectRatio"
+				]
+			},
+			"TvEpisode": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"episode"
+						]
+					},
+					"season": {
+						"type": "integer"
+					},
+					"number": {
+						"type": "integer"
+					},
+					"title": {
+						"type": "string"
+					},
+					"summary": {
+						"type": "string"
+					},
+					"aired": {
+						"type": "string",
+						"format": "date",
+						"nullable": true
+					},
+					"minutes": {
+						"type": "integer",
+						"description": "Episode duration in minutes"
+					},
+					"backdrop": {
+						"type": "string",
+						"nullable": true
+					},
+					"externalTmdbId": {
+						"type": "integer",
+						"nullable": true
+					},
+					"externalImdbId": {
+						"type": "string",
+						"nullable": true
+					}
+				},
+				"required": [
+					"type",
+					"season",
+					"number",
+					"title",
+					"summary"
+				]
+			}
+		}
+	}
+}

@@ -1,0 +1,71 @@
+@import 'default.css';
+@import 'pages.css';
+@import 'components.css';
+@import 'react-native-cross-player/dist/css/styles.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@tailwind variants;
+
+@layer components {
+	.h1 {
+		font-size: var(--h1-size);
+		font-family: 'Montserrat-Bold', serif;
+	}
+
+	.h2 {
+		font-size: var(--h2-size);
+		font-family: 'Montserrat-Bold', serif;
+	}
+
+	.h3 {
+		font-size: var(--h3-size);
+		font-family: 'Montserrat-Bold', serif;
+	}
+
+	.h4 {
+		font-size: var(--h4-size);
+		font-family: 'Montserrat-Bold', serif;
+	}
+
+	.h5 {
+		font-size: var(--h5-size);
+		font-family: 'Montserrat-Bold', serif;
+	}
+
+	.span1 {
+		font-size: var(--span1-size);
+		font-family: 'Montserrat-Regular', serif;
+	}
+
+	.span1b {
+		font-size: var(--span1b-size);
+		font-family: 'Montserrat-Regular', serif;
+	}
+
+	.span2 {
+		font-size: var(--span2-size);
+		font-family: 'Montserrat-Regular', serif;
+	}
+
+	.span3 {
+		font-size: var(--span3-size);
+		font-family: 'Montserrat-Regular', serif;
+	}
+
+	.span4 {
+		font-size: var(--span4-size);
+		font-family: 'Montserrat-Regular', serif;
+	}
+
+	.span5 {
+		font-size: var(--span5-size);
+		font-family: 'Montserrat-Regular', serif;
+	}
+
+	.span6 {
+		font-size: var(--span6-size);
+		font-family: 'Montserrat-Regular', serif;
+	}
+}

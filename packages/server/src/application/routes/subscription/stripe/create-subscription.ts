@@ -1,0 +1,149 @@
+/**
+ * POST /subscription/stripe/create/:planId
+ *
+ * Creates a Stripe Checkout Session for the given plan.
+ * Returns the Checkout URL so the client can redirect the user to Stripe.
+ *
+ * Body: { redirectURI: string, cancelURI: string }
+ */
+
+import { Response, Router } from 'express';
+import { AuthenticatedRequest } from '@api/middlewares/authentications';
+import Subscription from '@core/models/subscription';
+import User from '@core/models/user';
+import Plan from '@core/models/plan';
+import { StripeController, StripeService } from '@core/infrastructure/services/payments/stripe';
+import { HttpError } from '@/types/HttpError';
+import { HttpSuccess } from '@/types/HttpSuccess';
+import { validateUrl } from '@utils/validator';
+import { handleHardErrors } from '@/utils/standard';
+import { Transaction } from 'sequelize';
+import config from '@core/infrastructure/config/application';
+
+const router = Router();
+
+router.post('/:planId', async (req: AuthenticatedRequest, res: Response) => {
+	let transaction: Transaction | undefined;
+	try {
+		const publicId = req.params.planId;
+		// Redirect URIs provided by the client
+		const returnLocation: string = req.body.redirectURI || '';
+		const cancelLocation: string = req.body.cancelURI || '';
+
+		// Validate URLs
+		if (!validateUrl(returnLocation) || !validateUrl(cancelLocation)) {
+			return new HttpError({
+				statusCode: 400,
+				code: req.t('SERVER_BAD_REQUEST_CODE'),
+				message: req.t('SERVER_BAD_REQUEST_MESSAGE'),
+			}).sendResponse(res);
+		}
+
+		// Start transaction
+		transaction = await Subscription.sequelize!.transaction();
+
+		// Lock user to prevent concurrent subscription creation
+		const user = await User.findByPk(req.user.userId, { lock: true, transaction });
+		if (!user) {
+			await transaction.rollback();
+			return new HttpError({
+				statusCode: 404,
+				code: req.t('UNEXISTENT_USER_CODE'),
+				message: req.t('UNEXISTENT_USER_MESSAGE'),
+			}).sendResponse(res);
+		}
+
+		// Find plan by public ID
+		const plan = await Plan.findByPb(publicId);
+		if (!plan || !plan.stripePriceId) {
+			await transaction.rollback();
+			return new HttpError({
+				statusCode: 404,
+				code: req.t('PLAN_NOT_FOUND_CODE'),
+				message: req.t('PLAN_NOT_FOUND_MESSAGE'),
+			}).sendResponse(res);
+		}
+
+		// Check for existing active subscriptions
+		const [userSubscriptions, isSubscribed] = await Subscription.findUserSubscriptions(req.user.userId, transaction);
+		if (isSubscribed || Subscription.haveDormantSubscriptions(userSubscriptions)) {
+			await transaction.rollback();
+			return new HttpSuccess({
+				message: req.t('SUBSCRIPTION_ALREADY_EXISTS_MESSAGE'),
+				data: { url: config.frontendProcessingUrl },
+			}).sendResponse(res);
+		}
+
+		// Helper to create a new Stripe Checkout Session and persist a CREATED subscription
+		// This will create a placeholder subscription with status CREATED,
+		// which will be captured and turned into a real subscription when the checkout session is completed (via webhook or revalidation)
+		// ID of this session will be stored in the links of the subscription for later retrieval during capture
+		const createCheckoutSession = async () => {
+			const session = await StripeService.createCheckoutSession({
+				user: { id: user.id, email: user.email },
+				plan: { id: plan.id, stripePriceId: plan.stripePriceId! },
+				successUrl: returnLocation,
+				cancelUrl: cancelLocation,
+			});
+
+			if (!session || !session.url)
+				throw new HttpError({
+					statusCode: 400,
+					code: req.t('SUBSCRIPTION_CREATION_FAILED'),
+					message: req.t('SUBSCRIPTION_CREATION_FAILED_MESSAGE'),
+				});
+
+			return { sessionId: session.id, sessionUrl: session.url };
+		};
+
+		// Check for existing CREATED Stripe subscription to reuse
+		const createdSubscription = userSubscriptions.find((sub) => sub.status === 'CREATED' && sub.source === 'STRIPE');
+		let checkoutUrl: string | null = null;
+
+		// If there's an existing CREATED subscription for the same plan, try to reuse its checkout session
+		if (createdSubscription && createdSubscription.planId === plan.id) {
+			// Verify the existing Stripe Checkout Session is still open
+			const validSession = await StripeController.getValidCheckoutSession(createdSubscription.links || []);
+			if (validSession) {
+				// Session is still open — reuse the existing checkout URL
+				checkoutUrl = StripeController.getCheckoutUrl(createdSubscription.links || []);
+			} else {
+				// Session expired/completed/missing — invalidate the existing record
+				// NOT deleting it in case there are webhooks in-flight that reference this record,
+				// we mark it as INVALID so it's ignored in the future
+				await createdSubscription.update({ status: 'INVALID' }, { transaction });
+			}
+		}
+
+		// No valid existing session — create a fresh Stripe Checkout Session and DB record
+		if (!checkoutUrl) {
+			const { sessionId, sessionUrl } = await createCheckoutSession();
+			await StripeController.createPendingSubscription(sessionId, sessionUrl, user, plan, transaction);
+			checkoutUrl = sessionUrl;
+		}
+
+		// Commit transaction
+		await transaction.commit();
+		transaction = undefined;
+
+		if (!checkoutUrl) {
+			return new HttpError({
+				statusCode: 400,
+				code: req.t('SUBSCRIPTION_CREATION_FAILED'),
+				message: req.t('SUBSCRIPTION_CREATION_FAILED_MESSAGE'),
+			}).sendResponse(res);
+		}
+
+		// Return Stripe Checkout URL for client redirect
+		return new HttpSuccess({
+			message: req.t('SUBSCRIPTION_WAITING_FOR_PAYMENT_MESSAGE'),
+			data: { url: checkoutUrl },
+		}).sendResponse(res);
+	} catch (error) {
+		if (transaction) await transaction.rollback();
+		if (error instanceof HttpError) return error.sendResponse(res);
+		return handleHardErrors(error, req, res);
+	}
+});
+
+export default router;
