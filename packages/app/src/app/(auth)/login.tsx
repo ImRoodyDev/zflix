@@ -1,6 +1,6 @@
 // External imports
 import { Href, Link } from 'expo-router';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState, useTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Keyboard, KeyboardAvoidingView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -39,6 +39,8 @@ const Login = () => {
 
 	const [userForm, updateForm] = useState({ email: '', password: '' });
 	const [submitting, setSubmitting] = useState(false);
+	const [isTransitionPending, startTransition] = useTransition();
+	const isSubmitting = submitting || isTransitionPending;
 
 	// Components functions
 	const exitModal = useCallback(async () => {
@@ -50,7 +52,7 @@ const Login = () => {
 	}, [isPresented]);
 	const onLogin = useCallback(async () => {
 		try {
-			if (submitting) return;
+			if (isSubmitting) return;
 
 			// Dismiss keyboard
 			Keyboard.dismiss();
@@ -75,7 +77,9 @@ const Login = () => {
 			// Send login request to server
 			const response = await sendLogin(userForm);
 			successFeedback();
-			setLoggedIn?.(true);
+			startTransition(() => {
+				setLoggedIn?.(true);
+			});
 
 			// Check if the response contains a redirect URL
 			let redirect: Href | null;
@@ -89,8 +93,9 @@ const Login = () => {
 			await delay(2000);
 
 			// Redirect to the specified page
-			window.application.navigate.dismiss();
-			window.application.navigate.replace(redirect);
+			startTransition(() => {
+				window.application.navigate.replace(redirect);
+			});
 		} catch (error: any) {
 			errorFeedback();
 			if (isHttpError(error)) Toast.error(error.message);
@@ -99,9 +104,9 @@ const Login = () => {
 			// Prevent multiple submissions
 			setSubmitting(false);
 		}
-	}, [userForm, setLoggedIn, submitting, t]);
+	}, [userForm, setLoggedIn, isSubmitting, startTransition, t]);
 	const onResetPassword = async () => {
-		if (submitting) return;
+		if (isSubmitting) return;
 
 		if (userForm.email.length === 0 || !userForm.email) {
 			Toast.error(t('emailRequired'));
@@ -154,7 +159,7 @@ const Login = () => {
 						<LabeledInput
 							className="app-user-form-input"
 							inputConfig={{
-								editable: !submitting,
+								editable: !isSubmitting,
 								focusable: false,
 								type: 'email',
 								maxLength: 75,
@@ -178,7 +183,7 @@ const Login = () => {
 							className="app-user-form-input"
 							inputConfig={{
 								secure: true,
-								editable: !submitting,
+								editable: !isSubmitting,
 								focusable: false,
 								type: 'text',
 								maxLength: 75,
@@ -199,7 +204,7 @@ const Login = () => {
 						/>
 
 						<Button
-							disabled={submitting}
+							disabled={isSubmitting}
 							text={t('logIn')}
 							showIndicator={true}
 							onPress={onLogin}
@@ -225,7 +230,7 @@ const Login = () => {
 							</Text>
 						</TouchableOpacity>
 
-						<Link disabled={submitting} replace href="/(auth)/register" className="app-user-form-txt-ctn">
+						<Link disabled={isSubmitting} replace href="/(auth)/register" className="app-user-form-txt-ctn">
 							<ThemedText className="app-user-form-txt span4" selectable={false}>
 								{t('account')}{' '}
 							</ThemedText>

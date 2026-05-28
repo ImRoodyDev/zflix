@@ -1,6 +1,6 @@
 // External imports
 import { Link } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Keyboard, KeyboardAvoidingView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -38,6 +38,8 @@ const Register = () => {
 	const { t } = useTranslation();
 	const [userForm, updateForm] = useState({ fullName: '', email: '', password: '' });
 	const [submitting, setSubmitting] = useState(false);
+	const [isTransitionPending, startTransition] = useTransition();
+	const isSubmitting = submitting || isTransitionPending;
 
 	// Components functions
 	const exitModal = useCallback(async () => {
@@ -49,7 +51,7 @@ const Register = () => {
 	}, [isPresented]);
 	const onRegister = async () => {
 		try {
-			if (submitting) return;
+			if (isSubmitting) return;
 
 			// Dismiss keyboard
 			Keyboard.dismiss();
@@ -74,14 +76,17 @@ const Register = () => {
 			// Send register request to server
 			await sendRegister(userForm);
 			successFeedback();
-			setLoggedIn?.(true);
+			startTransition(() => {
+				setLoggedIn?.(true);
+			});
 
 			// Wait for 2 seconds to show success feedback
 			await delay(2000);
 
 			// Redirect to profile page
-			window.application.navigate.dismissAll();
-			window.application.navigate.replace('/(plan)/plan-picker');
+			startTransition(() => {
+				window.application.navigate.replace('/(plan)/plan-picker');
+			});
 		} catch (error: any) {
 			errorFeedback();
 			if (isHttpError(error)) Toast.error(error.message);
@@ -125,7 +130,7 @@ const Register = () => {
 						<LabeledInput
 							className="app-user-form-input"
 							inputConfig={{
-								editable: !submitting,
+								editable: !isSubmitting,
 								focusable: false,
 								type: 'text',
 								maxLength: 75,
@@ -148,7 +153,7 @@ const Register = () => {
 						<LabeledInput
 							className="app-user-form-input"
 							inputConfig={{
-								editable: !submitting,
+								editable: !isSubmitting,
 								focusable: false,
 								type: 'text',
 								maxLength: 75,
@@ -172,7 +177,7 @@ const Register = () => {
 							className="app-user-form-input"
 							inputConfig={{
 								secure: true,
-								editable: !submitting,
+								editable: !isSubmitting,
 								focusable: false,
 								type: 'text',
 								maxLength: 75,
@@ -193,8 +198,9 @@ const Register = () => {
 						/>
 
 						<Button
-							disabled={submitting}
+							disabled={isSubmitting}
 							text={t('register')}
+							showIndicator={true}
 							onPress={onRegister}
 							className="app-user-form-submit-btn"
 							icon="user_circle_add"
@@ -208,14 +214,14 @@ const Register = () => {
 							pressedBackgroundColor={Colors.primary[900]}
 						/>
 
-						<Link disabled={submitting} replace href="/(auth)/login" className="app-user-form-txt-ctn">
+						<Link disabled={isSubmitting} replace href="/(auth)/login" className="app-user-form-txt-ctn">
 							<ThemedText className="app-user-form-txt span4" selectable={false}>
 								{t('existedAccount')}{' '}
 							</ThemedText>
 							<Text className="font-mt_semibold app-user-form-blue-txt">{t('login')}</Text>
 						</Link>
 
-						<Link disabled={submitting} push href="/(others)/terms" className="app-user-form-txt-ctn">
+						<Link disabled={isSubmitting} push href="/(others)/terms" className="app-user-form-txt-ctn">
 							<ThemedText className="app-user-form-txt span4" selectable={false}>
 								{t('agree')}{' '}
 							</ThemedText>
