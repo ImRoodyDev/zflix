@@ -134,8 +134,10 @@ const Login = () => {
 		>
 			<SafeAreaView edges={['top', 'bottom']} className="flex-1">
 				<KeyboardAvoidingView behavior="height" className={'app-user-form'}>
-					<CloseButton className="app-user-form-header-btn" onClose={exitModal} />
-					<SwitchTheme className="app-user-form-theme-btn" />
+					<View className="app-user-form-floating-header">
+						<CloseButton className="app-user-form-header-btn" onClose={exitModal} />
+						<SwitchTheme className="app-user-form-theme-btn" />
+					</View>
 
 					<View className="app-user-form-ctn">
 						<View className="app-user-form-header">

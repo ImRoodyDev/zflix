@@ -243,6 +243,23 @@ body {
 	height: 100%;
 }
 
+.app-user-form-floating-header {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+
+	padding-top: var(--top-padding);
+	padding-bottom: var(--top-padding);
+	padding-left: var(--side-padding);
+	padding-right: var(--side-padding);
+}
+
 .app-user-form {
 	width: 100%;
 	height: 100%;
@@ -272,23 +289,22 @@ body {
 	height: auto !important;
 	aspect-ratio: 1;
 
-	position: absolute !important;
+	/* position: absolute !important;
 	top: 0 !important;
-	left: 0 !important;
+	left: 0 !important; */
 
-	margin-left: var(--side-padding);
-	margin-top: var(--top-padding);
-
+	/* margin-left: var(--side-padding);
+	margin-top: var(--top-padding); */
 	z-index: 10;
 }
 
 .app-user-form-theme-btn {
-	position: absolute !important;
+	/* position: absolute !important;
 	right: 0 !important;
 	top: 0;
 
 	margin-right: var(--side-padding);
-	margin-top: var(--top-padding);
+	margin-top: var(--top-padding); */
 }
 
 .app-user-form-header {
