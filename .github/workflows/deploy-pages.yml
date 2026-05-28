@@ -23,6 +23,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
     env:
       EXPO_PUBLIC_APP_NAME: ${{ vars.EXPO_PUBLIC_APP_NAME }}
       EXPO_PUBLIC_APP_ENV: production
@@ -43,6 +45,26 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Validate Expo environment
+        run: |
+          required_vars=(
+            EXPO_PUBLIC_APP_NAME
+            EXPO_PUBLIC_APP_ENV
+            EXPO_PUBLIC_APP_EMAIL
+            EXPO_PUBLIC_API_URL
+            EXPO_PUBLIC_ANDROID_DOWNLOAD_URL
+            EXPO_PUBLIC_IOS_DOWNLOAD_URL
+            EXPO_PUBLIC_WINDOWS_DOWNLOAD_URL
+            EXPO_PUBLIC_TMDB_API_KEYS
+          )
+
+          for name in "${required_vars[@]}"; do
+            if [ -z "${!name}" ]; then
+              echo "::error title=Missing environment variable::$name is empty. Add it in GitHub Actions repository variables or in the github-pages environment variables."
+              exit 1
+            fi
+          done
 
       - name: Build Expo web
         run: npm --workspace app run build:web
