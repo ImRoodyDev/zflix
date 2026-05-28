@@ -108,8 +108,7 @@
 		],
 		"experiments": {
 			"typedRoutes": true,
-			"autolinkingModuleResolution": true,
-			"baseUrl": "/zflix"
+			"autolinkingModuleResolution": true
 		}
 	}
 }
