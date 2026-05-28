@@ -146,7 +146,7 @@ const AppHeader = ({ style }: Props) => {
 			>
 				<View className="app-header-ctn">
 					<View className="app-header-logo" onPointerUp={() => window.application.navigate.replace('/')}>
-						{pathname === '/' ? (
+						{pathname !== '/' ? (
 							<Image
 								className="app-header-logo-img"
 								source={Images.appLogo}
