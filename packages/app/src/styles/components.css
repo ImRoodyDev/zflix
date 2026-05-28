@@ -185,7 +185,7 @@ body {
 
 .app-header-logo-img-wide {
 	width: auto !important;
-	height: 100% !important;
+	height: 92% !important;
 	aspect-ratio: var(--wd-logo-ratio);
 
 	display: flex;
