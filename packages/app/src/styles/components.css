@@ -403,6 +403,11 @@ body {
 	overflow: hidden;
 }
 
+.app-home-web {
+	height: 100dvh !important;
+	min-height: 0 !important;
+}
+
 .image-tint {
 	position: absolute;
 	height: 100%;

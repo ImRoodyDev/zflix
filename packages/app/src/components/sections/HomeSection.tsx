@@ -5,6 +5,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { clsx } from 'clsx';
 
 // Internal imports
 import config from '../../config/application';
@@ -40,7 +41,7 @@ const AppHome = () => {
 	};
 
 	return (
-		<View className="app-home">
+		<View className={clsx('app-home', Platform.OS === 'web' && 'app-home-web')}>
 			<ExpoImage
 				source={Images.homeBackground}
 				style={{ position: 'absolute', width: '100%', height: '100%', zIndex: -1 }}
