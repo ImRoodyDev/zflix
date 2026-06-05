@@ -126,7 +126,7 @@ export const fr: TranslationSchema = {
 	activationCode: "Saisissez votre code d'activation",
 	codeDescription:
 		"Vous pouvez acheter un code d'activation aupres de nos revendeurs agrees.\n Saisissez le code pour activer votre compte.",
-	activateCode: "Nouveau code d'activation",
+	activateCode: "Activer le code",
 	activatingCode: 'Activation de votre code',
 	activatingDescription:
 		'Nous activons actuellement votre code. Si le processus echoue, actualisez la page et reessayez.',

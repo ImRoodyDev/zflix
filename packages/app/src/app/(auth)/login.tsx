@@ -37,7 +37,7 @@ const Login = () => {
 	const sizes = useResponsiveSize();
 	const { t } = useTranslation();
 
-	const [userForm, updateForm] = useState({ email: '', password: '' });
+	const [userForm, updateForm] = useState({ email: 'test@zflix.com', password: 'Password123' });
 	const [submitting, setSubmitting] = useState(false);
 	const [isTransitionPending, startTransition] = useTransition();
 	const isSubmitting = submitting || isTransitionPending;
@@ -166,7 +166,7 @@ const Login = () => {
 								type: 'email',
 								maxLength: 75,
 								placeholder: t('email'),
-								defaultValue: '',
+								defaultValue: 'test@zflix.com',
 								required: true,
 								onChange: (text) => updateForm((prev) => ({ ...prev, email: text })),
 							}}
@@ -190,7 +190,7 @@ const Login = () => {
 								type: 'text',
 								maxLength: 75,
 								placeholder: t('password'),
-								defaultValue: '',
+								defaultValue: 'Password123',
 								required: true,
 								onChange: (text) => updateForm((prev) => ({ ...prev, password: text })),
 							}}
