@@ -2617,6 +2617,24 @@ body {
 	overflow: hidden;
 }
 
+.app-preview-iframe-parent {
+	/** For safety reasons added 8 percent more on the video */
+	width: 108%;
+	height: auto;
+	aspect-ratio: 16 / 9;
+	overflow: hidden;
+}
+
+.app-preview-iframe {
+	min-width: 100%;
+	height: 100%;
+
+	display: block;
+	border: none;
+	margin: 0;
+	padding: 0;
+}
+
 .app-preview-video-plyr-floating {
 	overflow: hidden;
 	border-radius: 22px;
@@ -2911,6 +2929,14 @@ body {
 	.app-preview-thumbnail,
 	.app-previews-scroll {
 		aspect-ratio: 10 / 9;
+	}
+
+	.app-preview-iframe-parent {
+		height: 130% !important;
+		width: auto !important;
+		min-width: 100% !important;
+		max-width: none !important;
+		aspect-ratio: 16 / 9 !important;
 	}
 
 	.app-preview-video-floating {

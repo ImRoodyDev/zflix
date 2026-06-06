@@ -7,7 +7,7 @@ import Animated, { FadeIn, FadeInLeft, FadeOut, FadeOutRight } from 'react-nativ
 
 // Internal imports
 import { Colors, Icons } from '../../constants';
-import PageContext from '../../contexts/PageContext';
+import PageContext from '../../contexts/PageShell';
 import { useResponsiveSize } from '../../contexts/ResponsiveContext';
 import { channelBookmarks } from '../../controllers/channels';
 import { mediaItemListByCode } from '../../controllers/media';

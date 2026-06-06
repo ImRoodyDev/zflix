@@ -6,9 +6,8 @@ import { ColorValue, Platform } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 // Internal imports
-import { useMoveXAnimation } from '../hooks/useAnimation';
-import { useRootContext } from './AppRootContext';
-
+import { useMoveXAnimation } from '../../hooks/useAnimation';
+import { useRootContext } from '../../contexts/AppRootContext';
 
 type PageContextProps<T extends ComponentType<any>> = {
 	as?: T;
@@ -17,7 +16,13 @@ type PageContextProps<T extends ComponentType<any>> = {
 	optimized?: boolean;
 } & React.ComponentProps<T>;
 
-function PageContext<T extends ComponentType<any>>({ as, children, backgroundColor, optimized, ...props }: PageContextProps<T>) {
+function PageShell<T extends ComponentType<any>>({
+	as,
+	children,
+	backgroundColor,
+	optimized,
+	...props
+}: PageContextProps<T>) {
 	const Component = as || React.Fragment; // default fallback
 
 	// Page focus state
@@ -87,4 +92,4 @@ function PageContext<T extends ComponentType<any>>({ as, children, backgroundCol
 	);
 }
 
-export default PageContext;
+export default PageShell;
