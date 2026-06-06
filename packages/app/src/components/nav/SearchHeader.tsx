@@ -22,7 +22,6 @@ import Button from '../interactables/Button';
 import ChannelFiltersList from '../main/ChannelFiltersList';
 import GenresList from '../main/GenresList';
 
-
 type Genres = { id: number; name: string }[];
 type Props = {
 	selectedType: MediaTypeWithChannels;
@@ -41,6 +40,7 @@ function SearchHeader(props: Props) {
 	const sizes = useResponsiveSize();
 	const insets = useSafeAreaInsets();
 	const colorAnimation = useColorAnimation('#FFFFFF00');
+	const searchInputFontSize = Math.max(sizes.span2, 16);
 	const selectedTabIndex = Math.max(tabs.indexOf(props.selectedType), 0);
 
 	// const [isFocused, setFocused] = useState(false);
@@ -139,7 +139,11 @@ function SearchHeader(props: Props) {
 									props.onSearch(searchText, type, genreId, categoryId);
 								}}
 								placeholderTextColor={'black'}
-								style={{ paddingLeft: sizes.span1 + sizes.span4 * 2, paddingRight: sizes.span4 }}
+								style={{
+									paddingLeft: sizes.span1 + sizes.span4 * 2,
+									paddingRight: sizes.span4,
+									fontSize: searchInputFontSize,
+								}}
 							/>
 
 							<View className={'search-header-input-icon'}>
