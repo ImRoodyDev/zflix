@@ -9,7 +9,6 @@ import { useTranslation } from 'react-i18next';
 import { DimensionValue, Platform, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInLeft, FadeInUp, FadeOut, FadeOutDown, FadeOutLeft } from 'react-native-reanimated';
 import { YoutubeView } from 'react-native-youtube-bridge';
-import YoutubePlayer from 'react-native-youtube-iframe';
 
 // Internal imports
 import { Colors, Icons } from '../../constants';
@@ -21,7 +20,6 @@ import {
 	usePreviewActions,
 	usePreviewPlayer,
 	usePreviewYTBridge,
-	usePreviewYTIframeNative,
 	usePreviewIframeWeb,
 } from '../../hooks/usePreviewController';
 import ShadowStyles from '../../styles/shadow.style';

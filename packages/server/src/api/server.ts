@@ -5,7 +5,6 @@ import { MaintenanceMiddleware } from '@api/middlewares/maintenance';
 import cookieParser from 'cookie-parser';
 import appConfig from '@core/infrastructure/config/application';
 import { isDevelopment } from '@utils/standard';
-import path from 'path';
 import type { Server } from 'http';
 
 // Initialize express application

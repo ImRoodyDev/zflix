@@ -1,5 +1,5 @@
 // External imports
-import { useCallback, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { CNPLogger, VideoPlayer, VideoPlayerRef, VideoSource } from 'react-native-cross-player';
 
 // Internal imports
@@ -30,27 +30,6 @@ const initialDummySources: VideoSource[] = [
 		format: 'mp4',
 	},
 ];
-
-const dummySourcesByLanguage: Record<string, VideoSource[]> = {
-	fr: [
-		{
-			source: 'https://tears-of-steel-subtitles.s3.amazonaws.com/tos.mp4',
-			playerId: SAMPLE_PLAYER_ID,
-			label: 'French Source 1',
-			id: 'fr-bunny tears-of-steel-fr',
-			format: 'mp4',
-		},
-	],
-	es: [
-		{
-			source: 'https://tears-of-steel-subtitles.s3.amazonaws.com/tos.mp4',
-			playerId: SAMPLE_PLAYER_ID,
-			label: 'Spanish Source 1',
-			id: 'es-mirror tears-of-steel-es',
-			format: 'mp4',
-		},
-	],
-};
 
 export default function Play() {
 	const { previousPathName } = useRootContext();

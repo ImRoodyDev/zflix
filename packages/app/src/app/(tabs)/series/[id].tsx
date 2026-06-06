@@ -19,7 +19,7 @@ import { InView, IOScrollView } from '@imroodydev/rn-intersection-observer';
 
 // Internal imports
 import { Colors, Images } from '../../../constants';
-import PageContext from '../../../contexts/PageShell';
+import PageContext from '../../../components/main/PageShell';
 import { useResponsiveSize } from '../../../contexts/ResponsiveContext';
 import { useMedia } from '../../../hooks/useMedia';
 import { TvEpisode } from '../../../types/Medias';

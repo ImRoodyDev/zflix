@@ -96,7 +96,7 @@ export const usePreviewActions = (
 			if (props.onPress) props.onPress(props.preview, season, episode);
 			else {
 				window.application.navigate.push({
-					pathname: `/series/play/[id]`,
+					pathname: `/series/play/bunny`,
 					params: { id: props.preview.id, season, episode },
 				});
 			}
@@ -105,7 +105,7 @@ export const usePreviewActions = (
 			if (props.onPress) props.onPress(props.preview);
 			else {
 				window.application.navigate.push({
-					pathname: `/movies/play/[id]`,
+					pathname: `/movies/play/bunny`,
 					params: { id: props.preview.id },
 				});
 			}

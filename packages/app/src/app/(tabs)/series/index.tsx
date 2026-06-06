@@ -5,7 +5,7 @@ import Animated, { FadeInLeft, FadeOutRight } from 'react-native-reanimated';
 import { IOScrollView } from '@imroodydev/rn-intersection-observer';
 
 // Internal imports
-import PageContext from '../../../contexts/PageShell';
+import PageContext from '../../../components/main/PageShell';
 import { useMedias } from '../../../hooks/useMedias';
 
 // Components

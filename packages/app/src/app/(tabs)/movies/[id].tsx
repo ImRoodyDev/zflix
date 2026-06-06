@@ -11,7 +11,7 @@ import { IOScrollView } from '@imroodydev/rn-intersection-observer';
 // Internal imports
 import { Colors, Images } from '../../../constants';
 import { useRootContext } from '../../../contexts/AppRootContext';
-import PageContext from '../../../contexts/PageShell';
+import PageContext from '../../../components/main/PageShell';
 import { useResponsiveSize } from '../../../contexts/ResponsiveContext';
 import { mediaItemListByCode } from '../../../controllers/media';
 import { useMedia } from '../../../hooks/useMedia';

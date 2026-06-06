@@ -1,5 +1,5 @@
 // External imports
-import React, { memo, startTransition, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { Text, TouchableOpacity } from 'react-native';
 import { Dropdown } from 'react-native-cross-elements';
 

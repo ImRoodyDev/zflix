@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Internal imports
 import { Icons } from '../../constants';
-import PageContext from '../../contexts/PageShell';
+import PageContext from '../../components/main/PageShell';
 import { useResponsiveSize } from '../../contexts/ResponsiveContext';
 import { channelSearch } from '../../controllers/channels';
 import { mediaSearch } from '../../controllers/media';
