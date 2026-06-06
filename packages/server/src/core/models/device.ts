@@ -1,4 +1,11 @@
-import { BelongsToGetAssociationMixin, BelongsToSetAssociationMixin, DataTypes, Model, Optional, Sequelize } from 'sequelize';
+import {
+	BelongsToGetAssociationMixin,
+	BelongsToSetAssociationMixin,
+	DataTypes,
+	Model,
+	Optional,
+	Sequelize,
+} from 'sequelize';
 import User from './user';
 import Country from './country';
 import { Models } from '@/types/Models';
@@ -105,8 +112,8 @@ export const bootstrap = (sequelize: Sequelize) => {
 			sequelize,
 			tableName: 'Devices',
 			modelName: 'Device',
-			indexes: [{ fields: ['userId'] }],
-		}
+			indexes: [{ fields: ['userId'] }, { unique: true, fields: ['userId', 'ip'] }],
+		},
 	);
 };
 

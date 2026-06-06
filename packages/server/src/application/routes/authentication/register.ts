@@ -2,7 +2,11 @@ import { Router } from 'express';
 import User from '@core/models/user';
 import { generateAuthenticationTokens, saveProtectedTokens } from '@app/controllers/tokens';
 import { validateRegister, validateDevice } from '@/utils/validator';
-import { getClientLocalTime as getLocationTime, isPublicIPv4 } from '@core/infrastructure/services/tracker';
+import {
+	getClientLocalTime as getLocationTime,
+	isPublicIPv4,
+	normalizeClientIp,
+} from '@core/infrastructure/services/tracker';
 import { parseDeviceHeader } from '@/utils/parser';
 import { MailerController } from '@core/infrastructure/services/mailer';
 import { handleHardErrors, isDevelopment } from '@/utils/standard';
@@ -31,7 +35,7 @@ router.post('/', async (req, res) => {
 		const [registerError, register] = validateRegister(req.body, req.t);
 
 		// Retrieve the IP address from the request object
-		const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '';
+		const clientIp = normalizeClientIp((req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress) || '';
 
 		// Check if postBody is safe
 		if (registerError) {
@@ -53,6 +57,7 @@ router.post('/', async (req, res) => {
 
 		// Device geolocation and time information
 		const deviceGeolocation = await getLocationTime(clientIp);
+		const loggedAt = deviceGeolocation.datetime ? new Date(deviceGeolocation.datetime) : new Date();
 
 		// Check if country is allowed
 		const isCountryAllowed = await Country.isCountryAllowed(deviceGeolocation.countryCode || '');
@@ -71,7 +76,7 @@ router.post('/', async (req, res) => {
 				country: deviceGeolocation.country || '',
 				countryCode: deviceGeolocation.countryCode || '',
 				city: deviceGeolocation.city || '',
-				loggedAt: deviceGeolocation.datetime ? new Date(deviceGeolocation.datetime) : null,
+				loggedAt,
 			},
 			req.t,
 		);
@@ -92,7 +97,7 @@ router.post('/', async (req, res) => {
 				email: register.email,
 				password: register.password,
 				countryCode: deviceGeolocation.countryCode || '',
-				loginAt: deviceGeolocation.datetime ? new Date(deviceGeolocation.datetime) : null,
+				loginAt: loggedAt,
 			},
 			{
 				name: device.name,

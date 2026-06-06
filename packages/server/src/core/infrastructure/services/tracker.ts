@@ -45,7 +45,7 @@ export function isPublicIPv4(ip: string): boolean {
 	return true;
 }
 
-function normalizeClientIp(ip: string | null | undefined): string | null {
+export function normalizeClientIp(ip: string | null | undefined): string | null {
 	const forwardedIp = ip?.split(',')[0]?.trim();
 	if (!forwardedIp) {
 		return null;
@@ -107,7 +107,10 @@ export async function getClientLocalTime(ip: string): Promise<LocationInfo> {
 	}
 
 	// For last if Country|Code|City is missing, try to get from ipgeolocation.io
-	if ((!locationInfo.country || !locationInfo.countryCode || !locationInfo.city) && appConfig.IpgeoApiKey !== 'undefined') {
+	if (
+		(!locationInfo.country || !locationInfo.countryCode || !locationInfo.city) &&
+		appConfig.IpgeoApiKey !== 'undefined'
+	) {
 		const geoResponse = await fetchResponseWithTimeout<{
 			country_name?: string;
 			country_code2?: string;

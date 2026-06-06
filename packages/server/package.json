@@ -16,7 +16,10 @@
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
 		"db:migrate": "sequelize-cli db:migrate",
-		"db:seed": "sequelize-cli db:seed:all"
+		"db:seed": "sequelize-cli db:seed:all",
+		"db:reset": "npm run db:drop && npm run db:create && npm run db:migrate && npm run db:seed",
+		"db:create": "sequelize-cli db:create",
+		"db:drop": "sequelize-cli db:drop"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.39.1",

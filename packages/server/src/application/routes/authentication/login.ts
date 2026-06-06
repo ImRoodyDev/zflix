@@ -2,7 +2,7 @@ import { Router } from 'express';
 import User from '@core/models/user';
 import { generateAuthenticationTokens, saveProtectedTokens } from '@app/controllers/tokens';
 import { validateLogin, validateDevice } from '@/utils/validator';
-import { getClientLocalTime } from '@core/infrastructure/services/tracker';
+import { getClientLocalTime, normalizeClientIp } from '@core/infrastructure/services/tracker';
 import { parseDeviceHeader } from '@/utils/parser';
 import { handleHardErrors, isDevelopment } from '@/utils/standard';
 import { HttpError } from '@/types/HttpError';
@@ -16,7 +16,7 @@ router.post('/', async (req, res) => {
 		const [authError, login] = validateLogin(req.body, req.t);
 
 		// Retrieve the IP address from the request object
-		const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '';
+		const clientIp = normalizeClientIp((req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress) || '';
 
 		// Check if loginBody is safe
 		if (authError) {
@@ -29,6 +29,7 @@ router.post('/', async (req, res) => {
 
 		// Device geolocation and time information
 		const deviceGeolocation = await getClientLocalTime(clientIp);
+		const loggedAt = deviceGeolocation.datetime ? new Date(deviceGeolocation.datetime) : new Date();
 
 		// Validate device
 		const [deviceError, device] = validateDevice(
@@ -37,7 +38,7 @@ router.post('/', async (req, res) => {
 				country: deviceGeolocation.country || '',
 				countryCode: deviceGeolocation.countryCode || '',
 				city: deviceGeolocation.city || '',
-				loggedAt: deviceGeolocation.datetime ? new Date(deviceGeolocation.datetime) : null,
+				loggedAt,
 			},
 			req.t,
 		);
@@ -77,7 +78,7 @@ router.post('/', async (req, res) => {
 
 		// Sign new device on login
 		await user.newLoginAttempt({
-			time: deviceGeolocation.datetime || new Date().toISOString(),
+			time: loggedAt,
 			name: device.name,
 			type: device.type,
 			ip: clientIp,

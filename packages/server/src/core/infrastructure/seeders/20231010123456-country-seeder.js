@@ -33,8 +33,12 @@ module.exports = {
 					code: 'NL',
 					name: 'Netherlands',
 				},
+				{
+					code: 'CW',
+					name: 'Curaçao',
+				},
 			],
-			{}
+			{},
 		);
 	},
 
