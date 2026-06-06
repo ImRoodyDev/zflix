@@ -16,7 +16,7 @@ import { isNotEmpty } from '../utils/standard';
 // Constants
 const DEFAULT_PREVIEW_DURATION = 5000; // Default duration for the preview in milliseconds
 const DEFAULT_PLAY_TIMEOUT = 3000; // Default timeout for starting the preview in milliseconds
-const PREVIEW_VIDEO_DURATION = 60_000; //60000 => 1min
+const PREVIEW_VIDEO_DURATION = 20_000; //60000 => 1min
 const YT_DEFAULT_PLAY_TIMEOUT = 3000;
 
 export type PreviewSectionProps<T extends MovieDetails | TvDetails> = (T extends MovieDetails
