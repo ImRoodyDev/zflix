@@ -17,7 +17,6 @@ import { PlanOutputInformation } from '../../types/ServerOutputs';
 import ThemedText from '../theme/ThemedText';
 import ThemedView from '../theme/ThemedView';
 
-
 type PlanProps = {
 	plan: PlanOutputInformation;
 	position: number;
@@ -47,6 +46,7 @@ function PlanButton({
 	// Extract plan data's
 	const name = plan.names[window.application.language] || plan.names['en'];
 	const descriptions = plan.descriptions[window.application.language] || plan.descriptions['en'];
+	const tColor = viewMode ? { color: 'white' } : {};
 
 	return (
 		<ThemedView
@@ -66,9 +66,9 @@ function PlanButton({
 			<Text selectable={false} className={'plan-title'} style={{ color }}>
 				{name}
 			</Text>
-			<ThemedText selectable={false} className={'plan-price'}>
+			<ThemedText selectable={false} className={'plan-price'} style={tColor}>
 				{plan.currency} {plan.price}
-				<ThemedText selectable={false} className={'plan-month'}>
+				<ThemedText selectable={false} className={'plan-month'} style={tColor}>
 					/ {t('month')}
 				</ThemedText>
 			</ThemedText>
@@ -81,7 +81,7 @@ function PlanButton({
 							size={sizes.span1b}
 							color={color ?? Colors.primary.DEFAULT}
 						/>
-						<ThemedText selectable={false} className={'plan-description-text'}>
+						<ThemedText selectable={false} className={'plan-description-text'} style={tColor}>
 							{description}
 						</ThemedText>
 					</View>
