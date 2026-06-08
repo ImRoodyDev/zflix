@@ -54,6 +54,14 @@ type LabeledInputProps = {
 
 function LabeledInput(props: LabeledInputProps) {
 	console.log(window.visualViewport?.scale);
+	console.log({
+		scale: window.visualViewport?.scale,
+		innerWidth: window.innerWidth,
+		visualWidth: window.visualViewport?.width,
+		docWidth: document.documentElement.scrollWidth,
+		bodyWidth: document.body.scrollWidth,
+	});
+
 	// Default values for optional props
 	const {
 		className,
