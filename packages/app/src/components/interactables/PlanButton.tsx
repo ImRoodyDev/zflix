@@ -1,7 +1,7 @@
 // External imports
 import clsx from 'clsx';
 import { BlurView } from 'expo-blur';
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import BouncyCheckbox from 'react-native-bouncy-checkbox';
@@ -46,7 +46,7 @@ function PlanButton({
 	// Extract plan data's
 	const name = plan.names[window.application.language] || plan.names['en'];
 	const descriptions = plan.descriptions[window.application.language] || plan.descriptions['en'];
-	const tColor = viewMode ? { color: 'white' } : {};
+	const tColor = useMemo(() => (viewMode ? { color: 'white' } : { color: undefined }), [viewMode]);
 
 	return (
 		<ThemedView
@@ -66,9 +66,9 @@ function PlanButton({
 			<Text selectable={false} className={'plan-title'} style={{ color }}>
 				{name}
 			</Text>
-			<ThemedText selectable={false} className={'plan-price'} style={tColor}>
+			<ThemedText selectable={false} className={'plan-price'} {...tColor}>
 				{plan.currency} {plan.price}
-				<ThemedText selectable={false} className={'plan-month'} style={tColor}>
+				<ThemedText selectable={false} className={'plan-month'} {...tColor}>
 					/ {t('month')}
 				</ThemedText>
 			</ThemedText>
@@ -81,7 +81,7 @@ function PlanButton({
 							size={sizes.span1b}
 							color={color ?? Colors.primary.DEFAULT}
 						/>
-						<ThemedText selectable={false} className={'plan-description-text'} style={tColor}>
+						<ThemedText selectable={false} className={'plan-description-text'} {...tColor}>
 							{description}
 						</ThemedText>
 					</View>
