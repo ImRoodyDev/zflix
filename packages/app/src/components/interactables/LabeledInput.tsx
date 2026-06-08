@@ -53,6 +53,7 @@ type LabeledInputProps = {
 };
 
 function LabeledInput(props: LabeledInputProps) {
+	console.log(window.visualViewport?.scale);
 	// Default values for optional props
 	const {
 		className,
