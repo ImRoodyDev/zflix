@@ -54,7 +54,9 @@ function ManageSubscriptionPayment(props: Props) {
 		// window.application.navigate.push('/(plan)/transactions');
 	}, []);
 
-	if (!(['CODE'] satisfies SubscriptionSource[] as SubscriptionSource[]).includes(subscription.source)) {
+	if (
+		!(['CODE', 'MANUAL', 'OTHER'] satisfies SubscriptionSource[] as SubscriptionSource[]).includes(subscription.source)
+	) {
 		return (
 			<>
 				{/* Your Subscription Plan Payment info's*/}
