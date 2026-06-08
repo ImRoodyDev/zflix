@@ -2306,6 +2306,9 @@ body {
 	padding-top: var(--carousel-header-pd);
 	padding-bottom: var(--carousel-header-pd);
 	z-index: 0;
+	user-select: none;
+	-webkit-user-select: none;
+	-webkit-touch-callout: none;
 }
 
 .app-carousel-shadow {
@@ -2451,6 +2454,10 @@ body {
 
 	aspect-ratio: var(--carousel-ratio);
 	z-index: 0 !important;
+	user-select: none;
+	-webkit-user-select: none;
+	-webkit-touch-callout: none;
+	-webkit-user-drag: none;
 }
 
 .carousel-item-lg-img {

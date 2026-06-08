@@ -232,6 +232,7 @@ function Carousel<T extends MediaInfo | IPTVChannel>(props: CarouselProps<T>) {
 					style={[{ paddingLeft: safeStyle.paddingLeft }]}
 					numberOfLines={1}
 					ellipsizeMode={'tail'}
+					selectable={false}
 				>
 					{title || t('unknownCategory')}
 				</Text>
