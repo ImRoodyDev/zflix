@@ -3,12 +3,12 @@ name: Deploy Expo web to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - github
     paths:
-      - "packages/app/**"
-      - "package.json"
-      - "package-lock.json"
-      - ".github/workflows/deploy-pages.yml"
+      - 'packages/app/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
 permissions:
