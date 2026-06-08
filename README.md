@@ -97,6 +97,30 @@ Never put database passwords, Redis URLs, JWT private keys, Stripe secrets, PayP
 npm install
 ```
 
+## Cookie Configuration
+
+The API uses HTTP-only cookies for session and refresh tokens. When the API and the frontend run on **different domains** (e.g. Render + GitHub Pages), browsers block cookies unless `SameSite=None; Secure` is set. Browsers that block third-party cookies may also require `Partitioned`.
+
+Add these to `packages/server/.env`:
+
+```env
+# Cross-domain deployment (different API and frontend domains)
+COOKIE_SAME_SITE=none
+COOKIE_SECURE=true
+COOKIE_PARTITIONED=true
+```
+
+For **local development** (both on `localhost`):
+
+```env
+COOKIE_SAME_SITE=lax
+COOKIE_SECURE=false
+COOKIE_PARTITIONED=false
+```
+
+> **Note:** `COOKIE_SECURE=true` is required when `COOKIE_SAME_SITE=none`. Browsers silently drop `SameSite=None` cookies that are not marked `Secure`.
+> Use `COOKIE_PARTITIONED=true` when your frontend and API are on unrelated sites, such as GitHub Pages and Render. If both are under the same registrable domain, such as `app.example.com` and `api.example.com`, keep it `false` and prefer same-site cookies.
+
 ## Database
 
 The backend is configured for Sequelize with MySQL.

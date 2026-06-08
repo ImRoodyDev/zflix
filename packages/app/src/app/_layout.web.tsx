@@ -7,7 +7,6 @@ import { RootContext } from '../contexts/AppRootContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { defaultModalStack, defaultStack } from '../styles/stack.style';
 
-
 const RootLayout = () => {
 	const { themeScheme } = useTheme();
 	const themeColor = themeScheme == 'dark' ? '#000000' : '#ffffff';
@@ -15,6 +14,7 @@ const RootLayout = () => {
 	return (
 		<RootContext>
 			<Head>
+				<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 				<meta name="theme-color" content={themeColor} />
 				<meta name="color-scheme" content="dark light" />
 			</Head>

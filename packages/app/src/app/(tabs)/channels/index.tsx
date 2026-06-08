@@ -8,9 +8,8 @@ import { IOScrollView } from '@imroodydev/rn-intersection-observer';
 
 // Internal imports
 import { Colors } from '../../../constants';
-import PageContext from '../../../contexts/PageContext';
+import PageContext from '../../../components/main/PageShell';
 import { OPTIONS, useChannels } from '../../../hooks/useChannels';
-
 
 // Components
 

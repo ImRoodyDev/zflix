@@ -37,7 +37,7 @@ const AppHeader = ({ style }: Props) => {
 	const { t } = useTranslation();
 
 	const sizes = useResponsiveSize();
-	const { loggedIn, routeName, toggleDrawerHandler } = useRootContext();
+	const { loggedIn, routeName, pathname, toggleDrawerHandler } = useRootContext();
 
 	// Get the page name based on the pathname
 	const pageName = usePageName();
@@ -146,12 +146,21 @@ const AppHeader = ({ style }: Props) => {
 			>
 				<View className="app-header-ctn">
 					<View className="app-header-logo" onPointerUp={() => window.application.navigate.replace('/')}>
-						<Image
-							className="app-header-logo-img"
-							source={Images.appLogo}
-							resizeMode="contain"
-							style={{ height: '100%', width: 'auto' }}
-						/>
+						{pathname !== '/' ? (
+							<Image
+								className="app-header-logo-img"
+								source={Images.appLogo}
+								resizeMode="contain"
+								style={{ height: '100%', width: 'auto' }}
+							/>
+						) : (
+							<Image
+								className="app-header-logo-img-wide"
+								source={Images.appLogoFull}
+								resizeMode="contain"
+								style={{ height: '100%', width: 'auto' }}
+							/>
+						)}
 						<Text className="app-location-text span1">{pageName}</Text>
 					</View>
 

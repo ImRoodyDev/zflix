@@ -4,7 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Platform, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PlayerState, useYouTubeEvent, useYouTubePlayer, YoutubeView } from 'react-native-youtube-bridge';
+import YoutubeTrailerPlayer from '../elements/YoutubeTrailerPlayer';
 
 // Internal imports
 import config from '../../config/application';
@@ -33,109 +33,6 @@ const AppDownload = () => {
 	const sizes = useResponsiveSize();
 	const safeAreaStyle = { paddingLeft: inset.left, paddingRight: inset.right };
 	const [videoId, setVideoId] = React.useState(DEFAULT_DOWNLOAD_TRAILER_YT_KEY);
-	const [renderYoutubeView, setRenderYoutubeView] = React.useState(false);
-	const autoplayRetryRef = React.useRef<NodeJS.Timeout | null>(null);
-	const loadedVideoIdRef = React.useRef<string | null>(null);
-
-	const player = useYouTubePlayer(videoId, {
-		autoplay: false,
-		muted: true,
-		controls: false,
-		loop: true,
-		playsinline: true,
-		rel: false,
-	});
-
-	// Mount iframe after first paint to improve autoplay reliability in webviews/browsers.
-	React.useEffect(() => {
-		const raf = requestAnimationFrame(() => setRenderYoutubeView(true));
-		return () => cancelAnimationFrame(raf);
-	}, []);
-
-	const runAutoplay = React.useCallback(
-		(retryDelay?: number, loadVideo: boolean = false) => {
-			if (!renderYoutubeView) return;
-
-			if (autoplayRetryRef.current) {
-				clearTimeout(autoplayRetryRef.current);
-				autoplayRetryRef.current = null;
-			}
-
-			const playNow = () => {
-				player.mute();
-				if (loadVideo && loadedVideoIdRef.current !== videoId) {
-					player.loadVideoById(videoId);
-					loadedVideoIdRef.current = videoId;
-				}
-				player.play();
-			};
-
-			playNow();
-
-			if (retryDelay != null) {
-				autoplayRetryRef.current = setTimeout(() => {
-					autoplayRetryRef.current = null;
-					playNow();
-				}, retryDelay);
-			}
-		},
-		[player, renderYoutubeView, videoId],
-	);
-
-	const restartLoopPlayback = React.useCallback(() => {
-		if (!renderYoutubeView) return;
-		player.mute();
-		player.seekTo(0, true);
-		player.play();
-	}, [player, renderYoutubeView]);
-
-	// Some environments still block autoplay initially; explicitly play once ready.
-	useYouTubeEvent(
-		player,
-		'ready',
-		() => {
-			runAutoplay(300, true);
-		},
-		[player, runAutoplay],
-	);
-
-	useYouTubeEvent(
-		player,
-		'autoplayBlocked',
-		() => {
-			Logger.info('[AppDownload] YouTube autoplay blocked, retrying muted playback');
-			runAutoplay(500, false);
-		},
-		[runAutoplay],
-	);
-
-	useYouTubeEvent(
-		player,
-		'stateChange',
-		(state) => {
-			if (state === PlayerState.ENDED) {
-				restartLoopPlayback();
-			}
-		},
-		[restartLoopPlayback],
-	);
-
-	React.useEffect(() => {
-		loadedVideoIdRef.current = null;
-		if (autoplayRetryRef.current) {
-			clearTimeout(autoplayRetryRef.current);
-			autoplayRetryRef.current = null;
-		}
-	}, [videoId]);
-
-	React.useEffect(() => {
-		return () => {
-			if (autoplayRetryRef.current) {
-				clearTimeout(autoplayRetryRef.current);
-				autoplayRetryRef.current = null;
-			}
-		};
-	}, []);
 
 	React.useEffect(() => {
 		let isMounted = true;
@@ -181,9 +78,7 @@ const AppDownload = () => {
 				<View className="app-download-device">
 					<View className="device-pile-img-ptn" style={{ height: 'auto', width: '100%' }}>
 						<View className="device-pile-screen">
-							{renderYoutubeView ? (
-								<YoutubeView player={player} style={{ width: '100%', height: '100%', alignSelf: 'center' }} />
-							) : null}
+							<YoutubeTrailerPlayer key={videoId} videoId={videoId} />
 						</View>
 						<Image source={Images.devicePile} className="device-pile-img" />
 					</View>

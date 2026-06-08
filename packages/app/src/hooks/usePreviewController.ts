@@ -16,7 +16,7 @@ import { isNotEmpty } from '../utils/standard';
 // Constants
 const DEFAULT_PREVIEW_DURATION = 5000; // Default duration for the preview in milliseconds
 const DEFAULT_PLAY_TIMEOUT = 3000; // Default timeout for starting the preview in milliseconds
-const PREVIEW_VIDEO_DURATION = 60_000; //60000 => 1min
+const PREVIEW_VIDEO_DURATION = 20_000; //60000 => 1min
 const YT_DEFAULT_PLAY_TIMEOUT = 3000;
 
 export type PreviewSectionProps<T extends MovieDetails | TvDetails> = (T extends MovieDetails
@@ -64,6 +64,81 @@ export function isMoviePreviewProps(
 ): props is PreviewSectionProps<MovieDetails> {
 	return props.preview instanceof MovieDetails;
 }
+
+export const usePreviewActions = (
+	props: PreviewSectionProps<MovieDetails | TvDetails>,
+	player: any,
+	onStateChange: (key: string, value: any) => void,
+) => {
+	const [bookmarked, setBookmarked] = useState(props.preview.bookmarked);
+	const [lastRuntime, setLastRuntime] = useState<number | { season: number; episode: number } | null>(null);
+
+	const checkLastRuntime = useCallback(() => {
+		if (props.preview.type === 'series') {
+			const lastWatched = window.application.currentProfile?.getLastWatchSeasonEpisode(props.preview.id) ?? null;
+			setLastRuntime(lastWatched);
+		} else {
+			const lastWatched = window.application.currentProfile?.getMovieRuntime(props.preview.id) ?? null;
+			setLastRuntime(lastWatched);
+		}
+	}, [props.preview.id, props.preview.type]);
+
+	useEffect(() => {
+		checkLastRuntime();
+	}, [checkLastRuntime]);
+
+	const onPlay = useCallback(() => {
+		console.log('Play pressed with last runtime:', { lastRuntime, props });
+		if (isTvPreviewProps(props)) {
+			console.log('TV preview play logic');
+			const season = lastRuntime && typeof lastRuntime === 'object' ? lastRuntime.season : 1;
+			const episode = lastRuntime && typeof lastRuntime === 'object' ? lastRuntime.episode : 1;
+			if (props.onPress) props.onPress(props.preview, season, episode);
+			else {
+				window.application.navigate.push({
+					pathname: `/series/play/bunny`,
+					params: { id: props.preview.id, season, episode },
+				});
+			}
+		} else if (isMoviePreviewProps(props)) {
+			console.log('Movie preview play logic');
+			if (props.onPress) props.onPress(props.preview);
+			else {
+				window.application.navigate.push({
+					pathname: `/movies/play/bunny`,
+					params: { id: props.preview.id },
+				});
+			}
+		}
+	}, [lastRuntime, props]);
+
+	const onBookmark = useCallback(() => {
+		const nextStatus = !bookmarked;
+		setBookmarked(nextStatus);
+		if (nextStatus) {
+			createBookmark(props.preview.type, props.preview.id)
+				.then((success) => setBookmarked(success))
+				.catch(() => setBookmarked(false));
+		} else {
+			removeBookmark(props.preview.type, props.preview.id)
+				.then((success) => setBookmarked(!success))
+				.catch(() => setBookmarked(true));
+		}
+	}, [bookmarked, props.preview.type, props.preview.id]);
+
+	const onMute = useCallback(() => {
+		player.muted = !player.muted;
+	}, [player]);
+
+	return {
+		bookmarked,
+		lastRuntime,
+		checkLastRuntime,
+		onPlay,
+		onBookmark,
+		onMute,
+	};
+};
 
 export const usePreviewPlayer = (props: PreviewSectionProps<MovieDetails | TvDetails>) => {
 	const { previewDuration, autoStart, loop, onFinished, startTimeout, ignoreVideo, preview } = props;
@@ -302,7 +377,7 @@ export const usePreviewPlayer = (props: PreviewSectionProps<MovieDetails | TvDet
 	};
 };
 
-export const useYTPreviewPlayer = (props: PreviewSectionProps<MovieDetails | TvDetails>) => {
+export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvDetails>) => {
 	// Play timeout
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 	// Start video time tracking
@@ -656,77 +731,308 @@ export const useYTPreviewPlayer = (props: PreviewSectionProps<MovieDetails | TvD
 	};
 };
 
-export const usePreviewActions = (
-	props: PreviewSectionProps<MovieDetails | TvDetails>,
-	player: any,
-	onStateChange: (key: string, value: any) => void,
-) => {
-	const [bookmarked, setBookmarked] = useState(props.preview.bookmarked);
-	const [lastRuntime, setLastRuntime] = useState<number | { season: number; episode: number } | null>(null);
+export const usePreviewIframeWeb = (props: PreviewSectionProps<MovieDetails | TvDetails>) => {
+	const iframeRef = useRef<HTMLIFrameElement | null>(null);
+	const startTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const endFallbackRef = useRef<NodeJS.Timeout | null>(null);
+	const playbackCycleRef = useRef(0);
+	const armEndFallbackRef = useRef<() => void>(() => {});
+	const playRequestedRef = useRef(false);
+	const forceStoppedRef = useRef(false);
+	const mutedRef = useRef(true);
 
-	const checkLastRuntime = useCallback(() => {
-		if (props.preview.type === 'series') {
-			const lastWatched = window.application.currentProfile?.getLastWatchSeasonEpisode(props.preview.id) ?? null;
-			setLastRuntime(lastWatched);
-		} else {
-			const lastWatched = window.application.currentProfile?.getMovieRuntime(props.preview.id) ?? null;
-			setLastRuntime(lastWatched);
-		}
-	}, [props.preview.id, props.preview.type]);
+	const [isInitialized, setInitialized] = useState(false);
+	const [isPlaying, setPlaying] = useState(false);
+	const [previewStarted, setPreviewStarted] = useState(!!props.autoStart);
+	const [videoEnabled, setEnableVideo] = useState(false);
+	const [muted, setMuted] = useState(true);
+	const [playerError, setPlayerError] = useState(false);
+
+	const videoId = props.preview.ytKey ?? undefined;
+	const canPlayYoutube = isNotEmpty(videoId) && !playerError && !props.ignoreVideo;
+	const clampedEndSeconds = useMemo(
+		() => Math.max(1, Math.ceil((props.previewDuration ?? PREVIEW_VIDEO_DURATION) / 1000)),
+		[props.previewDuration],
+	);
+
+	const iframeSrc = useMemo(() => {
+		if (!videoId) return null;
+
+		const params = new URLSearchParams({
+			playsinline: '1',
+			start: '0',
+			end: String(clampedEndSeconds),
+			autoplay: '1',
+			mute: '1',
+			modestbranding: '1',
+			rel: '0',
+			cc_load_policy: '0',
+			iv_load_policy: '3',
+			fs: '0',
+			controls: '0',
+			enablejsapi: '1',
+			origin: typeof window !== 'undefined' ? window.location.origin : '',
+		});
+
+		return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
+	}, [clampedEndSeconds, videoId]);
+
+	const postCommand = useCallback((func: string, args: any[] = []) => {
+		iframeRef.current?.contentWindow?.postMessage(
+			JSON.stringify({ event: 'command', func, args }),
+			'https://www.youtube.com',
+		);
+	}, []);
 
 	useEffect(() => {
-		checkLastRuntime();
-	}, [checkLastRuntime]);
+		mutedRef.current = muted;
+	}, [muted]);
 
-	const onPlay = useCallback(() => {
-		console.log('Play pressed with last runtime:', { lastRuntime, props });
-		if (isTvPreviewProps(props)) {
-			console.log('TV preview play logic');
-			const season = lastRuntime && typeof lastRuntime === 'object' ? lastRuntime.season : 1;
-			const episode = lastRuntime && typeof lastRuntime === 'object' ? lastRuntime.episode : 1;
-			if (props.onPress) props.onPress(props.preview, season, episode);
-			else {
-				window.application.navigate.push({
-					pathname: `/series/play/bunny`,
-					params: { id: props.preview.id, season, episode },
-				});
-			}
-		} else if (isMoviePreviewProps(props)) {
-			console.log('Movie preview play logic');
-			if (props.onPress) props.onPress(props.preview);
-			else {
-				window.application.navigate.push({
-					pathname: `/movies/play/bunny`,
-					params: { id: props.preview.id },
-				});
-			}
+	const clearStartTimeout = useCallback(() => {
+		if (startTimeoutRef.current) {
+			clearTimeout(startTimeoutRef.current);
+			startTimeoutRef.current = null;
 		}
-	}, [lastRuntime, props]);
+	}, []);
 
-	const onBookmark = useCallback(() => {
-		const nextStatus = !bookmarked;
-		setBookmarked(nextStatus);
-		if (nextStatus) {
-			createBookmark(props.preview.type, props.preview.id)
-				.then((success) => setBookmarked(success))
-				.catch(() => setBookmarked(false));
-		} else {
-			removeBookmark(props.preview.type, props.preview.id)
-				.then((success) => setBookmarked(!success))
-				.catch(() => setBookmarked(true));
+	const clearEndFallback = useCallback(() => {
+		if (endFallbackRef.current) {
+			clearTimeout(endFallbackRef.current);
+			endFallbackRef.current = null;
 		}
-	}, [bookmarked, props.preview.type, props.preview.id]);
+	}, []);
+
+	const invalidatePlaybackCycle = useCallback(() => {
+		playbackCycleRef.current++;
+	}, []);
+
+	const stopPreviewVideo = useCallback(
+		(callOnFinishCallback: boolean = false) => {
+			playRequestedRef.current = false;
+			invalidatePlaybackCycle();
+			clearStartTimeout();
+			clearEndFallback();
+			postCommand('pauseVideo');
+			setEnableVideo(false);
+			setPlaying(false);
+
+			if (callOnFinishCallback) {
+				if (!props.autoStart && !props.loop) setPreviewStarted(false);
+				props.onFinished?.();
+			}
+		},
+		[clearEndFallback, clearStartTimeout, invalidatePlaybackCycle, postCommand, props],
+	);
+
+	const finishPreviewCycle = useCallback(() => {
+		clearStartTimeout();
+		clearEndFallback();
+		postCommand('pauseVideo');
+		setPlaying(false);
+		setEnableVideo(false);
+
+		if (props.loop) {
+			startTimeoutRef.current = setTimeout(() => {
+				startTimeoutRef.current = null;
+				if (!playRequestedRef.current || forceStoppedRef.current || !canPlayYoutube) return;
+
+				playbackCycleRef.current++;
+				setPreviewStarted(true);
+				setEnableVideo(true);
+				armEndFallbackRef.current();
+			}, props.startTimeout ?? YT_DEFAULT_PLAY_TIMEOUT);
+			return;
+		}
+
+		stopPreviewVideo(true);
+	}, [
+		canPlayYoutube,
+		clearEndFallback,
+		clearStartTimeout,
+		postCommand,
+		props.loop,
+		props.startTimeout,
+		stopPreviewVideo,
+	]);
+
+	const armEndFallback = useCallback(() => {
+		clearEndFallback();
+		const cycle = playbackCycleRef.current;
+		endFallbackRef.current = setTimeout(
+			() => {
+				endFallbackRef.current = null;
+				if (cycle !== playbackCycleRef.current) return;
+				if (!playRequestedRef.current || forceStoppedRef.current) return;
+
+				logger.warn('[YTPreviewWeb] Fallback end timer fired - YouTube did not send an end event in time');
+				finishPreviewCycle();
+			},
+			clampedEndSeconds * 1000 + 750,
+		);
+	}, [clampedEndSeconds, clearEndFallback, finishPreviewCycle]);
+
+	useEffect(() => {
+		armEndFallbackRef.current = armEndFallback;
+	}, [armEndFallback]);
+
+	const startPreviewVideo = useCallback(() => {
+		setPreviewStarted(true);
+		clearStartTimeout();
+		clearEndFallback();
+
+		if (!canPlayYoutube) {
+			playbackCycleRef.current++;
+			startTimeoutRef.current = setTimeout(() => {
+				startTimeoutRef.current = null;
+				if (!playRequestedRef.current || forceStoppedRef.current) return;
+				stopPreviewVideo(true);
+			}, props.previewDuration ?? DEFAULT_PREVIEW_DURATION);
+			return;
+		}
+
+		startTimeoutRef.current = setTimeout(() => {
+			startTimeoutRef.current = null;
+			if (!playRequestedRef.current || forceStoppedRef.current) return;
+
+			playbackCycleRef.current++;
+			setPlaying(false);
+			setEnableVideo(true);
+			armEndFallbackRef.current();
+		}, props.startTimeout ?? YT_DEFAULT_PLAY_TIMEOUT);
+	}, [
+		canPlayYoutube,
+		clearEndFallback,
+		clearStartTimeout,
+		props.previewDuration,
+		props.startTimeout,
+		stopPreviewVideo,
+	]);
+
+	useEffect(() => {
+		const handleMessage = (event: MessageEvent) => {
+			if (event.origin !== 'https://www.youtube.com') return;
+
+			try {
+				const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+
+				if (data?.event === 'onReady') {
+					setInitialized(true);
+					postCommand(mutedRef.current ? 'mute' : 'unMute');
+					if (playRequestedRef.current && !forceStoppedRef.current) postCommand('playVideo');
+					return;
+				}
+
+				if (data?.event === 'infoDelivery' || data?.event === 'onStateChange') {
+					const state = data.event === 'onStateChange' ? data.info : data?.info?.playerState;
+
+					if (state === 1) {
+						setInitialized(true);
+						setPlaying(true);
+						setPreviewStarted(true);
+						setEnableVideo(true);
+						if (!mutedRef.current) postCommand('unMute');
+						if (!endFallbackRef.current) armEndFallbackRef.current();
+					} else if (state === 2 || state === -1) {
+						setPlaying(false);
+					} else if (state === 0) {
+						finishPreviewCycle();
+					}
+					return;
+				}
+
+				if (data?.event === 'onError') {
+					logger.warn('[YTPreviewWeb] iframe player error:', data.info);
+					setPlayerError(true);
+					stopPreviewVideo(false);
+				}
+			} catch {
+				// Ignore non-JSON browser messages.
+			}
+		};
+
+		window.addEventListener('message', handleMessage);
+		return () => window.removeEventListener('message', handleMessage);
+	}, [finishPreviewCycle, postCommand, stopPreviewVideo]);
+
+	useEffect(() => {
+		return () => {
+			playRequestedRef.current = false;
+			forceStoppedRef.current = true;
+			invalidatePlaybackCycle();
+			clearStartTimeout();
+			clearEndFallback();
+		};
+	}, [clearEndFallback, clearStartTimeout, invalidatePlaybackCycle]);
+
+	useEffect(() => {
+		if (!props.autoStart || playRequestedRef.current) return;
+
+		playRequestedRef.current = true;
+		forceStoppedRef.current = false;
+		startPreviewVideo();
+	}, [props.autoStart, startPreviewVideo]);
+
+	const startPreview = useCallback(() => {
+		playRequestedRef.current = true;
+		forceStoppedRef.current = false;
+		if (!isInitialized) setPreviewStarted(true);
+		startPreviewVideo();
+	}, [isInitialized, startPreviewVideo]);
+
+	const stopPreview = useCallback(() => {
+		forceStoppedRef.current = true;
+		stopPreviewVideo(false);
+	}, [stopPreviewVideo]);
+
+	const pausePreview = useCallback(
+		(pause: boolean) => {
+			clearStartTimeout();
+
+			if (pause) {
+				playRequestedRef.current = false;
+				invalidatePlaybackCycle();
+				clearEndFallback();
+				postCommand('pauseVideo');
+				setPlaying(false);
+				setEnableVideo(false);
+				return;
+			}
+
+			if (canPlayYoutube) {
+				playRequestedRef.current = true;
+				forceStoppedRef.current = false;
+				startPreviewVideo();
+			}
+		},
+		[canPlayYoutube, clearEndFallback, clearStartTimeout, invalidatePlaybackCycle, postCommand, startPreviewVideo],
+	);
 
 	const onMute = useCallback(() => {
-		player.muted = !player.muted;
-	}, [player]);
+		setMuted((prev) => {
+			const next = !prev;
+			postCommand(next ? 'mute' : 'unMute');
+			return next;
+		});
+	}, [postCommand]);
+
+	const previewPlaying = useCallback(
+		() => startTimeoutRef.current !== null || endFallbackRef.current !== null || isPlaying,
+		[isPlaying],
+	);
 
 	return {
-		bookmarked,
-		lastRuntime,
-		checkLastRuntime,
-		onPlay,
-		onBookmark,
+		iframeRef,
+		iframeSrc,
+		isPlaying,
+		muted,
+		isInitialized,
+		previewStarted,
+		videoEnabled,
+		canPlayYoutube,
 		onMute,
+		startPreview,
+		stopPreview,
+		pausePreview,
+		previewPlaying,
 	};
 };

@@ -139,7 +139,7 @@ export const en = {
 	activationCode: 'Enter your activation Code',
 	codeDescription:
 		'You can buy an activation code from our authorized resellers.\n Enter the code to activate your account.',
-	activateCode: 'New Activation Code',
+	activateCode: 'Activate Code',
 	activatingCode: 'Activating your code',
 	activatingDescription:
 		'We are currently activating your code. If the process fails, please refresh the page and try again.',

@@ -6,7 +6,6 @@ import { CustomButton, Dropdown, Switch, SwitchRef } from 'react-native-cross-el
 
 // Internal imports
 import { Icons, IconType } from '../../constants';
-import { useRootContext } from '../../contexts/AppRootContext';
 import { useResponsiveSize } from '../../contexts/ResponsiveContext';
 import { useTheme } from '../../contexts/ThemeContext';
 

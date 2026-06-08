@@ -119,7 +119,11 @@ class User extends Model<UserAttributes, UserCreationAttributes> {
 	 */
 	public static associate(models: any) {
 		this.belongsTo(models.Country, { foreignKey: 'countryCode', targetKey: 'code' });
-		this.belongsTo(models.Subscription, { foreignKey: 'subscriptionId', as: 'ActiveSubscription', onDelete: 'SET NULL' });
+		this.belongsTo(models.Subscription, {
+			foreignKey: 'subscriptionId',
+			as: 'ActiveSubscription',
+			onDelete: 'SET NULL',
+		});
 		this.hasMany(models.Device, { foreignKey: 'userId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 		this.hasMany(models.Profile, { foreignKey: 'userId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 		this.hasMany(models.Subscription, { foreignKey: 'userId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
@@ -229,7 +233,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> {
 			defaults: {
 				...register,
 				countryCode: device.countryCode,
-				loginAt: device.datetime,
+				loginAt: register.loginAt ?? device.loggedAt ?? new Date(),
 			},
 		});
 
@@ -321,10 +325,27 @@ class User extends Model<UserAttributes, UserCreationAttributes> {
 	 * @returns {Promise<Device | null>} The created device instance.
 	 */
 	public async createDevice(deviceData: any): Promise<Device | null> {
-		return Device.create({
-			...deviceData,
-			userId: this.id,
+		const [device] = await Device.findOrCreate({
+			where: {
+				userId: this.id,
+				ip: deviceData.ip,
+			},
+			defaults: {
+				...deviceData,
+				loggedAt: deviceData.loggedAt ?? new Date(),
+				userId: this.id,
+			},
 		});
+
+		await device.update({
+			name: deviceData.name,
+			type: deviceData.type,
+			city: deviceData.city,
+			countryCode: deviceData.countryCode,
+			loggedAt: deviceData.loggedAt ?? new Date(),
+		});
+
+		return device;
 	}
 
 	/**
@@ -341,7 +362,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> {
 	 * @param {any} device - The device information for the login attempt.
 	 */
 	public async newLoginAttempt(device: any): Promise<void> {
-		this.loginAt = device.time;
+		this.loginAt = device.time ?? device.loggedAt ?? new Date();
 		if (this.countryCode !== device.countryCode) {
 			this.countryCode = device.countryCode;
 		}

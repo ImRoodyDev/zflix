@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     rootDir: packages/server
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     autoDeploy: true
     buildFilter:
@@ -33,6 +33,12 @@ services:
       - key: FRONTEND_DOMAINS
         sync: false
       - key: WEBHOOK_ORIGINS
+        sync: false
+      - key: COOKIE_SAME_SITE
+        sync: false
+      - key: COOKIE_SECURE
+        sync: false
+      - key: COOKIE_PARTITIONED
         sync: false
       - key: ADMIN_ID
         sync: false

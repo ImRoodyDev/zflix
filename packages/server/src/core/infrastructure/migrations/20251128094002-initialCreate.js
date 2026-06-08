@@ -329,6 +329,9 @@ module.exports = {
 			},
 		});
 		await queryInterface.addIndex('Devices', ['userId']);
+		await queryInterface.addIndex('Devices', ['userId', 'ip'], {
+			unique: true,
+		});
 
 		// 10. Subscriptions
 		await queryInterface.createTable('Subscriptions', {

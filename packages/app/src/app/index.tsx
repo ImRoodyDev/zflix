@@ -8,8 +8,15 @@ import AppDownload from '../components/sections/Download';
 import AppHome from '../components/sections/HomeSection';
 import AppPlans from '../components/sections/Plans';
 
-
 const Home = () => {
+	console.log({
+		scale: window.visualViewport?.scale,
+		innerWidth: window.innerWidth,
+		visualWidth: window.visualViewport?.width,
+		docWidth: document.documentElement.scrollWidth,
+		bodyWidth: document.body.scrollWidth,
+	});
+
 	return (
 		<Page
 			enableHeader

@@ -24,6 +24,7 @@
 
 	--header-size-h: calc(var(--top-padding) + var(--top-padding) + var(--avatar-size));
 	--sm-logo-ratio: calc(44 / 51);
+	--wd-logo-ratio: calc(113 / 41);
 	--outline-width: 2px;
 	--preview-cut-margin: 0.7;
 	--previews-cut-size: calc(var(--carousel-scroll-h) * var(--preview-cut-margin));
@@ -165,6 +166,36 @@ input:-webkit-autofill:active {
 
 input[data-autocompleted] {
 	background-color: transparent !important;
+}
+
+/**Avoids input zoom on safari mobile */
+@media only screen and (max-width: 1023px), (hover: none) and (pointer: coarse) {
+	input,
+	textarea,
+	select {
+		font-size: 18px !important;
+	}
+}
+@media only screen and (min-width: 768px) and (max-width: 1023px) and (min-height: 480px) {
+	input,
+	textarea,
+	select {
+		font-size: 18px !important;
+	}
+}
+@media (max-width: 767px) and (min-height: 480px) {
+	input,
+	textarea,
+	select {
+		font-size: 18px !important;
+	}
+}
+@media only screen and (max-width: 1023px) and (max-height: 480px) {
+	input,
+	textarea,
+	select {
+		font-size: 18px !important;
+	}
 }
 
 .top-shadow {
@@ -352,9 +383,12 @@ input[data-autocompleted] {
 	z-index: 5;
 }
 
-.theme-btn {
+.theme-switch-btn {
 	aspect-ratio: 1;
-	padding: var(--span4-size);
+	padding-left: var(--span4-size);
+	padding-right: var(--span4-size);
+	padding-top: var(--span4-size);
+	padding-bottom: var(--span4-size);
 	z-index: 5;
 }
 

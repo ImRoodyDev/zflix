@@ -125,7 +125,7 @@ export const nl: TranslationSchema = {
 	activationCode: 'Voer je activeringscode in',
 	codeDescription:
 		'Je kunt een activeringscode kopen bij onze geautoriseerde verkopers.\n Voer de code in om je account te activeren.',
-	activateCode: 'Nieuwe activeringscode',
+	activateCode: 'Code activeren',
 	activatingCode: 'Je code wordt geactiveerd',
 	activatingDescription:
 		'We zijn momenteel je code aan het activeren. Als het proces mislukt, vernieuw dan de pagina en probeer het opnieuw.',

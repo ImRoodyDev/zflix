@@ -19,7 +19,8 @@ import {
 	PreviewSectionRef,
 	usePreviewActions,
 	usePreviewPlayer,
-	useYTPreviewPlayer,
+	usePreviewYTBridge,
+	usePreviewIframeWeb,
 } from '../../hooks/usePreviewController';
 import ShadowStyles from '../../styles/shadow.style';
 import { MovieDetails, TvDetails } from '../../types/Medias';
@@ -277,6 +278,12 @@ const PreviewActions = memo(
 	},
 );
 
+/**
+ * PreviewSection — Native & Web teaser player using expo-video.
+ * Streams the content's own teaser/trailer from the app server (authenticated,
+ * DRM-protected on iOS/Android). Supports dominant-color extraction for
+ * ambient gradients. Use this as the default preview on native.
+ */
 const _PreviewSection = forwardRef(
 	(props: PreviewSectionProps<MovieDetails | TvDetails>, ref?: React.Ref<PreviewSectionRef | null>) => {
 		const { t } = useTranslation();
@@ -460,6 +467,13 @@ const _PreviewSection = forwardRef(
 	},
 );
 
+/**
+ * YTPreviewSection — Native YouTube preview using react-native-youtube-bridge.
+ * Embeds the item's YouTube trailer (ytKey) inside a bridge-managed iframe
+ * rendered in a WebView. Includes start-timeout, looping, duration clamping,
+ * mute toggle, and overscan sizing to hide letterboxing. Preferred native YT
+ * variant when the bridge library is available.
+ */
 const _YTPreviewSection = forwardRef(
 	(props: PreviewSectionProps<MovieDetails | TvDetails>, ref?: React.Ref<PreviewSectionRef | null>) => {
 		const { t } = useTranslation();
@@ -480,7 +494,7 @@ const _YTPreviewSection = forwardRef(
 			stopPreview,
 			pausePreview,
 			previewPlaying,
-		} = useYTPreviewPlayer(props);
+		} = usePreviewYTBridge(props);
 
 		const { bookmarked, lastRuntime, checkLastRuntime, onPlay, onBookmark } = usePreviewActions(
 			props,
@@ -683,8 +697,206 @@ const _YTPreviewSection = forwardRef(
 	},
 );
 
-const PreviewSection = memo(_PreviewSection);
-const YTPreviewSection = memo(_YTPreviewSection);
+/**
+ * YTPreviewSectionWeb — Web-only YouTube preview using a bare <iframe>.
+ * Skips all native bridge/WebView overhead. Controls playback via postMessage
+ * (YouTube IFrame API) and listens to window.message for state changes.
+ * URL uses the same parameter structure as YoutubeTrailerPlayer. Automatically
+ * replaces YTPreviewSection and YTPreviewSection2 when Platform.OS === 'web'.
+ */
+const _YTPreviewSectionWeb = forwardRef(
+	(props: PreviewSectionProps<MovieDetails | TvDetails>, ref?: React.Ref<PreviewSectionRef | null>) => {
+		const { t } = useTranslation();
+		const sizes = useResponsiveSize();
+		const [playerSize, setPlayerSize] = React.useState<{ width: number; height: number } | null>(null);
 
-export { PreviewSection, YTPreviewSection };
+		const {
+			iframeRef,
+			iframeSrc,
+			isPlaying,
+			muted,
+			previewStarted,
+			videoEnabled,
+			canPlayYoutube,
+			onMute,
+			startPreview,
+			stopPreview,
+			pausePreview,
+			previewPlaying,
+		} = usePreviewIframeWeb(props);
+
+		const { bookmarked, lastRuntime, checkLastRuntime, onPlay, onBookmark } = usePreviewActions(
+			props,
+			{ muted },
+			() => {},
+		);
+
+		const dominantColors = useMemo(() => Array(5).fill(Colors.primary['600']), []);
+		const previewShadowStyle = props.floating
+			? { ...ShadowStyles.shadowLight3, shadowColor: dominantColors[1] }
+			: undefined;
+
+		const playText = useMemo(() => {
+			if (lastRuntime == null) return t('play');
+			if (props.preview.type === 'series' && typeof lastRuntime === 'object') {
+				return `${t('resume')} S${lastRuntime.season} E${lastRuntime.episode}`;
+			}
+			return t('continuePlaying');
+		}, [lastRuntime, props.preview.type, t]);
+
+		const gradientBottom = useMemo(
+			() =>
+				!props.floating ? (
+					<LinearGradient
+						locations={[0.7, 1]}
+						colors={['transparent', 'black']}
+						style={[ShadowStyles.bottomShadow, { zIndex: 2 }]}
+					/>
+				) : null,
+			[props.floating],
+		);
+
+		const memoizedImage = useMemo(
+			() => (
+				<Image
+					source={{ uri: props.preview.backdrop ? getApiUrl(props.preview.backdrop) : undefined }}
+					className={'app-preview-thumbnail-img'}
+					style={{ width: '100%', height: '100%' }}
+					contentFit={'cover'}
+					cachePolicy={'disk'}
+					priority={'high'}
+				/>
+			),
+			[props.preview.backdrop],
+		);
+
+		const onLayout = (event: any) => {
+			const { width, height } = event.nativeEvent.layout;
+			setPlayerSize((prev) => {
+				if (prev != null && prev.width === width && prev.height === height) return prev;
+				return { width, height };
+			});
+		};
+
+		useImperativeHandle(
+			ref,
+			() =>
+				({
+					startPreview: () => startPreview(),
+					stopPreview: () => stopPreview(),
+					pausePreview: (pause: boolean) => pausePreview(pause),
+					previewPlaying: () => previewPlaying(),
+					updateLastRuntime: () => checkLastRuntime(),
+				}) as any,
+			[checkLastRuntime, pausePreview, previewPlaying, startPreview, stopPreview],
+		);
+
+		const youtubeIframeSize = useMemo(() => {
+			const youtubeAspectRatio = 16 / 9;
+			const midRatioMin = 1.3;
+			const midRatioMax = 2.5;
+			const fallbackWidthValue = props.floating ? playerSize?.width : sizes.previewVideoSize.width;
+			const fallbackHeightValue = props.floating ? playerSize?.height : sizes.previewVideoSize.height;
+			const fallbackWidth = Math.max(Number(fallbackWidthValue) || 480, 200);
+			const fallbackHeight = Math.max(Number(fallbackHeightValue) || fallbackWidth / youtubeAspectRatio, 200);
+
+			if (playerSize == null || playerSize.width <= 0 || playerSize.height <= 0) {
+				return { width: fallbackWidth, height: fallbackHeight };
+			}
+
+			const containerWidth = playerSize.width;
+			const containerHeight = playerSize.height;
+			const containerAspectRatio = containerWidth / containerHeight;
+			const baseWidth = Math.max(containerWidth, containerHeight * youtubeAspectRatio);
+			const baseHeight = Math.max(containerHeight, containerWidth / youtubeAspectRatio);
+			const shouldOverscan = containerAspectRatio >= midRatioMin && containerAspectRatio <= midRatioMax;
+			const normalizedRatio = Math.min(
+				Math.max((containerAspectRatio - midRatioMin) / (midRatioMax - midRatioMin), 0),
+				1,
+			);
+			const overscanScale = shouldOverscan ? 1.52 - normalizedRatio * 0.3 : 1;
+			const safetyBleed = shouldOverscan ? 8 : 2;
+
+			return {
+				width: baseWidth * overscanScale + safetyBleed * 2,
+				height: baseHeight * overscanScale + safetyBleed * 2,
+			};
+		}, [playerSize, props.floating, sizes.previewVideoSize.height, sizes.previewVideoSize.width]);
+
+		return (
+			<View
+				ref={ref}
+				className={clsx('app-preview', props.floating && 'app-preview-floating', props.className)}
+				style={props.style}
+			>
+				<View className={'app-preview-ctn'}>
+					{gradientBottom}
+					<View
+						className={clsx('app-preview-video', props.floating && 'app-preview-video-floating')}
+						style={previewShadowStyle}
+					>
+						<View
+							className={clsx('app-preview-video-plyr', props.floating && 'app-preview-video-plyr-floating')}
+							onLayout={onLayout}
+						>
+							{videoEnabled && canPlayYoutube && iframeSrc ? (
+								<View className={'app-preview-iframe-parent'}>
+									<iframe
+										className={'app-preview-iframe'}
+										ref={iframeRef}
+										src={iframeSrc}
+										allow="autoplay; encrypted-media"
+										title={props.preview.title}
+									/>
+								</View>
+							) : null}
+
+							{!isPlaying && !videoEnabled ? (
+								<Animated.View
+									entering={FadeIn}
+									exiting={FadeOut}
+									className={clsx('app-preview-thumbnail', props.floating && 'app-preview-thumbnail-floating')}
+								>
+									{memoizedImage}
+								</Animated.View>
+							) : null}
+							<View className={'app-preview-video-overlay'} />
+						</View>
+					</View>
+					<View className={clsx('app-preview-infos', props.floating && 'app-preview-infos-floating')}>
+						{props.floating ? <BlurView className={'app-preview-info-blur'} intensity={36} tint={'default'} /> : null}
+						{previewStarted ? (
+							<PreviewInfos
+								preview={props.preview}
+								floating={props.floating}
+								dominantColors={dominantColors}
+								showLabels={props.showLabels}
+								sizes={sizes}
+								currentSeason={isTvPreviewProps(props) ? props.currentSeason : undefined}
+								onSeasonChange={isTvPreviewProps(props) ? props.onSeasonChange : undefined}
+							/>
+						) : null}
+						<PreviewActions
+							onPlay={onPlay}
+							onBookmark={onBookmark}
+							onMute={onMute}
+							bookmarked={bookmarked}
+							muted={muted}
+							sizes={sizes}
+							floating={props.floating}
+							ignoreVideo={props.ignoreVideo || !canPlayYoutube}
+							playText={playText}
+						/>
+					</View>
+				</View>
+			</View>
+		);
+	},
+);
+
+const PreviewSection = memo(_PreviewSection);
+const YTPreviewSectionWeb = memo(_YTPreviewSectionWeb);
+const YTPreviewSection = Platform.OS === 'web' ? YTPreviewSectionWeb : memo(_YTPreviewSection);
+
+export { PreviewSection, YTPreviewSection, YTPreviewSectionWeb };
 export type { PreviewSectionRef };

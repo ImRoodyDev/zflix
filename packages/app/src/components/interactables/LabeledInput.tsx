@@ -1,12 +1,11 @@
 // External imports
-import clsx from "clsx";
+import clsx from 'clsx';
 import React from 'react';
-import {ColorValue, InputModeOptions, View} from 'react-native';
-import {LabeledInputFieldWeb} from "react-native-cross-elements";
+import { ColorValue, InputModeOptions, Platform, View } from 'react-native';
+import { LabeledInputFieldWeb } from 'react-native-cross-elements';
 
 // Internal imports
-import {Icons, IconType} from '../../constants';
-
+import { Icons, IconType } from '../../constants';
 
 type LabeledInputProps = {
 	/** CSS class for the container */
@@ -54,6 +53,15 @@ type LabeledInputProps = {
 };
 
 function LabeledInput(props: LabeledInputProps) {
+	console.log(window.visualViewport?.scale);
+	console.log({
+		scale: window.visualViewport?.scale,
+		innerWidth: window.innerWidth,
+		visualWidth: window.visualViewport?.width,
+		docWidth: document.documentElement.scrollWidth,
+		bodyWidth: document.body.scrollWidth,
+	});
+
 	// Default values for optional props
 	const {
 		className,
@@ -67,7 +75,7 @@ function LabeledInput(props: LabeledInputProps) {
 			onChange,
 			type,
 			className: inputClassName,
-			placeholderClassName
+			placeholderClassName,
 		},
 		icon,
 		iconClassName,
@@ -80,11 +88,15 @@ function LabeledInput(props: LabeledInputProps) {
 		pressedBackgroundColor = 'white',
 		selectedBackgroundColor = 'white ',
 	} = props;
+	const inputTextStyle = {
+		color: textColor,
+		...(Platform.OS === 'web' && !inputClassName ? { fontSize: Math.max(labelFontSize ?? 16, 16) } : null),
+	};
 
 	return (
 		<LabeledInputFieldWeb
 			onChange={onChange}
-			className={clsx("i-element", className)}
+			className={clsx('i-element', className)}
 			inputConfig={{
 				className: inputClassName,
 				placeholderClassName: clsx('span4 i-element-text', placeholderClassName),
@@ -95,25 +107,24 @@ function LabeledInput(props: LabeledInputProps) {
 				placeholder,
 				defaultValue,
 			}}
-			leftComponent={icon &&
-				<View className={clsx('i-element-icon', iconClassName)}>
-					{
-						Icons[icon]({
+			leftComponent={
+				icon && (
+					<View className={clsx('i-element-icon', iconClassName)}>
+						{Icons[icon]({
 							variant: 'Bold',
 							color: iconColor,
 							size: iconSize,
-						})
-					}
-				</View>
+						})}
+					</View>
+				)
 			}
 			backgroundColor={backgroundColor as ColorValue}
 			pressedBackgroundColor={pressedBackgroundColor as ColorValue}
 			selectedBackgroundColor={selectedBackgroundColor as ColorValue}
-			labelStyle={{color: iconColor, labelFilledFontSize: filledLabelFontSize ?? 13, fontSize: labelFontSize ?? 16}}
-			textStyle={{color: textColor}}
+			labelStyle={{ color: iconColor, labelFilledFontSize: filledLabelFontSize ?? 13, fontSize: labelFontSize ?? 16 }}
+			textStyle={inputTextStyle}
 		/>
 	);
 }
 
 export default LabeledInput;
-
