@@ -4,6 +4,7 @@ body {
 	margin: 0 !important;
 	padding: 0 !important;
 	transition: all 300ms ease-in-out;
+	-webkit-text-size-adjust: 100%;
 }
 
 #root {
@@ -11,15 +12,6 @@ body {
 	height: 100vh;
 	height: -webkit-fill-available;
 	overflow: hidden;
-}
-
-html,
-body,
-#root {
-	width: 100%;
-	max-width: 100%;
-	overflow-x: hidden;
-	-webkit-text-size-adjust: 100%;
 }
 
 .app-web-container {
