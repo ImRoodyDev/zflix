@@ -111,6 +111,10 @@ export const handleHardErrors = (error: any, req: Request, res: Response) => {
 export const sanitizeMessage = (value: string): string =>
 	value.replace(/\\"/g, '"').replace(/"/g, '').replace(/\s+/g, ' ').trim();
 
+export const normalizeSubscriptionSource = <T extends string = string>(source?: string | null): T => {
+	return (source || 'OTHER').toUpperCase() as T;
+};
+
 /**
  * Calculate cosine similarity between two strings
  * Returns a score between 0 and 1, where 1 is perfect match

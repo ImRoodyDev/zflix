@@ -22,6 +22,7 @@ import { Models } from '@/types/Models';
 import { PaypalController, PayPalService } from '@core/infrastructure/services/payments/paypal';
 import { StripeController, StripeService } from '@core/infrastructure/services/payments/stripe';
 import { maskEmail } from '@utils/masker';
+import { normalizeSubscriptionSource } from '@utils/standard';
 import AppConfig from '@core/infrastructure/config/application';
 import logger from '@/utils/logger';
 
@@ -458,6 +459,9 @@ export const bootstrap = (sequelize: Sequelize) => {
 			source: {
 				type: DataTypes.STRING(255),
 				allowNull: false,
+				set(value: SubscriptionSource) {
+					this.setDataValue('source', normalizeSubscriptionSource(value));
+				},
 			},
 			oneTimePayment: {
 				type: DataTypes.BOOLEAN,
@@ -483,15 +487,23 @@ export const bootstrap = (sequelize: Sequelize) => {
 		},
 	);
 
+	Subscription.addHook('beforeSave', (instance: Subscription) => {
+		instance.source = normalizeSubscriptionSource(instance.source);
+	});
+
+	Subscription.addHook('beforeBulkUpdate', (options) => {
+		const attributes = (options as typeof options & { attributes?: Partial<SubscriptionAttributes> }).attributes;
+		if (attributes?.source) {
+			attributes.source = normalizeSubscriptionSource<SubscriptionSource>(attributes.source);
+		}
+	});
+
 	// Auto-generate unique ID before validation (runs first)
 	Subscription.addHook('beforeValidate', async (instance: Subscription) => {
+		instance.source = normalizeSubscriptionSource(instance.source);
+
 		// Only generate ID if it's not already set
 		if (!instance.id) {
-			// Ensure source is set (default to 'OTHER' if not provided)
-			if (!instance.source) {
-				instance.source = 'OTHER';
-			}
-
 			// Generate ID immediately without checking for uniqueness (faster)
 			// Uniqueness will be checked in beforeCreate if needed
 			const baseId = Subscription.generateSubscriptionId(instance);
@@ -502,10 +514,7 @@ export const bootstrap = (sequelize: Sequelize) => {
 	// Auto-generate unique ID before creation (runs after beforeValidate)
 	// This hook tries to ensure uniqueness, but beforeValidate already set an ID for validation
 	Subscription.addHook('beforeCreate', async (instance: Subscription) => {
-		// Ensure source is set
-		if (!instance.source) {
-			instance.source = 'OTHER';
-		}
+		instance.source = normalizeSubscriptionSource(instance.source);
 
 		// Try to ensure ID is unique (optional optimization, ID already set in beforeValidate)
 		// Only check if we have a simple ID without the extra randomness
@@ -560,6 +569,8 @@ export const bootstrap = (sequelize: Sequelize) => {
 
 	// Validate subscription validity on update (max 1 year) for MANUAL and OTHER sources
 	Subscription.addHook('beforeUpdate', async (instance: Subscription) => {
+		instance.source = normalizeSubscriptionSource(instance.source);
+
 		if (['MANUAL', 'OTHER'].includes(instance.source) && instance.startAt && instance.expiredAt) {
 			const startDate = new Date(instance.startAt);
 			const expiredDate = new Date(instance.expiredAt);
