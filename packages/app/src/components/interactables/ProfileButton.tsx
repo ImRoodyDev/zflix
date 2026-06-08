@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import { Image } from 'expo-image';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TouchableHighlight, View } from 'react-native';
+import { Platform, TouchableHighlight, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 // Internal imports
@@ -43,6 +43,12 @@ function ProfileButton(props: ProfileButtonProps) {
 
 	// Component state
 	const [focused, setFocused] = useState(false);
+	const supportsHover = useMemo(
+		() =>
+			Platform.OS !== 'web' ||
+			(typeof window !== 'undefined' && window.matchMedia?.('(hover: hover) and (pointer: fine)').matches),
+		[],
+	);
 
 	// Handlers
 	const handleClick = useCallback(() => {
@@ -60,6 +66,10 @@ function ProfileButton(props: ProfileButtonProps) {
 	const handleBlur = useCallback(() => {
 		setFocused(false);
 	}, []);
+	const hoverHandlers = useMemo(
+		() => (supportsHover ? { onPointerEnter: handleFocus, onPointerLeave: handleBlur } : {}),
+		[supportsHover, handleBlur, handleFocus],
+	);
 
 	const icon = useMemo(() => {
 		if (!props.onSelectIcon || props.onSelectIcon.length == 0) return;
@@ -95,15 +105,11 @@ function ProfileButton(props: ProfileButtonProps) {
 				]}
 				// Handle events
 				onPress={handleClick}
-				onPressIn={handleFocus}
+				onPressIn={Platform.OS === 'web' ? undefined : handleFocus}
 				onFocus={handleFocus}
 				onBlur={handleBlur}
 			>
-				<View
-					className={'app-profile'}
-					onPointerEnter={() => setFocused(true)}
-					onPointerLeave={() => setFocused(false)}
-				>
+				<View className={'app-profile'} {...hoverHandlers}>
 					<View className={clsx('app-profile-img-ctn', isAddProfile && 'app-add-profile')}>
 						{
 							// Add sign or profile image
@@ -114,7 +120,7 @@ function ProfileButton(props: ProfileButtonProps) {
 					{
 						// Profile icon
 						!isAddProfile && focused && (
-							<Animated.View entering={FadeIn} className="app-profile-btn-icon-ctn">
+							<Animated.View pointerEvents="none" entering={FadeIn} className="app-profile-btn-icon-ctn">
 								{icon}
 							</Animated.View>
 						)

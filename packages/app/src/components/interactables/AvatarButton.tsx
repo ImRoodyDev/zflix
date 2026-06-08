@@ -27,6 +27,12 @@ function AvatarButton(props: AvatarButtonProps) {
 	const { schemeRule } = useTheme();
 	const [focused, setFocused] = useState(false);
 	const sizes = useResponsiveSize();
+	const supportsHover = useMemo(
+		() =>
+			Platform.OS !== 'web' ||
+			(typeof window !== 'undefined' && window.matchMedia?.('(hover: hover) and (pointer: fine)').matches),
+		[],
+	);
 
 	// Handlers
 	const handleClick = useCallback(() => {
@@ -41,6 +47,10 @@ function AvatarButton(props: AvatarButtonProps) {
 	const handleBlur = useCallback(() => {
 		setFocused(false);
 	}, []);
+	const hoverHandlers = useMemo(
+		() => (supportsHover ? { onPointerLeave: handleBlur, onPointerEnter: handleFocus } : {}),
+		[supportsHover, handleBlur, handleFocus],
+	);
 
 	// Memoized components
 	const image = useMemo(() => {
@@ -64,19 +74,19 @@ function AvatarButton(props: AvatarButtonProps) {
 			style={schemeRule == 'dark' ? ShadowStyles.shadowDark2 : ShadowStyles.shadowLight2}
 			// Handle events
 			onPress={handleClick}
-			onPressIn={handleFocus}
+			onPressIn={Platform.OS === 'web' ? undefined : handleFocus}
 			onFocus={handleFocus}
 			onBlur={handleBlur}
 			// TODO: there is an bug on web if we use onPressOut button dont trigger OnPress event
 			{...(Platform.OS != 'web' ? { onPressOut: handleBlur } : {})}
 		>
-			<View onPointerLeave={handleBlur} onPointerEnter={handleFocus}>
+			<View {...hoverHandlers}>
 				<View className={`app-profile-img-ctn app-avatar-img-ctn`}>{image}</View>
 
 				{
 					// Profile icon
 					focused && (
-						<Animated.View entering={FadeIn} className="app-profile-btn-icon-ctn">
+						<Animated.View pointerEvents="none" entering={FadeIn} className="app-profile-btn-icon-ctn">
 							{icon}
 						</Animated.View>
 					)
