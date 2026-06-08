@@ -11,7 +11,6 @@ import { useTheme } from '../contexts/ThemeContext';
 import Button from '../components/interactables/Button';
 import Page from '../components/main/Page';
 
-
 export default function ErrorScreen() {
 	const { themeColors } = useTheme();
 	const params = useLocalSearchParams();
@@ -36,7 +35,7 @@ export default function ErrorScreen() {
 			<Page
 				backgroundColor={themeColors.whiteBackground}
 				statusBarStyle={'dark'}
-				className="app-error-page"
+				className="app-error-page responsive-vars"
 				contentContainerClassName="app-error-page-ctn"
 			>
 				<View className="app-error-img-ctn">
@@ -44,7 +43,7 @@ export default function ErrorScreen() {
 						className="app-error-img"
 						source={Images.notFoundImage}
 						resizeMode="contain"
-						style={{ height: '100%', width: 'auto' }}
+						// style={{ height: '100%', width: 'auto' }}
 					/>
 				</View>
 

@@ -748,19 +748,18 @@
 	justify-content: center;
 }
 .app-error-img-ctn {
-	width: 100%;
-	height: auto;
-	max-width: calc(var(--h1-size) * 4);
-
+	height: calc(var(--h1-size) * 4);
+	width: auto;
+	margin-bottom: var(--span5-size);
 	display: flex;
 	justify-content: center;
 	align-items: center;
 }
 
 .app-error-img {
-	width: 100% !important;
-	height: auto !important;
-	aspect-ratio: var(--sm-logo-ratio);
+	height: 100% !important;
+	width: auto !important;
+	aspect-ratio: 16/9;
 
 	display: flex;
 	align-items: center;

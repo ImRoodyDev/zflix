@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import Head from 'expo-router/head';
 
 // Internal imports
+import RouteErrorBoundary from '../components/main/RouteErrorBoundary';
 import { RootContext } from '../contexts/AppRootContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { defaultModalStack, defaultStack } from '../styles/stack.style';
@@ -32,5 +33,7 @@ const RootLayout = () => {
 		</RootContext>
 	);
 };
+
+export const ErrorBoundary = RouteErrorBoundary;
 
 export default RootLayout;
