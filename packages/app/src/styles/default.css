@@ -168,6 +168,15 @@ input[data-autocompleted] {
 	background-color: transparent !important;
 }
 
+/**Avoids input zoom on safari mobile */
+@media only screen and (max-width: 1023px), (hover: none) and (pointer: coarse) {
+	input,
+	textarea,
+	select {
+		font-size: 16px !important;
+	}
+}
+
 .top-shadow {
 	top: 0;
 	position: absolute;
