@@ -181,8 +181,15 @@ input[data-autocompleted] {
 	input,
 	textarea,
 	select {
-		font-size: 17px !important;
-		line-height: 1.4 !important;
+		font-size: 16px !important;
+		font:
+			16px -apple-system,
+			BlinkMacSystemFont,
+			'Segoe UI',
+			Roboto,
+			Helvetica,
+			Arial,
+			sans-serif !important;
 	}
 }
 @media (max-width: 767px) and (min-height: 480px) {
@@ -190,7 +197,14 @@ input[data-autocompleted] {
 	textarea,
 	select {
 		font-size: 17px !important;
-		line-height: 1.4 !important;
+		font:
+			16px -apple-system,
+			BlinkMacSystemFont,
+			'Segoe UI',
+			Roboto,
+			Helvetica,
+			Arial,
+			sans-serif !important;
 	}
 }
 
@@ -199,7 +213,14 @@ input[data-autocompleted] {
 	textarea,
 	select {
 		font-size: 17px !important;
-		line-height: 1.4 !important;
+		font:
+			16px -apple-system,
+			BlinkMacSystemFont,
+			'Segoe UI',
+			Roboto,
+			Helvetica,
+			Arial,
+			sans-serif !important;
 	}
 }
 
