@@ -4,3 +4,10 @@
 
 expo-env.d.ts
 # @end expo-cli
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
