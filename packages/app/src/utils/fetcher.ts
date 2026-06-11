@@ -72,7 +72,7 @@ export function getPublicImageUrl(imagePath: string): string {
 /** Get the avatar path by ID */
 export function getAvatarSourceById(avatarId: string | undefined): string {
 	// Check if the avatar ID is valid
-	if (!avatarId && window.application.avatars.includes(avatarId ?? '')) {
+	if (!avatarId || !window.application.avatars.includes(avatarId)) {
 		return getPublicImageUrl(`avatars/${window.application.avatars[0]}.png`);
 	}
 	return getPublicImageUrl(`avatars/${avatarId}.png`);
