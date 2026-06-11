@@ -8,10 +8,17 @@ import { LocalStorageService } from '../services/LocalStorage';
 import { CachedAuthObject } from '../types/AuthObject';
 import { HttpError } from '../types/HttpError';
 import { ProcessError } from '../types/ProcessError';
+import logger from './logger';
 
 const ImageColors = (Platform.OS === 'web' && require('react-native-image-colors').default) || null;
 
-async function resolveAccessToken(): Promise<string> {
+async function resolveAccessToken(request: string): Promise<string | null> {
+	// Only resolve access token for API requests
+	if (!request.startsWith(config.API_URL)) {
+		// console.log('Non-API request, skipping token resolution for URL:', request);
+		return null;
+	}
+
 	const accessToken = window.application.auth.accessToken;
 	if (accessToken) return accessToken;
 
@@ -43,6 +50,19 @@ export function getAuthenticationHeaders(): Record<string, string> {
 	};
 }
 
+/** Get an authenticated image source for native image components. */
+export function getAuthenticatedImageSource(uri: string): { uri: string; headers: Record<string, string> } {
+	return {
+		uri,
+		headers: {
+			Accept: 'image/*',
+			'Accept-Language': window.application.language,
+			...getAuthenticationHeaders(),
+			...(config.USER_AGENT && { 'User-Agent': config.USER_AGENT }),
+		},
+	};
+}
+
 /** Get the public URL for an image based on its path */
 export function getPublicImageUrl(imagePath: string): string {
 	const path = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath; // Remove leading slash if present
@@ -58,13 +78,24 @@ export function getAvatarSourceById(avatarId: string | undefined): string {
 	return getPublicImageUrl(`avatars/${avatarId}.png`);
 }
 
+/** Get the avatar image source by ID with authentication metadata. */
+export function getAvatarImageSourceById(avatarId: string | undefined): {
+	uri: string;
+	headers: Record<string, string>;
+} {
+	return getAuthenticatedImageSource(getAvatarSourceById(avatarId));
+}
+
 /** Make an application fetch request */
 export async function appFetch(request: RequestInfo | URL, options: RequestInit = {}) {
 	// Check if the request url start with / if yes add the API_URL
 	if (typeof request === 'string' && request.startsWith('/')) {
 		request = new URL(request, config.API_URL);
+		// logger.info('Fetching URL:', request.toString());
 	}
-	const accessToken = await resolveAccessToken();
+
+	const accessToken = await resolveAccessToken(request.toString());
+	// logger.info('Token: ', accessToken);
 	// logger.info('Fetching URL:', request.toString());
 
 	// Set default options for proper cookie handling
@@ -95,7 +126,6 @@ export async function appFetch(request: RequestInfo | URL, options: RequestInit 
 }
 
 /** Handle HTTPS request requestResponse */
-
 export async function handleResponse<GeneticResponse = any, GeneticError = any>(requestResponse: Response) {
 	// Check if the input is a valid Response object
 	if (!(requestResponse instanceof Response)) {

@@ -16,8 +16,8 @@ const config = {
 	CookieSecure: process.env.COOKIE_SECURE === 'true',
 	CookiePartitioned: process.env.COOKIE_PARTITIONED === 'true',
 
-	// IP Geolocation API configuration
-	IpgeoApiKey: process.env.IPGEO_API_KEY ?? 'undefined',
+	// IPInfo API configuration
+	IpinfoToken: process.env.IPINFO_TOKEN ?? 'undefined',
 
 	// Paypal configuration
 	PaypalClientId: process.env.PAYPAL_CLIENT_ID ?? 'undefined',

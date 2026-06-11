@@ -20,7 +20,6 @@ import type {
 import { User } from '../types/User';
 import { fetchResponse, getPublicImageUrl } from '../utils/fetcher';
 import logger from '../utils/logger';
-import { hoursToSeconds } from '../utils/standard';
 
 type InitializeAppProps = {
 	navigate: Router;
@@ -54,7 +53,6 @@ export default async function initializeApp({ navigate, pathname }: InitializeAp
 
 	// Initialize application features
 	await initializeAuthentication();
-	await initializeCountry();
 	await initializeServer();
 	await initializeAvatars();
 
@@ -65,17 +63,13 @@ export default async function initializeApp({ navigate, pathname }: InitializeAp
 /** Initialize Backend Data */
 async function initializeServer() {
 	try {
-		const params = new URLSearchParams({
-			...(window.application.countryCode && { country: window.application.countryCode }),
-		});
-
 		const response = await fetchResponse<
 			HttpSuccess<{
 				paymentProcessors: PaymentSource[];
 				plans: PlanOutputInformation[];
 				certifications: CertificationOutputInformation[];
 			}>
-		>(`/v1/api/init?${params.toString()}`);
+		>(`/v1/api/init`);
 
 		// Set payment sources
 		window.application.paymentSources =
@@ -156,53 +150,5 @@ async function initializeAvatars() {
 		window.application.avatars = response.data?.map((avatar) => avatar.id) || [];
 	} catch {
 		window.application.avatars = [];
-	}
-}
-
-/** Initialize country */
-async function initializeCountry() {
-	try {
-		// Check if the user is logged in
-		if (window.application.auth.loggedIn) {
-			window.application.country = window.application.auth.user?.country;
-			window.application.countryCode = window.application.auth.user?.countryCode;
-			return;
-		}
-
-		// Check if country data is cached in LocalStorage
-		const cachedGeolocation = await LocalStorageService.getItem<ClientGeo>(config.$CLIENT_GEOLOCATION_KEY);
-
-		// If cached data exists, parse it
-		if (cachedGeolocation) {
-			const { country, countryCode, timestamp } = cachedGeolocation;
-			const now = new Date().getTime();
-
-			// Check if the cached data is less than 5 hours old
-			if (now - timestamp < hoursToSeconds(5)) {
-				window.application.country = country;
-				window.application.countryCode = countryCode;
-				return;
-			}
-		}
-
-		// GET request to an IP geolocation API
-		const response = await fetchResponse<Omit<ClientGeo, 'timestamp'>>('https://ipinfo.io/json?token=ae21b1b981784b', {
-			credentials: 'omit',
-		});
-
-		// Set country and country code in the application object
-		window.application.country = response.country;
-		window.application.countryCode = response.country;
-
-		// Cache the country data in LocalStorage with a timestamp
-		await LocalStorageService.setItem(config.$CLIENT_GEOLOCATION_KEY, {
-			country: response.country,
-			countryCode: response.country,
-			timestamp: new Date().getTime(),
-		});
-	} catch {
-		// Set country and country code to null if an error occurs
-		window.application.country = null;
-		window.application.countryCode = null;
 	}
 }

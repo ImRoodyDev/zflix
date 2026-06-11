@@ -2,26 +2,40 @@ import { getCertifications } from '@core/constants/tmdb';
 import Plan from '@core/models/plan';
 import { HttpError } from '@/types/HttpError';
 import { HttpSuccess } from '@/types/HttpSuccess';
-import { minutesToSeconds, handleHardErrors } from '@/utils/standard';
+import { minutesToSeconds, handleHardErrors, isDevelopment } from '@/utils/standard';
 import { Router } from 'express';
 import { PAYMENT_SOURCES } from '@core/constants/payments-processors';
+import { getClientLocation, isPublicIPv4, requestClientIp } from '@core/infrastructure/services/tracker';
 
 const router = Router();
 
 router.get('/', async (req, res) => {
 	try {
-		const country = ((req.query.country ?? '') as string).toLocaleUpperCase();
+		// Retrieve the IP address from the request object
+		const clientIp = requestClientIp(req);
 
-		if (!country) {
+		// If IP address is not found, return an error response
+		// Check if the IP address is a public IPv4 address
+		if (!clientIp || (!isPublicIPv4(clientIp) && !isDevelopment())) {
 			return new HttpError({
-				code: req.t('SERVER_BAD_REQUEST_CODE'),
-				message: req.t('SERVER_BAD_REQUEST_MESSAGE'),
+				code: req.t('INVALID_LOCATION_CODE'),
+				message: req.t('INVALID_LOCATION_MESSAGE'),
+				statusCode: 400,
+			}).sendResponse(res);
+		}
+
+		// Device geolocation and time information
+		const deviceGeolocation = await getClientLocation(clientIp);
+		if (!deviceGeolocation.country) {
+			return new HttpError({
+				code: req.t('INVALID_LOCATION_CODE'),
+				message: req.t('INVALID_LOCATION_MESSAGE'),
 				statusCode: 400,
 			}).sendResponse(res);
 		}
 
 		// Find all plans on the database
-		const plans = (await Plan.findPlanByCountry(country)) ?? [];
+		const plans = (await Plan.findPlanByCountry(deviceGeolocation.country)) ?? [];
 		const filteredPlans = plans.filter((plan) => plan.isActive);
 
 		// Send to client

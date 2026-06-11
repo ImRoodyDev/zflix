@@ -1,33 +1,58 @@
 import logger from '@/utils/logger';
-import { daysToSeconds, isDevelopment } from '@/utils/standard';
+import { daysToSeconds } from '@/utils/standard';
 import { fetchResponseWithTimeout } from '@utils/fetcher';
 import appConfig from '@core/infrastructure/config/application';
+import { Request } from 'express';
 
-export interface LocationInfo {
+export type LocationInfo = {
 	countryCode?: string | null;
 	country?: string | null;
 	city?: string | null;
 	datetime?: string | null;
 	unixtime?: number;
-}
+};
 
-interface IpApiResponse {
+/**
+ * IP-API
+ * @see http://ip-api.com/json/{ip_address} for response format
+ */
+type IpApiResponse = {
 	status?: string;
 	countryCode?: string;
 	country?: string;
 	city?: string;
-}
+};
 
-interface WorldTimeApiResponse {
+/**
+ * World Time API
+ * @see https://worldtimeapi.org/api/ip/{ip_address} for response format
+ */
+type WorldTimeApiResponse = {
 	datetime?: string;
 	utc_offset?: string;
 	utc_datetime?: string;
 	unixtime?: number;
 	timezone?: string;
-}
+};
+
+/**
+ * ipgeolocation.io
+ * @see https://ipinfo.io/${ip}?token=${IPINFO_TOKEN} for response format
+ */
+type IpInfoResponse = {
+	ip: string;
+	hostname?: string;
+	city: string;
+	region: string;
+	country: string;
+	loc: string; // example: "52.0767,4.2986"
+	org: string;
+	postal: string;
+	timezone: string;
+};
 
 export function isPublicIPv4(ip: string): boolean {
-	const normalizedIp = normalizeClientIp(ip);
+	const normalizedIp = sanitizedIP(ip);
 	if (!normalizedIp) {
 		return false;
 	}
@@ -45,7 +70,12 @@ export function isPublicIPv4(ip: string): boolean {
 	return true;
 }
 
-export function normalizeClientIp(ip: string | null | undefined): string | null {
+export function requestClientIp(req: Request): string | null {
+	const ip = (req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.socket.remoteAddress) as string;
+	return sanitizedIP(ip);
+}
+
+export function sanitizedIP(ip: string | null | undefined): string | null {
 	const forwardedIp = ip?.split(',')[0]?.trim();
 	if (!forwardedIp) {
 		return null;
@@ -58,78 +88,71 @@ function normalizeCountryCode(countryCode: string | null | undefined): string | 
 	return typeof countryCode === 'string' && countryCode.trim() ? countryCode.trim().toUpperCase() : null;
 }
 
-async function getPublicIpAddress(): Promise<string | null> {
-	return await fetchResponseWithTimeout<{ ip: string }>('https://api.ipify.org?format=json', undefined, 5000)
-		.then((response) => response.ip)
-		.catch(() => null);
-}
-
-export async function getClientLocalTime(ip: string): Promise<LocationInfo> {
+export async function getClientLocation(ip: string): Promise<LocationInfo> {
+	// Start with empty location infoand fill in as we get data from the APIs
 	const locationInfo: LocationInfo = {};
 
-	// If in development mode, use interlal IP for testing
-	const usedIp = isDevelopment() ? await getPublicIpAddress() : normalizeClientIp(ip);
+	// Client IP normalization and validation
+	const clientIP = sanitizedIP(ip);
 
-	if (!usedIp) {
+	if (!clientIP) {
 		logger.debug('Location Service', 'Skipped location lookup because no client IP was available');
 		return locationInfo;
 	}
 
 	// Fetch location data from ipapi.com and ipgeolocation.io
-	const [locationResponse, timeResponse] = await Promise.allSettled([
+	const [ipApiResponse, timeResponse] = await Promise.allSettled([
 		fetchResponseWithTimeout<IpApiResponse>(
-			`http://ip-api.com/json/${usedIp}`,
+			`http://ip-api.com/json/${clientIP}`,
 			{
-				customCacheKey: `ipapi-${usedIp}`,
+				customCacheKey: `ipapi-${clientIP}`,
 				cachedSeconds: daysToSeconds(2),
 			},
 			5000,
 		).catch(null),
 		fetchResponseWithTimeout<WorldTimeApiResponse>(
-			`https://worldtimeapi.org/api/ip/${usedIp}`,
+			`https://worldtimeapi.org/api/ip/${clientIP}`,
 			{
-				customCacheKey: `worldtime-${usedIp}`,
+				customCacheKey: `worldtime-${clientIP}`,
 				cachedSeconds: daysToSeconds(1),
 			},
 			5000,
 		).catch(null),
 	]);
 
-	if (locationResponse.status === 'fulfilled' && locationResponse.value) {
-		locationInfo.country = locationResponse.value.country;
-		locationInfo.countryCode = normalizeCountryCode(locationResponse.value.countryCode);
-		locationInfo.city = locationResponse.value.city;
+	// Filling in location info if available from ip-api.com and ipinfo.io (ipinfo is fallback if ip-api fails)
+	if (
+		ipApiResponse.status === 'fulfilled' &&
+		ipApiResponse.value.country &&
+		ipApiResponse.value.countryCode &&
+		ipApiResponse.value.city
+	) {
+		locationInfo.country = ipApiResponse.value.country;
+		locationInfo.countryCode = normalizeCountryCode(ipApiResponse.value.countryCode);
+		locationInfo.city = ipApiResponse.value.city;
+	} else {
+		logger.warn(`ip-api.com lookup failed for IP ${clientIP}, falling back to ipinfo.io response:`);
+
+		// If ip-api fails, try to get location info from ipinfo.io
+		const ipinfoResponse = await fetchResponseWithTimeout<IpInfoResponse>(
+			`https://ipinfo.io/${clientIP}?token=${appConfig.IpinfoToken}`,
+			{
+				customCacheKey: `ipinfo-${clientIP}`,
+				cachedSeconds: daysToSeconds(1),
+			},
+		).catch(null);
+
+		locationInfo.country = ipinfoResponse.country;
+		locationInfo.countryCode = normalizeCountryCode(ipinfoResponse.country);
+		locationInfo.city = ipinfoResponse.city;
 	}
 
+	// Filling in time info if available from World Time API
 	if (timeResponse.status === 'fulfilled' && timeResponse.value) {
 		locationInfo.datetime = timeResponse.value.datetime;
 		locationInfo.unixtime = timeResponse.value.unixtime;
 	}
 
-	// For last if Country|Code|City is missing, try to get from ipgeolocation.io
-	if (
-		(!locationInfo.country || !locationInfo.countryCode || !locationInfo.city) &&
-		appConfig.IpgeoApiKey !== 'undefined'
-	) {
-		const geoResponse = await fetchResponseWithTimeout<{
-			country_name?: string;
-			country_code2?: string;
-			city?: string;
-		}>(
-			`https://api.ipgeolocation.io/ipgeo?apiKey=${appConfig.IpgeoApiKey}&ip=${usedIp}`,
-			{
-				customCacheKey: `ipgeo-${usedIp}`,
-				cachedSeconds: daysToSeconds(2),
-			},
-			5000,
-		).catch(null);
-		if (geoResponse) {
-			locationInfo.country = locationInfo.country || geoResponse.country_name;
-			locationInfo.countryCode = locationInfo.countryCode || normalizeCountryCode(geoResponse.country_code2);
-			locationInfo.city = locationInfo.city || geoResponse.city;
-		}
-	}
-
-	logger.debug('Location Service', `Resolved location for IP ${usedIp}:`, locationInfo);
+	logger.debug(`Resolved Location for IP ${clientIP}:`, locationInfo);
 	return locationInfo;
 }
