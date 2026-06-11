@@ -75,7 +75,10 @@ export async function handleResponse<GeneticResponse = any, GeneticError = any>(
 }
 
 /** Fetch and handle HTTPS request requestResponse */
-export async function fetchResponse<GeneticResponse = any, GeneticError = any>(request: RequestInfo | URL, options: RequestInit = {}) {
+export async function fetchResponse<GeneticResponse = any, GeneticError = any>(
+	request: RequestInfo | URL,
+	options: RequestInit = {},
+) {
 	// Make the API fetch request
 	const requestResponse = await appFetch(request, options);
 
@@ -84,7 +87,11 @@ export async function fetchResponse<GeneticResponse = any, GeneticError = any>(r
 }
 
 /** Fetch with timeout */
-export async function fetchWithTimeout(request: RequestInfo | URL, options: Omit<RequestInit, 'signal'> = {}, timeout = 5000) {
+export async function fetchWithTimeout(
+	request: RequestInfo | URL,
+	options: Omit<RequestInit, 'signal'> = {},
+	timeout = 5000,
+) {
 	const controller = new AbortController();
 	const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -98,7 +105,9 @@ export async function fetchWithTimeout(request: RequestInfo | URL, options: Omit
 	}
 }
 
-/** Fetch and handle HTTPS request requestResponse with timeout */
+/** Fetch and handle HTTPS request requestResponse with timeout
+ *  If the request takes longer than the specified timeout, it will be aborted and an error will be thrown.
+ */
 export async function fetchResponseWithTimeout<GeneticResponse = any, GeneticError = any>(
 	request: RequestInfo | URL,
 	options: Omit<NodeCacheRequestInit, 'signal'> = {},

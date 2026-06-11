@@ -3,9 +3,9 @@ import User from '@core/models/user';
 import { generateAuthenticationTokens, saveProtectedTokens } from '@app/controllers/tokens';
 import { validateRegister, validateDevice } from '@/utils/validator';
 import {
-	getClientLocalTime as getLocationTime,
+	getClientLocation as getLocationTime,
 	isPublicIPv4,
-	normalizeClientIp,
+	requestClientIp,
 } from '@core/infrastructure/services/tracker';
 import { parseDeviceHeader } from '@/utils/parser';
 import { MailerController } from '@core/infrastructure/services/mailer';
@@ -22,8 +22,8 @@ router.post('/', async (req, res) => {
 	try {
 		// Check App Configuration
 		const language = getAcceptLanguage(req);
-		const allowed = await AppConfiguration.canRegisterUser();
-		if (!allowed) {
+		const registeredUsers = await AppConfiguration.canRegisterUser();
+		if (!registeredUsers) {
 			return new HttpError({
 				code: 'REGISTRATION_DISABLED',
 				message: req.t('REGISTRATION_DISABLED_MESSAGE'),
@@ -34,9 +34,6 @@ router.post('/', async (req, res) => {
 		// Validate request body
 		const [registerError, register] = validateRegister(req.body, req.t);
 
-		// Retrieve the IP address from the request object
-		const clientIp = normalizeClientIp((req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress) || '';
-
 		// Check if postBody is safe
 		if (registerError) {
 			return new HttpError({
@@ -46,8 +43,11 @@ router.post('/', async (req, res) => {
 			}).sendResponse(res);
 		}
 
+		// Retrieve the IP address from the request object
+		const clientIp = requestClientIp(req);
+
 		// Check if the IP address is a public IPv4 address
-		if (!isPublicIPv4(clientIp) && !isDevelopment()) {
+		if (!clientIp || (!isPublicIPv4(clientIp) && !isDevelopment())) {
 			return new HttpError({
 				code: req.t('INVALID_LOCATION_CODE'),
 				message: req.t('INVALID_LOCATION_MESSAGE'),

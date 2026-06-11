@@ -2,7 +2,7 @@ import { Router } from 'express';
 import User from '@core/models/user';
 import { generateAuthenticationTokens, saveProtectedTokens } from '@app/controllers/tokens';
 import { validateLogin, validateDevice } from '@/utils/validator';
-import { getClientLocalTime, normalizeClientIp } from '@core/infrastructure/services/tracker';
+import { getClientLocation, requestClientIp } from '@core/infrastructure/services/tracker';
 import { parseDeviceHeader } from '@/utils/parser';
 import { handleHardErrors, isDevelopment } from '@/utils/standard';
 import { HttpError } from '@/types/HttpError';
@@ -15,9 +15,6 @@ router.post('/', async (req, res) => {
 		// Validate login request body
 		const [authError, login] = validateLogin(req.body, req.t);
 
-		// Retrieve the IP address from the request object
-		const clientIp = normalizeClientIp((req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress) || '';
-
 		// Check if loginBody is safe
 		if (authError) {
 			return new HttpError({
@@ -27,8 +24,20 @@ router.post('/', async (req, res) => {
 			}).sendResponse(res);
 		}
 
+		// Retrieve the IP address from the request object
+		const clientIp = requestClientIp(req);
+
+		// If IP address is not found, return an error response
+		if (!clientIp) {
+			return new HttpError({
+				code: req.t('INVALID_LOCATION_CODE'),
+				message: req.t('INVALID_LOCATION_MESSAGE'),
+				statusCode: 400,
+			}).sendResponse(res);
+		}
+
 		// Device geolocation and time information
-		const deviceGeolocation = await getClientLocalTime(clientIp);
+		const deviceGeolocation = await getClientLocation(clientIp);
 		const loggedAt = deviceGeolocation.datetime ? new Date(deviceGeolocation.datetime) : new Date();
 
 		// Validate device
