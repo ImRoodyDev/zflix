@@ -1,5 +1,5 @@
 import logger from '@/utils/logger';
-import { daysToSeconds } from '@/utils/standard';
+import { daysToSeconds, isDevelopment } from '@/utils/standard';
 import { fetchResponseWithTimeout } from '@utils/fetcher';
 import appConfig from '@core/infrastructure/config/application';
 import { Request } from 'express';
@@ -75,7 +75,7 @@ export function requestClientIp(req: Request): string | null {
 	return sanitizedIP(ip);
 }
 
-export function sanitizedIP(ip: string | null | undefined): string | null {
+function sanitizedIP(ip: string | null | undefined): string | null {
 	const forwardedIp = ip?.split(',')[0]?.trim();
 	if (!forwardedIp) {
 		return null;
@@ -145,6 +145,15 @@ export async function getClientLocation(ip: string): Promise<LocationInfo> {
 		locationInfo.country = ipinfoResponse.country;
 		locationInfo.countryCode = normalizeCountryCode(ipinfoResponse.country);
 		locationInfo.city = ipinfoResponse.city;
+
+		// For localhost or when server is running in development, ipinfo may return empty country and city.
+		// Because of private IP adresss being used
+		// In that case, we fill it with random country
+		if (isDevelopment() && !ipinfoResponse.country && !ipinfoResponse.city) {
+			locationInfo.country = 'Netherlands';
+			locationInfo.countryCode = 'NL';
+			locationInfo.city = 'Amsterdam';
+		}
 	}
 
 	// Filling in time info if available from World Time API
