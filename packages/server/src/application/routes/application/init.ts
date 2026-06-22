@@ -35,7 +35,7 @@ router.get('/', async (req, res) => {
 		}
 
 		// Find all plans on the database
-		const plans = (await Plan.findPlanByCountry(deviceGeolocation.country)) ?? [];
+		const plans = (await Plan.findPlanByCountry(deviceGeolocation.countryCode ?? 'NL')) ?? [];
 		const filteredPlans = plans.filter((plan) => plan.isActive);
 
 		// Send to client
