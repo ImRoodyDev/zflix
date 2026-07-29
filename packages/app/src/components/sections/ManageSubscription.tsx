@@ -17,7 +17,6 @@ import { delay } from '../../utils/standard';
 // Components
 import Button from '../interactables/Button';
 
-
 type Props = {
 	subscription: Subscription;
 	currentPlan: { name: string; description: string[]; price: string };

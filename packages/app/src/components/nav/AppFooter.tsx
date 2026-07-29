@@ -1,5 +1,4 @@
 // External imports
-import { Link } from 'expo-router';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Text, View } from 'react-native';
@@ -13,7 +12,7 @@ import { useResponsiveSize } from '../../contexts/ResponsiveContext';
 // Components
 import Button from '../interactables/Button';
 import LanguagePicker from '../interactables/LanguagePicker';
-
+import Link from '../interactables/Link';
 
 function AppFooter() {
 	const { t } = useTranslation();
@@ -57,8 +56,8 @@ function AppFooter() {
 							iconSize={sizes.h4}
 							textColor={Colors.black}
 							backgroundColor={Colors.white}
-							selectedBackgroundColor={Colors.zinc[200]}
-							pressedBackgroundColor={Colors.zinc[300]}
+							selectedBackgroundColor={Colors.zinc[500]}
+							pressedBackgroundColor={Colors.zinc[600]}
 						/>
 					</View>
 
@@ -66,7 +65,7 @@ function AppFooter() {
 						<LanguagePicker />
 						<Text className={'app-footer-socials-title'}>{t('followUsOn')}</Text>
 						<View className={'app-footer-socials-btns'}>
-							<Link href={'/(others)/contact'}>
+							<Link asChild href={'/(others)/contact'}>
 								<Button
 									icon="facebook"
 									className="app-footer-social-btn"
@@ -80,7 +79,7 @@ function AppFooter() {
 									pressedBackgroundColor={'transparent'}
 								/>
 							</Link>
-							<Link href={'/(others)/contact'}>
+							<Link asChild href={'/(others)/contact'}>
 								<Button
 									icon="twitter"
 									className="app-footer-social-btn"
@@ -94,7 +93,7 @@ function AppFooter() {
 									pressedBackgroundColor={'white'}
 								/>
 							</Link>
-							<Link href={'/(others)/contact'}>
+							<Link asChild href={'/(others)/contact'}>
 								<Button
 									icon="telegram"
 									className="app-footer-social-btn"

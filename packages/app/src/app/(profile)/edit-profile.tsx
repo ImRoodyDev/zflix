@@ -13,7 +13,7 @@ import AppProfileForm from '../../components/sections/ProfileForm';
 // Components
 
 function EditProfile() {
-	const { switchProfile, switchLanguage } = useRootContext();
+	const { switchProfile, switchLanguage, refreshProfile } = useRootContext();
 	const { t } = useTranslation();
 
 	return (
@@ -36,6 +36,9 @@ function EditProfile() {
 			onSave={async ({ id, ...profile }) => {
 				const { primary, ...profileData } = profile; // Remove primary from the payload
 				await updateProfile(id!, profileData);
+				// The profile is mutated in place, so notify subscribers (e.g. the sidebar
+				// DrawerMenuButton) to re-read the updated avatar/name/status.
+				if (id === window.application.currentProfile?.id) refreshProfile();
 				window.application.navigate.replace('/(profile)/manage-profiles');
 				// Update app language by calling switch
 				switchLanguage((window.application.currentProfile?.languageCode as any) ?? window.application.language);

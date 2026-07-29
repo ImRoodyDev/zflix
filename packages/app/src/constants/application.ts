@@ -6,38 +6,40 @@ import { Platform } from 'react-native';
 // Internal imports
 import { supportedLanguages } from '../controllers/localization';
 
-const application = {
-	unsupportedDrawerRoutes: ['check-plan', 'process-plan', 'process-code'],
-} as const;
+export const unsupportedDrawerRoutes = [
+	'check-plan',
+	'process-plan',
+	'process-code',
+	'manage-plan',
+	'plan-picker',
+	'plan-payment',
+	'update-plan',
+	'login',
+	'register',
+	'reset/[id]',
+	'error',
+	'+not-found',
+	'terms',
+	'privacy',
+	'dmca',
+	'contact',
+	'movies/[id]',
+	'movies/play/bunny',
+	'series/[id]',
+	'series/play/bunny',
+	'channels/play/bunny',
+	'[id]',
+] as const;
+
+export function isDrawerUnsupportedRoute(routeName: string) {
+	return unsupportedDrawerRoutes.some((route) => routeName === route);
+}
 
 /** Get the name of a language based on its code. */
 export function getLanguageName(code: string) {
 	if (code === '##') return 'Unknown';
 	const languageName = ISO6391.getName(code);
 	return languageName || 'Unknown';
-
-	// const languageNames = {
-	// 	en: 'English',
-	// 	es: 'Spanish',
-	// 	fr: 'French',
-	// 	de: 'German',
-	// 	it: 'Italian',
-	// 	pt: 'Portuguese',
-	// 	ru: 'Russian',
-	// 	zh: 'Chinese',
-	// 	ar: 'Arabic',
-	// 	ja: 'Japanese',
-	// 	ko: 'Korean',
-	// 	nl: 'Dutch',
-	// 	pl: 'Polish',
-	// 	tr: 'Turkish',
-	// 	vi: 'Vietnamese',
-	// 	hi: 'Hindi',
-	// 	bn: 'Bengali',
-	// 	'##': 'Unknown',
-	// } as const;
-
-	// return languageNames[code as keyof typeof languageNames] || languageNames['##'];
 }
 
 /** Get the languages */
@@ -88,4 +90,3 @@ export function createUserAgent() {
 
 	return null;
 }
-export default application;

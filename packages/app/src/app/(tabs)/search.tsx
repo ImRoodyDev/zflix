@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Internal imports
 import { Icons } from '../../constants';
-import PageContext from '../../components/main/PageShell';
+import PageShell from '../../components/main/PageShell';
 import { useResponsiveSize } from '../../contexts/ResponsiveContext';
 import { channelSearch } from '../../controllers/channels';
 import { mediaSearch } from '../../controllers/media';
@@ -301,7 +301,7 @@ function Search() {
 	}, []);
 
 	return (
-		<PageContext
+		<PageShell
 			optimized
 			statusBarStyle={'light'}
 			backgroundColor={'black'}
@@ -327,7 +327,7 @@ function Search() {
 				ListHeaderComponent={searchQuery.type !== 'channels' ? preview : carouselHeader}
 				customPadding={{ top: sizes.topPadding, bottom: sizes.topPadding }}
 			/>
-		</PageContext>
+		</PageShell>
 	);
 }
 

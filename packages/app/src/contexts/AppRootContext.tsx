@@ -1,26 +1,19 @@
 // External imports
 import { TFunction } from 'i18next';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Drawer } from 'react-native-drawer-layout';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { createContext, useContext } from 'react';
 
 // Internal imports
-import '../styles/global.css';
-import { Application, defaultDrawerOption } from '../constants';
 import { Languages } from '../controllers/localization';
-import { useApplicationConfiguration } from '../hooks/useApplicationConfiguration';
 import { ProcessError } from '../types/ProcessError';
-import { ResponsiveSizeProvider } from './ResponsiveContext';
-import { SessionProvider } from './SessionContext';
-import { ThemeProvider } from './ThemeContext';
 
-// Components
-import SplashScreenComponent from '../components/main/SplashScreen';
-import SidebarDrawer from '../components/nav/SidebarDrawer';
-import ThemedView from '../components/theme/ThemedView';
+// NOTE: This module must stay a "leaf" — it deliberately imports no app components
+// or providers. Many components import useRootContext() from here, and the provider
+// (RootProvider) pulls in the whole component tree; keeping the context definition and
+// hook here (separate from the provider) prevents a circular import that would leave
+// useRootContext() undefined at render time.
 
-// AppContext Type
+// AppContext Type — STABLE app state. Only changes on real app/navigation events, so every
+// useRootContext() consumer re-rendering when one of these changes is acceptable.
 type AppContextType = {
 	initialized: boolean;
 	loggedIn: boolean;
@@ -29,45 +22,56 @@ type AppContextType = {
 	pathname: string;
 	routeName: string;
 
-	drawerToggled: boolean;
-	tabBarVisible: boolean;
 	profileIndex: number;
+	profileVersion: number;
 
 	t: TFunction;
 	logout: () => void;
-	toggleDrawerHandler: () => boolean;
-	setTabBarVisible: (visible: boolean) => void;
 
 	switchLanguage: (code: Languages) => void;
 	switchProfile: (index: number) => void;
+	refreshProfile: () => void;
 	setLoggedIn: (loggedIn: boolean) => void;
-
-	forceLockSpatialNavigation: boolean;
-	lockSpatialNavigation: (locked: boolean) => void;
 };
 
-// Create the AppContext
+// AppUIContext Type — VOLATILE UI state (drawer, tab bar, TV focus target). These flip during
+// normal interaction (e.g. opening the drawer). They live in a SEPARATE context so toggling them
+// does NOT change the identity of AppContext and therefore does NOT re-render the ~hundreds of
+// components that only read stable fields like `t`, `loggedIn`, or `pathname`. See PROFILING.md.
+type AppUIContextType = {
+	drawerToggled: boolean;
+	tabBarVisible: boolean;
+
+	toggleDrawerHandler: () => boolean;
+	setTabBarVisible: (visible: boolean) => void;
+};
+
+// Create the AppContext (stable)
 const AppContext = createContext<AppContextType>({
 	initialized: false,
 	loggedIn: false,
 	previousPathName: undefined,
 	pathname: '',
 	routeName: '',
-	drawerToggled: false,
-	tabBarVisible: true,
 	profileIndex: 0,
+	profileVersion: 0,
 	t: ((..._args: unknown[]) => '') as unknown as TFunction,
 	logout: () => undefined,
-	toggleDrawerHandler: () => false,
-	setTabBarVisible: () => undefined,
 	switchLanguage: () => undefined,
 	switchProfile: () => undefined,
+	refreshProfile: () => undefined,
 	setLoggedIn: () => undefined,
-	forceLockSpatialNavigation: false,
-	lockSpatialNavigation: () => undefined,
 });
 
-// Create context hook
+// Create the AppUIContext (volatile UI state)
+const AppUIContext = createContext<AppUIContextType>({
+	drawerToggled: false,
+	tabBarVisible: true,
+	toggleDrawerHandler: () => false,
+	setTabBarVisible: () => undefined,
+});
+
+// Create context hook (stable app state)
 const useRootContext = () => {
 	const context = useContext(AppContext);
 	if (!context) {
@@ -79,99 +83,17 @@ const useRootContext = () => {
 	return context;
 };
 
-// Create the AppProvider component
-const RootContext: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-	const ApplicationConfiguration = useApplicationConfiguration();
-	const [tabBarVisible, setTabBarVisible] = useState(true);
-	const [drawerToggled, toggleDrawer] = useState(false);
-	const [enableDrawer, setEnableDrawer] = useState(true);
-	const [forceLockSpatialNavigation, setForceLockSpatialNavigation] = useState(false);
-
-	// Ensure the drawer is enabled only on certain routes
-	useEffect(() => {
-		const routeName = ApplicationConfiguration.routeName;
-		const supported = !Application.unsupportedDrawerRoutes.includes(routeName as any);
-
-		// Update the drawer enabled state if it has changed
-		if (enableDrawer !== supported) setEnableDrawer(supported);
-
-		if (drawerToggled)
-			setTimeout(() => {
-				toggleDrawerHandler();
-			}, 50);
-
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [ApplicationConfiguration.routeName]);
-
-	// Toggle the drawer state
-	const toggleDrawerHandler = useCallback(() => {
-		if (drawerToggled || !enableDrawer) {
-			toggleDrawer(false);
-			setForceLockSpatialNavigation(false);
-		} else {
-			toggleDrawer(true);
-			setForceLockSpatialNavigation(true);
-		}
-
-		return !drawerToggled;
-	}, [enableDrawer, drawerToggled]);
-
-	// Memoized sidebar content
-	const memoizedSidebar = useMemo(() => {
-		return (
-			<SidebarDrawer
-				logout={ApplicationConfiguration.logout}
-				toggleDrawerHandler={toggleDrawerHandler}
-				drawerToggled={drawerToggled}
-			/>
-		);
-	}, [ApplicationConfiguration.logout, drawerToggled, toggleDrawerHandler]);
-
-	// Context props
-	const contextProps: AppContextType = {
-		...ApplicationConfiguration,
-		drawerToggled,
-		tabBarVisible,
-		forceLockSpatialNavigation,
-		setTabBarVisible,
-		toggleDrawerHandler,
-		lockSpatialNavigation: (b) => setForceLockSpatialNavigation(b),
-	};
-
-	// Inner child component
-	const innerChild = (
-		<Drawer
-			{...defaultDrawerOption}
-			overlayStyle={{ backdropFilter: 'blur(8px)' }}
-			open={ApplicationConfiguration.initialized ? drawerToggled : false}
-			swipeEnabled={enableDrawer && ApplicationConfiguration.initialized}
-			swipeEdgeWidth={180}
-			swipeMinDistance={20}
-			onOpen={() => toggleDrawer(true)}
-			onClose={() => toggleDrawer(false)}
-			renderDrawerContent={() => memoizedSidebar}
-		>
-			<ThemedView className={'flex-1 responsive-vars'}>
-				<GestureHandlerRootView style={{ flex: 1 }}>{children}</GestureHandlerRootView>
-			</ThemedView>
-		</Drawer>
-	);
-
-	return (
-		<AppContext.Provider value={contextProps}>
-			<SessionProvider>
-				<ResponsiveSizeProvider>
-					<ThemeProvider>
-						<SessionProvider>
-							<SafeAreaProvider>
-								{ApplicationConfiguration.initialized ? innerChild : <SplashScreenComponent />}
-							</SafeAreaProvider>
-						</SessionProvider>
-					</ThemeProvider>
-				</ResponsiveSizeProvider>
-			</SessionProvider>
-		</AppContext.Provider>
-	);
+// Create context hook (volatile UI state — drawer, tab bar, TV focus target)
+const useAppUI = () => {
+	const context = useContext(AppUIContext);
+	if (!context) {
+		throw new ProcessError({
+			code: 'CONTEXT_NOT_FOUND',
+			message: 'useAppUI must be used within an RootContext',
+		});
+	}
+	return context;
 };
 
-export { RootContext, useRootContext };
+export { AppContext, AppUIContext, useRootContext, useAppUI };
+export type { AppContextType, AppUIContextType };

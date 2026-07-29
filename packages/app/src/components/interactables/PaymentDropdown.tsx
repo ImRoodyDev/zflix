@@ -6,7 +6,7 @@ import { BaseButton, Dropdown, DropdownRef } from 'react-native-cross-elements';
 
 // Internal imports
 import { Colors, Icons } from '../../constants';
-import { useResponsiveSize } from '../../contexts/ResponsiveContext';
+import { useResponsiveSize, useResponsiveVars } from '../../contexts/ResponsiveContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { PaymentSource } from '../../types/ServerOutputs';
 
@@ -32,7 +32,7 @@ type PaymentDropdownProps = {
 
 const PaymentDropdownButton = ({ selectedItem, onPress }: DropButton) => {
 	const { t } = useTranslation();
-	const sizes = useResponsiveSize();
+	const { span1, span1b } = useResponsiveSize();
 	const { themeColors } = useTheme();
 
 	return (
@@ -54,15 +54,16 @@ const PaymentDropdownButton = ({ selectedItem, onPress }: DropButton) => {
 			{
 				// If selected item is null
 				selectedItem == null ? (
-					<Icons.credit_card color={Colors.primary.DEFAULT} size={sizes.span1} variant="Bold" />
+					<Icons.credit_card color={Colors.primary.DEFAULT} size={span1} variant="Bold" />
 				) : (
 					<Image
 						className={'payment-dropdown-btn-img'}
 						source={{ uri: selectedItem.img }}
 						resizeMode={'contain'}
 						style={{
-							height: selectedItem.height,
-							width: selectedItem.width,
+							height:
+								typeof selectedItem.height === 'number' ? selectedItem.height : selectedItem.height,
+							width: typeof selectedItem.width === 'number' ? selectedItem.width : selectedItem.width,
 							aspectRatio: selectedItem.ratio,
 						}}
 					/>
@@ -75,7 +76,7 @@ const PaymentDropdownButton = ({ selectedItem, onPress }: DropButton) => {
 					selectedItem == null ? t('paymentMethod') : selectedItem.source
 				}
 			</ThemedText>
-			<Icons.arrow_down color={Colors.primary.DEFAULT} variant="Bold" size={sizes.span1b} />
+			<Icons.arrow_down color={Colors.primary.DEFAULT} variant="Bold" size={span1b} />
 		</BaseButton>
 	);
 };
@@ -83,6 +84,7 @@ const PaymentDropdownButton = ({ selectedItem, onPress }: DropButton) => {
 const PaymentDropdown = memo(
 	forwardRef((props: PaymentDropdownProps, ref?: Ref<DropdownRef>) => {
 		const { themeColors } = useTheme();
+		const vars = useResponsiveVars();
 
 		const dropdownItem = useCallback(
 			({ index, item, onPress }: ButtonItem) => {
@@ -90,6 +92,7 @@ const PaymentDropdown = memo(
 					<BaseButton
 						key={index}
 						className={'payment-dropdown-item responsive-vars'}
+						style={vars as any}
 						onPress={() => {
 							onPress();
 							props.onSelect(item, index);
@@ -103,8 +106,8 @@ const PaymentDropdown = memo(
 							source={{ uri: item.img }}
 							resizeMode={'contain'}
 							style={{
-								height: item.height,
-								width: item.width,
+								height: typeof item.height === 'number' ? item.height : item.height,
+								width: typeof item.width === 'number' ? item.width : item.width,
 								aspectRatio: item.ratio,
 							}}
 						/>
@@ -112,7 +115,7 @@ const PaymentDropdown = memo(
 					</BaseButton>
 				);
 			},
-			[props, themeColors.lbi_zinc_200, themeColors.lbi_zinc_300],
+			[props, themeColors.lbi_zinc_200, themeColors.lbi_zinc_300, vars],
 		);
 
 		return (

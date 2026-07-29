@@ -43,12 +43,15 @@ const AppProfileForm = (props: AppProfileFormProps) => {
 	const { themeColors } = useTheme();
 	const sizes = useResponsiveSize();
 	const insets = useSafeAreaInsets();
-	const safeStyle = {
-		paddingTop: insets.top,
-		paddingBottom: Math.max(insets.bottom, sizes.topPadding),
-		paddingLeft: insets.left,
-		paddingRight: insets.right,
-	};
+	const safeStyle = useMemo(
+		() => ({
+			paddingTop: insets.top,
+			paddingBottom: Math.max(insets.bottom, sizes.topPadding),
+			paddingLeft: insets.left,
+			paddingRight: insets.right,
+		}),
+		[insets.bottom, insets.left, insets.right, insets.top, sizes.topPadding],
+	);
 
 	const [state, dispatch] = useComponentStateReducer();
 	const [openAvatars, setOpenAvatars] = useState(false);
@@ -58,23 +61,84 @@ const AppProfileForm = (props: AppProfileFormProps) => {
 			avatarId: window.application.avatars[Math.floor(Math.random() * window.application.avatars.length)],
 		}),
 	});
+	const avatarId = form.avatarId!;
+	const profileName = form.profileName;
+	const autoPlay = form.autoPlay || false;
 
-	// Certification and language dropdowns
-	const certificationDefault = useMemo(
-		() => certificationIndexByCode(form.certificationId),
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[props.profile],
-	);
-	const languageDefault = useMemo(
-		() => getLanguages().findIndex((l) => l.code == (form.languageCode ?? window.application.language)),
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[props.profile],
-	);
+	const certificationDefault = certificationIndexByCode(form.certificationId);
+	const languageDefault = getLanguages().findIndex((l) => l.code == (form.languageCode ?? window.application.language));
 	const languages = useMemo(() => getLanguages(), []);
 
 	const updateForm = useCallback((key: keyof ProfileInputInformation, value: string | boolean | undefined) => {
 		setForm((prevForm) => ({ ...prevForm, [key]: value }) as ProfileInputInformation);
 	}, []);
+	const handleToggleAvatars = useCallback(() => {
+		setOpenAvatars(true);
+	}, []);
+	const handleCloseAvatars = useCallback(() => {
+		setOpenAvatars(false);
+	}, []);
+	const handleProfileNameChange = useCallback((value: string) => updateForm('profileName', value), [updateForm]);
+	const handleAutoPlayUpdate = useCallback((value: boolean) => updateForm('autoPlay', value), [updateForm]);
+	const handleCertificationSelect = useCallback(
+		(e: any) => {
+			updateForm('certificationId', e?.code);
+			updateForm('avatarId', e?.defaultAvatarId);
+		},
+		[updateForm],
+	);
+	const handleLanguageSelect = useCallback((e: any) => updateForm('languageCode', e?.code), [updateForm]);
+	const handleResetError = useCallback(() => dispatch({ type: 'idle' }), [dispatch]);
+	const handleAvatarSelect = useCallback(
+		(avatar: string) => {
+			handleCloseAvatars();
+			updateForm('avatarId', avatar);
+		},
+		[handleCloseAvatars, updateForm],
+	);
+	const profileNameInputConfig = useMemo(
+		() => ({
+			editable: true,
+			focusable: false,
+			type: 'text' as const,
+			maxLength: 75,
+			placeholder: t('displayName'),
+			defaultValue: profileName,
+			required: true,
+			onChange: handleProfileNameChange,
+			className: 'profile-form-option-input',
+			placeholderClassName: 'profile-form-option-input-text',
+		}),
+		[handleProfileNameChange, profileName, t],
+	);
+	const handleCertificationButton = useCallback(
+		(e: any) => ({
+			title: t('parentalControls') as string,
+			description: e?.getName(),
+			code: e?.code,
+		}),
+		[t],
+	);
+	const handleLanguageButton = useCallback(
+		(e: any) => ({
+			title: t('appLanguage') as string,
+			description: e?.name,
+			icon: 'language' as const,
+		}),
+		[t],
+	);
+	const handleCertificationItem = useCallback(
+		(e: any, callback: () => void) => (
+			<FormDropdownItem key={e?.code} label={e?.code} value={e.getName()} onPress={callback} />
+		),
+		[],
+	);
+	const handleLanguageItem = useCallback(
+		(e: any, callback: () => void) => (
+			<FormDropdownItem key={e?.code} label={e?.code} value={e?.name} onPress={callback} />
+		),
+		[],
+	);
 	const onSubmit = useCallback(async () => {
 		try {
 			// Check if form is valid
@@ -113,17 +177,6 @@ const AppProfileForm = (props: AppProfileFormProps) => {
 			dispatch({ type: 'error', message: e.message });
 		}
 	}, [dispatch, onDelete, profile, t]);
-	const toggleAvatars = useCallback((open: boolean) => {
-		setOpenAvatars(open);
-	}, []);
-	const onSelectAvatar = useCallback(
-		(avatar: string) => {
-			setOpenAvatars(false);
-			updateForm('avatarId', avatar);
-		},
-		[updateForm],
-	);
-
 	return (
 		<Page
 			backgroundColor={themeColors.whiteBackground}
@@ -140,30 +193,21 @@ const AppProfileForm = (props: AppProfileFormProps) => {
 						<Animated.View entering={FadeIn} className={'profile-form-grid'}>
 							<View className={'profile-form-option-2'}>
 								<AvatarButton
-									avatarId={form.avatarId!}
+									avatarId={avatarId}
 									onSelectIcon={'magicpen'}
-									onSelect={() => toggleAvatars(true)}
+									onSelect={handleToggleAvatars}
 								/>
 							</View>
 
 							{/** Profile name */}
 							<LabeledInput
 								className="profile-form-option-input-ptn profile-form-input"
-								inputConfig={{
-									editable: true,
-									focusable: false,
-									type: 'text',
-									maxLength: 75,
-									placeholder: t('displayName'),
-									defaultValue: form.profileName,
-									required: true,
-									onChange: (value) => updateForm('profileName', value),
-									className: 'profile-form-option-input',
-									placeholderClassName: 'profile-form-option-input-text',
-								}}
+								inputConfig={profileNameInputConfig}
+								iconClassName={'profile-form-option-input-icon'}
 								icon="user"
 								iconSize={sizes.span1}
-								iconClassName={'profile-form-option-input-icon'}
+								labelFontSize={sizes.span3}
+								filledLabelFontSize={sizes.span5}
 								iconColor={themeColors.lbi_text}
 								textColor={themeColors.black}
 								backgroundColor={themeColors.lbi_zinc_100}
@@ -176,8 +220,8 @@ const AppProfileForm = (props: AppProfileFormProps) => {
 								icon={'youtube_play'}
 								title={t('autoPlay')}
 								description={t('autoPlayNote')}
-								defaultValue={form.autoPlay || false}
-								onUpdate={(value: boolean) => updateForm('autoPlay', value)}
+								defaultValue={autoPlay}
+								onUpdate={handleAutoPlayUpdate}
 							/>
 
 							{/** Certification dropdown */}
@@ -185,20 +229,9 @@ const AppProfileForm = (props: AppProfileFormProps) => {
 								type={'certification'}
 								data={window.application.certifications}
 								defaultValue={certificationDefault}
-								onSelect={(e) => {
-									updateForm('certificationId', e?.code);
-									updateForm('avatarId', e?.defaultAvatarId);
-								}}
-								onRenderButton={(e) => {
-									return {
-										title: t('parentalControls') as string,
-										description: e?.getName(),
-										code: e?.code,
-									};
-								}}
-								onRenderItem={(e, callback) => (
-									<FormDropdownItem key={e?.code} label={e?.code} value={e.getName()} onPress={callback} />
-								)}
+								onSelect={handleCertificationSelect}
+								onRenderButton={handleCertificationButton}
+								onRenderItem={handleCertificationItem}
 							/>
 
 							{/** Language dropdown */}
@@ -206,17 +239,9 @@ const AppProfileForm = (props: AppProfileFormProps) => {
 								type={'language'}
 								data={languages}
 								defaultValue={languageDefault}
-								onSelect={(e) => updateForm('languageCode', e?.code)}
-								onRenderButton={(e) => {
-									return {
-										title: t('appLanguage') as string,
-										description: e.name,
-										icon: 'language',
-									};
-								}}
-								onRenderItem={(e, callback) => (
-									<FormDropdownItem key={e?.code} label={e?.code} value={e?.name} onPress={callback} />
-								)}
+								onSelect={handleLanguageSelect}
+								onRenderButton={handleLanguageButton}
+								onRenderItem={handleLanguageItem}
 							/>
 						</Animated.View>
 					) : (
@@ -228,7 +253,7 @@ const AppProfileForm = (props: AppProfileFormProps) => {
 							<>
 								{props.type == 'edit' && !profile?.primary && (
 									<Button
-										onPress={() => onDeleteProfile()}
+										onPress={onDeleteProfile}
 										text={t('delete')}
 										className="app-profiles-manage-btn"
 										textClassName="app-profiles-manage-btn-text"
@@ -243,7 +268,7 @@ const AppProfileForm = (props: AppProfileFormProps) => {
 								)}
 
 								<Button
-									onPress={() => onSubmit()}
+									onPress={onSubmit}
 									text={props.submitText}
 									className="app-profiles-manage-btn"
 									textClassName="app-profiles-manage-btn-text"
@@ -252,15 +277,15 @@ const AppProfileForm = (props: AppProfileFormProps) => {
 									textColor="white"
 									focusedTextColor="white"
 									backgroundColor={Colors.primary.DEFAULT}
-									selectedBackgroundColor={Colors.primary[800]}
-									pressedBackgroundColor={Colors.primary[900]}
+									selectedBackgroundColor={Colors.primary[900]}
+									pressedBackgroundColor={Colors.primary[950]}
 								/>
 							</>
 						)}
 
 						{state.type == 'error' && (
 							<Button
-								onPress={() => dispatch({ type: 'idle' })}
+								onPress={handleResetError}
 								text={t('ok')}
 								className="app-profiles-manage-btn"
 								textClassName="app-profiles-manage-btn-text"
@@ -279,7 +304,7 @@ const AppProfileForm = (props: AppProfileFormProps) => {
 
 			{
 				/**  Avatar selection modal */
-				openAvatars && <Avatars onClose={() => setOpenAvatars(false)} onSelect={onSelectAvatar} />
+				openAvatars && <Avatars onClose={handleCloseAvatars} onSelect={handleAvatarSelect} />
 			}
 
 			<ToastManager {...ToastConfig} />

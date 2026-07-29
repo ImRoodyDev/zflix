@@ -1,7 +1,7 @@
 // External imports
 import clsx from 'clsx';
 import React, { memo, useCallback, useState } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { CustomButton, Dropdown, Switch, SwitchRef } from 'react-native-cross-elements';
 
 // Internal imports
@@ -38,7 +38,7 @@ export type FormDropdownItemProps = {
 	onPress?: () => void;
 };
 
-export function FormDropdownItem(props: FormDropdownItemProps) {
+export const FormDropdownItem = memo(function FormDropdownItem(props: FormDropdownItemProps) {
 	const { themeColors } = useTheme();
 	return (
 		<CustomButton
@@ -52,7 +52,7 @@ export function FormDropdownItem(props: FormDropdownItemProps) {
 			<ThemedText className={'dropdown-item-txt responsive-vars'}>{props.value}</ThemedText>
 		</CustomButton>
 	);
-}
+});
 
 export const FormOption = memo((props: FormOptionProps) => {
 	const { icon, title, description, defaultValue, onUpdate } = props;
@@ -112,7 +112,10 @@ export const FormOption = memo((props: FormOptionProps) => {
 				className={'profile-form-option-switch'}
 				defaultValue={defaultValue}
 				onValueChange={handleOnValueChange}
-				disableTouch={true}
+				disableTouch={Platform.OS === 'web'}
+				focusable
+				onFocus={handleFocus}
+				onBlur={handleBlur}
 			/>
 		</View>
 	);
@@ -123,6 +126,62 @@ export const FormDropdown = memo(<T,>(props: FormDropdownProps<T>) => {
 
 	const sizes = useResponsiveSize();
 	const { themeColors } = useTheme();
+
+	const renderDropdownRow = useCallback(
+		(e: T | null, _: any, focused: boolean) => {
+			const renderProps = onRenderButton(e ?? data[defaultValue]);
+			return (
+				<View
+					className={'profile-form-option'}
+					style={{ backgroundColor: !focused ? themeColors.lbi_zinc_100 : themeColors.lbi_zinc_200 }}
+				>
+					<View className={'profile-form-option-ctn'}>
+						<View className={'profile-form-option-icon'}>
+							{!renderProps.icon ? (
+								<ThemedText color={themeColors.lbi_text} className={'profile-form-option-icon-txt'}>
+									{renderProps.code || '##'}
+								</ThemedText>
+							) : (
+								Icons[renderProps.icon]({
+									size: sizes.span1,
+									color: themeColors.lbi_text,
+								})
+							)}
+						</View>
+
+						<View className={'profile-form-option-texts'}>
+							<ThemedText selectable={false} className={'profile-form-option-title'}>
+								{renderProps.title}
+							</ThemedText>
+
+							<ThemedText selectable={false} className={'profile-form-option-txt'}>
+								{renderProps.description}
+							</ThemedText>
+						</View>
+
+						<View className={'profile-form-option-arrow'}>
+							<Icons.arrow_right size={sizes.span1} color={themeColors.black} />
+						</View>
+					</View>
+				</View>
+			);
+		},
+		[
+			data,
+			defaultValue,
+			onRenderButton,
+			sizes.span1,
+			themeColors.black,
+			themeColors.lbi_text,
+			themeColors.lbi_zinc_100,
+			themeColors.lbi_zinc_200,
+		],
+	);
+
+	const renderDropdownItem = useCallback(
+		({ item, onPress }: { item: T; onPress: () => void }) => onRenderItem(item, onPress),
+		[onRenderItem],
+	);
 
 	return (
 		<Dropdown
@@ -139,45 +198,8 @@ export const FormDropdown = memo(<T,>(props: FormDropdownProps<T>) => {
 			animateDropdown={true}
 			showsVerticalScrollIndicator={true}
 			dropdownOverlayColor="transparent"
-			renderButtonContent={(e, _, focused) => {
-				const renderProps = onRenderButton(e || data[defaultValue]);
-				return (
-					<View
-						className={'profile-form-option'}
-						style={{ backgroundColor: !focused ? themeColors.lbi_zinc_100 : themeColors.lbi_zinc_200 }}
-					>
-						<View className={'profile-form-option-ctn'}>
-							<View className={'profile-form-option-icon'}>
-								{!renderProps.icon ? (
-									<ThemedText color={themeColors.lbi_text} className={'profile-form-option-icon-txt'}>
-										{renderProps.code || '##'}
-									</ThemedText>
-								) : (
-									Icons[renderProps.icon]({
-										size: sizes.span1,
-										color: themeColors.lbi_text,
-									})
-								)}
-							</View>
-
-							<View className={'profile-form-option-texts'}>
-								<ThemedText selectable={false} className={'profile-form-option-title'}>
-									{renderProps.title}
-								</ThemedText>
-
-								<ThemedText selectable={false} className={'profile-form-option-txt'}>
-									{renderProps.description}
-								</ThemedText>
-							</View>
-
-							<View className={'profile-form-option-arrow'}>
-								<Icons.arrow_right size={sizes.span1} color={themeColors.black} />
-							</View>
-						</View>
-					</View>
-				);
-			}}
-			renderItemButton={({ item, onPress }) => onRenderItem(item, onPress)}
+			renderButtonContent={renderDropdownRow}
+			renderItemButton={renderDropdownItem}
 		/>
 	);
 }) as <T>(props: FormDropdownProps<T>) => React.JSX.Element;

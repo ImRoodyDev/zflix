@@ -53,9 +53,9 @@ import {
 import React from 'react';
 import { View } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
-import FontAwesomeIcons from 'react-native-vector-icons/FontAwesome';
-import FontAwesomeIcons6 from 'react-native-vector-icons/FontAwesome6';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import FontAwesomeIcons from '@expo/vector-icons/FontAwesome';
+import FontAwesomeIcons6 from '@expo/vector-icons/FontAwesome6';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 
 type IconProps = {

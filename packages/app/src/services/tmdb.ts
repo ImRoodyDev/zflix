@@ -20,7 +20,8 @@ import Logger from '../utils/logger';
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
-const TMDB_DEFAULT_IMAGE_SIZE = 'w500';
+// w342 is plenty for carousel poster cells and halves the decode cost vs w500
+const TMDB_DEFAULT_IMAGE_SIZE = 'w342';
 const PLIMIT = pLimit(10); // Limit concurrent API calls to 10
 
 function buildTmdbImageUrl(path: string | null, size: string = TMDB_DEFAULT_IMAGE_SIZE): string | null {
@@ -116,6 +117,29 @@ async function movieDetails(id: string, lang = 'en') {
 	return response;
 }
 
+// In-memory cache of raw TMDB details keyed by `type:tmdbId:lang`: revisits and
+// duplicate items across carousels reuse the response instead of refetching.
+// Caching the in-flight promise also dedupes concurrent requests for the same media.
+const DETAILS_CACHE_MAX = 500;
+const detailsCache = new Map<string, Promise<TmdbMovieDetails | TvShowDetails | null>>();
+
+function getCachedDetails(type: BareMediaInfo['type'], tmdbId: number, lang: string) {
+	const key = `${type}:${tmdbId}:${lang}`;
+	let cached = detailsCache.get(key);
+	if (!cached) {
+		cached = type === 'movies' ? movieDetails(String(tmdbId), lang) : tvDetails(String(tmdbId), lang);
+		detailsCache.set(key, cached);
+		// Don't keep failed requests cached
+		cached.catch(() => detailsCache.delete(key));
+		// Simple FIFO eviction to bound memory
+		if (detailsCache.size > DETAILS_CACHE_MAX) {
+			const oldest = detailsCache.keys().next().value;
+			if (oldest) detailsCache.delete(oldest);
+		}
+	}
+	return cached;
+}
+
 export async function getMediaDetails(meta: BareMediaInfo, lang = 'en'): Promise<MediaInfo> {
 	const tmdbId = Number(meta.external_id);
 	if (!Number.isFinite(tmdbId) || tmdbId <= 0) {
@@ -126,8 +150,7 @@ export async function getMediaDetails(meta: BareMediaInfo, lang = 'en'): Promise
 		});
 	}
 
-	const details =
-		meta.type === 'movies' ? await movieDetails(String(tmdbId), lang) : await tvDetails(String(tmdbId), lang);
+	const details = await getCachedDetails(meta.type, tmdbId, lang);
 	if (!details) {
 		throw new ProcessError({
 			code: 'TMDB_DETAILS_NOT_FOUND',

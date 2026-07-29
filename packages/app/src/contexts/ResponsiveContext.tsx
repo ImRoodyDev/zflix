@@ -1,19 +1,33 @@
 // External imports
-import React, { createContext, useEffect, useRef, useState } from 'react';
-import { Dimensions, Platform } from 'react-native';
+import React, { createContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Dimensions, Platform, View } from 'react-native';
+import { vars } from 'nativewind';
 
 // Internal imports
-import { sizes, SizeType, SizeValues } from '../constants/sizes';
+import {
+	sizes,
+	sizeToCssVars,
+	type SizeType,
+	type SizeValues,
+	type CssVars,
+} from '../constants/sizes.native';
 import logger from '../utils/logger';
 
+// Components
+import ThemedView, { type ThemedViewProps } from '@/components/theme/ThemedView';
+import clsx from 'clsx';
 
-type ResponsiveContextType = SizeValues;
+type ResponsiveContextResult = {
+	vars: CssVars[] | Record<string, string>;
+	sizes: SizeValues;
+};
 
+/** Sizes breakpoints for screens */
 function getSizeType(width: number, height: number): SizeType {
-	if (width <= 767 && height >= 480) {
+	if (width <= 599) {
 		return 'mobile';
-	} else if (width <= 1023 && width >= 768 && height >= 480) return 'tablet';
-	else if (width <= 1023 && height <= 480) return 'mobile_landscape';
+	} else if (width <= 1023 && height <= 479) return 'mobile_landscape';
+	else if (width <= 899) return 'tablet';
 
 	return 'default';
 }
@@ -32,8 +46,9 @@ function getCurrentViewport() {
 }
 
 // Create the ResponsiveContext
-const ResponsiveContext = createContext<ResponsiveContextType | undefined>(undefined);
+const ResponsiveContext = createContext<ResponsiveContextResult | undefined>(undefined);
 
+// Responsive Provider
 const ResponsiveSizeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 	const dimensionsRef = useRef(getCurrentViewport());
 	const [type, setType] = useState<SizeType>(() => {
@@ -87,15 +102,79 @@ const ResponsiveSizeProvider: React.FC<{ children: React.ReactNode }> = ({ child
 		logger.info(`Viewport changed: ${type} (${dimensionsRef.current.width}x${dimensionsRef.current.height})`);
 	}, [type]);
 
-	return <ResponsiveContext.Provider value={responsiveValues}>{children}</ResponsiveContext.Provider>;
+	const value = useMemo(() => {
+		return {
+			sizes: responsiveValues,
+			// There may be an issue if native screen is changing dimension but thats not reality
+			// Thats is why i havent added width and height to the memo
+			vars: vars(sizeToCssVars(responsiveValues, 1)),
+		} as ResponsiveContextResult;
+	}, [responsiveValues]);
+
+	return <ResponsiveContext.Provider value={value}>{children}</ResponsiveContext.Provider>;
 };
 
-const useResponsiveSize = () => {
+/**
+ * Read the active responsive size tokens.
+ *
+ * The `options` argument is accepted for API compatibility but no longer affects
+ * the result — tokens are always returned as-is on mobile/web.
+ */
+const useResponsiveSize = (_options?: { scaled?: boolean }): SizeValues => {
 	const context = React.useContext(ResponsiveContext);
 	if (!context) {
 		throw new Error('useResponsiveSize must be used within a ResponsiveSizeProvider');
 	}
-	return context;
+
+	return context.sizes;
 };
 
-export { ResponsiveSizeProvider, useResponsiveSize };
+const useResponsiveVars = () => {
+	const context = React.useContext(ResponsiveContext);
+	if (!context) {
+		throw new Error('useResponsiveVars must be used within a ResponsiveSizeProvider');
+	}
+
+	return context.vars;
+};
+
+/**
+ * Root View to load all vars sizes in the css file
+ */
+const ResponsiveRootView: React.FC<{ children: React.ReactNode } & React.ComponentProps<typeof View>> = ({
+	children,
+	...props
+}) => {
+	// Raw tokens: sizeToCssVars applies the TV scale itself, so scaling here would double it.
+	const style = useResponsiveVars();
+	return (
+		<View
+			//...
+			{...props}
+			className={clsx('flex-1 responsive-vars', props?.className)}
+			style={[props?.style, style]}
+		>
+			{children}
+		</View>
+	);
+};
+
+const ResponsiveRootThemedView: React.FC<{ children: React.ReactNode } & ThemedViewProps> = ({
+	children,
+	...props
+}) => {
+	// Raw tokens: sizeToCssVars applies the TV scale itself, so scaling here would double it.
+	const style = useResponsiveVars();
+	return (
+		<ThemedView
+			//...
+			{...props}
+			className={clsx('flex-1 responsive-vars', props?.className)}
+			style={[props?.style, style]}
+		>
+			{children}
+		</ThemedView>
+	);
+};
+
+export { ResponsiveSizeProvider, ResponsiveRootView, ResponsiveRootThemedView, useResponsiveSize, useResponsiveVars };

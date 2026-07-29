@@ -1,8 +1,7 @@
 // External imports
 import { useFocusEffect } from 'expo-router';
 import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useWindowDimensions, View, type ViewStyle } from 'react-native';
-import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { type ViewStyle } from 'react-native';
 
 // Internal imports
 import { Colors } from '../constants';
@@ -14,10 +13,8 @@ import logger from '../utils/logger';
 import { useEpisodes } from './useEpisodes';
 
 // Components
+import AmbientGradient from '../components/elements/AmbientGradient';
 import { PreviewSectionRef, YTPreviewSection } from '../components/sections/Preview';
-
-
-// Components
 
 type MediaDetailsResult<T extends MediaType> = T extends 'movies' ? MovieDetails : TvDetails;
 
@@ -55,7 +52,6 @@ export function useMedia(
 	const [isInitialized, setInitialized] = useState(false);
 	const [gradientColors, setGradientColors] = useState<string[]>([]);
 	const episodesController = useEpisodes({ seriesId: id, enabled: type === 'series' });
-	const dimension = useWindowDimensions();
 
 	// Keep a stable reference to the latest season-change handler without forcing focus effects to re-run.
 	useEffect(() => {
@@ -206,22 +202,10 @@ export function useMedia(
 	}, [id, mediaDetails, routeName, type, strechPreviewHeight]);
 
 	const gradientAmbient = useMemo(() => {
-		return (
-			<View className="app-media-preview-ambient">
-				<Svg height={dimension.height} width={dimension.width}>
-					<Defs>
-						<RadialGradient id="float_ambient1" cx="0.5" cy="0.5" rx="0.5" ry="0.5" gradientUnits="objectBoundingBox">
-							<Stop offset="0%" stopColor={gradientColors[2]} stopOpacity="0.25" />
-							<Stop offset="40%" stopColor={gradientColors[2]} stopOpacity="0.2" />
-							<Stop offset="75%" stopColor={gradientColors[1]} stopOpacity="0.1" />
-							<Stop offset="100%" stopColor={'black'} stopOpacity="0" />
-						</RadialGradient>
-					</Defs>
-					<Rect x="0%" y="0%" height={dimension.height} width={dimension.width} fill="url(#float_ambient1)" />
-				</Svg>
-			</View>
-		);
-	}, [dimension, gradientColors]);
+		// radiusScale is a fraction (0–1] of the shorter screen side — smaller = tighter,
+		// more obviously circular glow. NOT a pixel size.
+		return <AmbientGradient gradientColors={gradientColors} />;
+	}, [gradientColors]);
 
 	// Keep common values together so the final branch only adds type-specific fields.
 	const baseResult = {

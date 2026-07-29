@@ -87,60 +87,59 @@ const AppDownload = () => {
 					<Text className="app-download-title font-mt_extrabold">{t('downloadTitle')}</Text>
 					<Text className="app-download-txt font-mt_regular">{t('downloadDescription')}</Text>
 
-					{Platform.OS === 'web' && (
-						<>
-							<Button
-								// Props
-								icon="android"
-								text={'Android'}
-								className="app-download-button"
-								textClassName="span3"
-								// Styling
-								borderRadius={99999}
-								iconSize={sizes.span2}
-								textColor={Colors.white}
-								focusedTextColor={Colors.white}
-								backgroundColor={Colors.zinc[800]}
-								selectedBackgroundColor={Colors.zinc[700]}
-								pressedBackgroundColor={Colors.zinc[600]}
-								onPress={() => Linking.openURL(config.ANDROID_DOWNLOAD_URL)}
-							/>
+					<Button
+						// Props
+						icon="android"
+						text={'Android'}
+						className="app-download-button"
+						textClassName="span3"
+						// Styling
+						borderRadius={99999}
+						iconSize={sizes.span2}
+						textColor={Colors.white}
+						focusedTextColor={Colors.white}
+						backgroundColor={Colors.zinc[800]}
+						selectedBackgroundColor={Colors.zinc[700]}
+						pressedBackgroundColor={Colors.zinc[600]}
+						onPress={() => Linking.openURL(config.ANDROID_DOWNLOAD_URL)}
+						focusable={Platform.OS == 'web'}
+					/>
 
-							<Button
-								// Props
-								icon="tv"
-								text={'Android TV'}
-								className="app-download-button"
-								textClassName="span3"
-								// Styling
-								borderRadius={99999}
-								iconSize={sizes.span2}
-								textColor={Colors.white}
-								focusedTextColor={Colors.white}
-								backgroundColor={Colors.zinc[800]}
-								selectedBackgroundColor={Colors.zinc[700]}
-								pressedBackgroundColor={Colors.zinc[600]}
-								onPress={() => Linking.openURL(config.ANDROID_DOWNLOAD_URL)}
-							/>
+					<Button
+						// Props
+						icon="tv"
+						text={'Android TV'}
+						className="app-download-button"
+						textClassName="span3"
+						// Styling
+						borderRadius={99999}
+						iconSize={sizes.span2}
+						textColor={Colors.white}
+						focusedTextColor={Colors.white}
+						backgroundColor={Colors.zinc[800]}
+						selectedBackgroundColor={Colors.zinc[700]}
+						pressedBackgroundColor={Colors.zinc[600]}
+						onPress={() => Linking.openURL(config.ANDROID_DOWNLOAD_URL)}
+						focusable={Platform.OS == 'web'}
+					/>
 
-							<Button
-								// Props
-								icon="windows"
-								text={'Windows'}
-								className="app-download-button"
-								textClassName="span3"
-								// Styling
-								borderRadius={99999}
-								iconSize={sizes.span2}
-								textColor={Colors.white}
-								focusedTextColor={Colors.white}
-								backgroundColor={Colors.zinc[800]}
-								selectedBackgroundColor={Colors.zinc[700]}
-								pressedBackgroundColor={Colors.zinc[600]}
-								onPress={() => Linking.openURL(config.WINDOWS_DOWNLOAD_URL)}
-							/>
-						</>
-					)}
+					<Button
+						// Props
+						icon="windows"
+						text={'Windows'}
+						className="app-download-button"
+						textClassName="span3"
+						// Styling
+						borderRadius={99999}
+						iconSize={sizes.span2}
+						textColor={Colors.white}
+						focusedTextColor={Colors.white}
+						backgroundColor={Colors.zinc[800]}
+						selectedBackgroundColor={Colors.zinc[700]}
+						pressedBackgroundColor={Colors.zinc[600]}
+						onPress={() => Linking.openURL(config.WINDOWS_DOWNLOAD_URL)}
+						focusable={Platform.OS == 'web'}
+					/>
 				</View>
 			</View>
 		</View>

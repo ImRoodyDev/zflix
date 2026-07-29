@@ -35,8 +35,9 @@ export default function ErrorScreen() {
 			<Page
 				backgroundColor={themeColors.whiteBackground}
 				statusBarStyle={'dark'}
-				className="app-error-page responsive-vars"
+				className="app-error-page"
 				contentContainerClassName="app-error-page-ctn"
+				useResponsiveVars
 			>
 				<View className="app-error-img-ctn">
 					<Image
@@ -60,8 +61,8 @@ export default function ErrorScreen() {
 						text={t('retry')}
 						textColor={Colors.white}
 						backgroundColor={Colors.primary[700]}
-						selectedBackgroundColor={Colors.primary[800]}
-						pressedBackgroundColor={Colors.primary[900]}
+						selectedBackgroundColor={Colors.primary[900]}
+						pressedBackgroundColor={Colors.primary[950]}
 						className="app-error-btn"
 					/>
 					<Button
@@ -69,8 +70,8 @@ export default function ErrorScreen() {
 						text={t('goHome')}
 						textColor={Colors.black}
 						backgroundColor={Colors.gray[200]}
-						selectedBackgroundColor={Colors.gray[300]}
-						pressedBackgroundColor={Colors.gray[400]}
+						selectedBackgroundColor={Colors.gray[400]}
+						pressedBackgroundColor={Colors.gray[500]}
 						className="app-error-btn"
 					/>
 				</View>

@@ -1,5 +1,4 @@
 // External imports
-import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 
 // Internal imports
@@ -17,7 +16,25 @@ import {
 	type UpdatePayPalSubscriptionRequest,
 } from '../types/ServerOutputs';
 import { fetchResponse } from '../utils/fetcher';
+import logger from '@/utils/logger';
 
+/** Build the payment redirect URLs for the current platform.
+ * Payment providers (PayPal/Stripe) only accept http(s) return/cancel URLs, so
+ * custom app schemes from Linking.createURL can't be used. All returns land on
+ * the web frontend's /redirect page, which forwards to the target page — and,
+ * when `platform=native`, first tries to reopen the native app via deep link.
+ * On web the origin comes from window.location at runtime (accurate even
+ * behind proxies); on native there is no http(s) origin, so the URIs are
+ * omitted and the server falls back to its configured web frontend. */
+function buildRedirectURIs(redirectPath: string, cancelPath: string): CreatePayPalSubscriptionRequest {
+	const origin = Platform.OS === 'web' ? window.location?.origin : undefined;
+	if (!origin) return {};
+
+	return {
+		redirectURI: `${origin}/redirect?page=${encodeURIComponent(redirectPath)}&platform=web`,
+		cancelURI: `${origin}/redirect?page=${encodeURIComponent(cancelPath)}&platform=web`,
+	};
+}
 
 /** Fetches subscription plans.
  * First checks if plans are cached in `window.application.plans`. If found, returns them.
@@ -50,21 +67,10 @@ export async function getBillingHistory() {
 
 /** Create subscription (Recurring) */
 export async function createSubscription(planId: string, source: SubscriptionSource) {
-	// Build the redirect URLs
-	let redirectURI: string;
-	let cancelURI: string;
+	// Build the redirect URLs (omitted on native — the server provides fallbacks)
+	const body: CreatePayPalSubscriptionRequest = buildRedirectURIs('/process-plan', `/plan-payment?planId=${planId}`);
+	logger.debug('Creating subscription with redirect URIs:', body);
 
-	if (Platform.OS === 'web') {
-		redirectURI = `${window.location.origin}/process-plan`;
-		cancelURI = `${window.location.origin}/plan-payment?planId=${planId}`;
-	} else {
-		// For native (iOS/Android), use the custom app scheme
-		const scheme = Linking.createURL('/');
-		redirectURI = `${scheme}/process-plan`;
-		cancelURI = `${scheme}/plan-payment?planId=${planId}`;
-	}
-
-	const body: CreatePayPalSubscriptionRequest = { redirectURI, cancelURI };
 	return fetchResponse<HttpSuccess<SubscriptionRedirectResponse>>(
 		`/v1/api/subscription/${source.toLowerCase()}/create/${planId}`,
 		{
@@ -76,21 +82,10 @@ export async function createSubscription(planId: string, source: SubscriptionSou
 
 /** Create subscription (One-time) */
 export async function createOneTimeSubscription(planId: string, source: SubscriptionSource) {
-	// Build the redirect URLs
-	let redirectURI: string;
-	let cancelURI: string;
+	// Build the redirect URLs (omitted on native — the server provides fallbacks)
+	const body: CreatePayPalSubscriptionRequest = buildRedirectURIs('/process-plan', `/plan-payment?planId=${planId}`);
+	logger.debug('Creating one-time subscription with redirect URIs:', body);
 
-	if (Platform.OS === 'web') {
-		redirectURI = `${window.location.origin}/process-plan`;
-		cancelURI = `${window.location.origin}/plan-payment?planId=${planId}`;
-	} else {
-		// For native (iOS/Android), use the custom app scheme
-		const scheme = Linking.createURL('/');
-		redirectURI = `${scheme}/process-plan`;
-		cancelURI = `${scheme}/plan-payment?planId=${planId}`;
-	}
-
-	const body: CreatePayPalSubscriptionRequest = { redirectURI, cancelURI };
 	return fetchResponse<HttpSuccess<SubscriptionRedirectResponse>>(
 		`/v1/api/subscription/${source.toLowerCase()}/one-time/create/${planId}`,
 		{
@@ -107,20 +102,13 @@ export async function captureSubscription() {
 
 /** Update the PayPal subscription plan */
 export async function updateSubscription(subscriptionId: string, newPlanId: string, source: SubscriptionSource) {
-	// Build the redirect URLs
-	let redirectURI: string;
-	let cancelURI: string;
+	// Build the redirect URLs (omitted on native — the server provides fallbacks)
+	const body: UpdatePayPalSubscriptionRequest = {
+		planId: newPlanId,
+		...buildRedirectURIs('/check-plan', '/manage-plan'),
+	};
+	logger.debug('Update subscription with redirect URIs:', body);
 
-	if (Platform.OS === 'web') {
-		cancelURI = `${window.location.origin}/manage-plan`;
-		redirectURI = `${window.location.origin}/check-plan`;
-	} else {
-		const scheme = Linking.createURL('/');
-		cancelURI = `${scheme}/manage-plan`;
-		redirectURI = `${scheme}/check-plan`;
-	}
-
-	const body: UpdatePayPalSubscriptionRequest = { planId: newPlanId, redirectURI, cancelURI };
 	return await fetchResponse<HttpSuccess<SubscriptionRedirectResponse>>(
 		`/v1/api/subscription/${source.toLowerCase()}/update/${subscriptionId}`,
 		{

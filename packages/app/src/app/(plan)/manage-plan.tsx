@@ -21,16 +21,13 @@ import Page from '../../components/main/Page';
 import ManageSubscription from '../../components/sections/ManageSubscription';
 import ManageSubscriptionPayment from '../../components/sections/ManageSubscriptionPayment';
 
-
-// Components
-
 function ManagePlan() {
 	const { initialized } = useRootContext();
-	const sizes = useResponsiveSize();
+	const { topPadding } = useResponsiveSize();
 	const insets = useSafeAreaInsets();
 	const safeStyle = {
 		paddingTop: insets.top,
-		paddingBottom: Math.max(insets.bottom, sizes.topPadding),
+		paddingBottom: Math.max(insets.bottom, topPadding),
 		paddingLeft: insets.left,
 		paddingRight: insets.right,
 	};

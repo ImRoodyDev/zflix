@@ -1,7 +1,6 @@
 // External imports
 import { amber, black, blue, gray, green, neutral, red, rose, stone, white, yellow, zinc } from 'tailwindcss/colors';
 
-
 const defaultColors = {
 	black,
 	white,
@@ -32,9 +31,9 @@ const defaultColors = {
 		600: '#00ACF7',
 		700: '#0099DE',
 		800: '#0088C5',
-		900: '#0074C2',
-		950: '#005A99',
-		1000: '#005A8F',
+		900: '#005A99',
+		950: '#004A80',
+		1000: '#003A66',
 		DEFAULT: '#00aeef',
 	},
 	whiteTransparent: {
@@ -66,8 +65,8 @@ export const ThemeColors = {
 
 		// Buttons
 		whiteButton: defaultColors.white,
-		sWhiteButton: defaultColors.zinc[200],
-		pWhiteButton: defaultColors.zinc[300],
+		sWhiteButton: defaultColors.zinc[300],
+		pWhiteButton: defaultColors.zinc[400],
 
 		grayButton: defaultColors.zinc[200],
 		sGrayButton: defaultColors.zinc[300],

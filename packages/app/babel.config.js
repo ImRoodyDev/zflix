@@ -6,5 +6,10 @@ module.exports = function (api) {
 			'@babel/plugin-proposal-export-namespace-from',
 			'react-native-reanimated/plugin', // Keep this for Reanimated
 		],
+		env: {
+			production: {
+				plugins: ['transform-remove-console'],
+			},
+		},
 	};
 };

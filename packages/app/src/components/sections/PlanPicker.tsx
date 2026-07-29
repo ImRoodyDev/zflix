@@ -1,6 +1,6 @@
 // External imports
 import { useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 import { ButtonsSlider } from 'react-native-cross-elements';
@@ -12,7 +12,6 @@ import { useResponsiveSize } from '../../contexts/ResponsiveContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { StateType, useComponentStateReducer } from '../../hooks/useComponentState';
 import { PlanOutputInformation } from '../../types/ServerOutputs';
-import { lightFeedback } from '../../utils/haptrics';
 import { delay } from '../../utils/standard';
 
 // Components
@@ -75,21 +74,26 @@ function PlanPickerSection(props: AppPickerProps) {
 	const [selectedPlan, setSelectedPlan] = useState(selectedPlanIndex === undefined ? -1 : selectedPlanIndex);
 	const [currentTab, setTab] = useState(params.code === 'true' ? 1 : 0);
 
+	// Keep the latest state type in a ref so onSliderButtonClicked can stay identity-stable.
+	// ButtonsSlider re-invokes onSelect whenever the callback identity changes, so a new
+	// function per state change would reset loading/error states back to idle.
+	const stateTypeRef = useRef(state.type);
+	stateTypeRef.current = state.type;
+
 	// Handle slider button clicked
 	const onSliderButtonClicked = useCallback(
 		(index: number) => {
-			if (state.type != 'idle') dispatch({ type: 'idle' });
+			if (stateTypeRef.current != 'idle') dispatch({ type: 'idle' });
 			setTab(index);
 		},
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[state.type],
+		[dispatch],
 	);
 
 	// Handle submit
 	const onSubmit = useCallback(async () => {
 		try {
 			dispatch({ type: 'loading', message: loadingText });
-			lightFeedback();
+
 			// If the current tab is plans, submit the selected plan
 			if (currentTab === 0) {
 				await onSubmitPlan?.(window.application.plans[selectedPlan]);
@@ -99,17 +103,18 @@ function PlanPickerSection(props: AppPickerProps) {
 				await onSubmitCode?.(code);
 			}
 
-			await delay(1500);
+			await delay(2500);
 			dispatch({ type: 'succeed', message: succeedText });
 		} catch (e: any) {
-			// If the current tab is plans, submit the selected plan
-			if (currentTab === 0) {
-				dispatch({ type: 'error', message: e.message || t('anErrorOccurred') });
-			}
-			// If the current tab is code, submit the code
-			else {
-				dispatch({ type: 'error', message: e.message || t('activationFailed') });
-			}
+			// Keep the loading message on screen long enough to be readable before showing the error
+			await delay(1500);
+
+			const fallbackMessage = currentTab === 0 ? t('anErrorOccurred') : t('activationFailed');
+			dispatch({ type: 'error', message: e?.message || fallbackMessage });
+
+			// Keep the error visible long enough to be read, then return to the picker for a retry
+			await delay(1500);
+			dispatch({ type: 'idle' });
 		}
 	}, [dispatch, loadingText, currentTab, succeedText, onSubmitPlan, selectedPlan, onSubmitCode, code, t]);
 
@@ -123,6 +128,7 @@ function PlanPickerSection(props: AppPickerProps) {
 					position={index}
 					checked={selectedPlan === index}
 					onClicked={(i: number) => selectedPlan != i && setSelectedPlan(i)}
+					blur={false}
 				/>
 			);
 		});
@@ -151,28 +157,27 @@ function PlanPickerSection(props: AppPickerProps) {
 					onPress={onSubmit}
 					className="plan-select-btn"
 					icon="success"
-					iconSize={sizes.span1b}
+					iconSize={sizes.span2}
 					// Style props
 					textColor="white"
 					focusedTextColor="white"
-					textClassName="s!font-mt_medium span3"
+					textClassName="!font-mt_medium span2"
 					borderRadius={99999}
 					backgroundColor={Colors.primary.DEFAULT}
-					selectedBackgroundColor={Colors.primary[800]}
-					pressedBackgroundColor={Colors.primary[900]}
+					selectedBackgroundColor={Colors.primary[900]}
+					pressedBackgroundColor={Colors.primary[950]}
 					showIndicator={true}
 				/>
 			</>
 		);
-	}, [onSubmit, renderedPlans, selectedPlan, sizes.span1b, submitText, t]);
+	}, [onSubmit, renderedPlans, selectedPlan, sizes.span2, submitText, t]);
 	// Handle code tab
 	const codeTab = useMemo(() => {
 		return (
 			<View className="activation-code-ctn">
 				<LabeledInput
-					className="app-select-plan-input-ctn"
+					className="app-select-plan-input"
 					inputConfig={{
-						className: 'app-select-plan-input',
 						placeholderClassName: 'app-select-plan-input-text',
 						editable: true,
 						focusable: false,
@@ -184,7 +189,9 @@ function PlanPickerSection(props: AppPickerProps) {
 						onChange: (text) => setCode(text),
 					}}
 					icon="key"
-					iconSize={sizes.h4}
+					iconSize={sizes.span1}
+					labelFontSize={sizes.span4}
+					filledLabelFontSize={sizes.span4}
 					iconColor={themeColors.lbi_text}
 					textColor={themeColors.black}
 					backgroundColor={themeColors.lbi_zinc_100}
@@ -198,15 +205,15 @@ function PlanPickerSection(props: AppPickerProps) {
 					onPress={onSubmit}
 					className="plan-select-btn"
 					icon="success"
-					iconSize={sizes.span1b}
+					iconSize={sizes.span2}
 					// Style props
 					textColor="white"
 					focusedTextColor="white"
-					textClassName="!font-mt_medium span3"
+					textClassName="!font-mt_medium span2"
 					borderRadius={99999}
 					backgroundColor={Colors.primary.DEFAULT}
-					selectedBackgroundColor={Colors.primary[800]}
-					pressedBackgroundColor={Colors.primary[900]}
+					selectedBackgroundColor={Colors.primary[900]}
+					pressedBackgroundColor={Colors.primary[950]}
 					showIndicator={true}
 				/>
 
@@ -215,7 +222,7 @@ function PlanPickerSection(props: AppPickerProps) {
 				</View>
 			</View>
 		);
-	}, [code.length, onSubmit, sizes.h4, sizes.span1b, themeColors, t]);
+	}, [code.length, onSubmit, sizes.span4, sizes.span1, sizes.span2, themeColors, t]);
 
 	return (
 		<Page
@@ -248,11 +255,13 @@ function PlanPickerSection(props: AppPickerProps) {
 					sliderItemTextStyle={({ focused, isSelected }) => ({
 						color: focused || isSelected ? Colors.primary.DEFAULT : themeColors.black,
 					})}
+					sliderContainerStyle={{ padding: sizes.outlineWidth + 1 }}
 				/>
 				{(['idle', 'succeed'] satisfies StateType[] as StateType[]).includes(state.type) &&
 					currentTab == 0 &&
 					pickerTab}
 				{(['idle', 'succeed'] satisfies StateType[] as StateType[]).includes(state.type) && currentTab == 1 && codeTab}
+
 				{!(['idle', 'succeed'] satisfies StateType[] as StateType[]).includes(state.type) && (
 					<ComponentStatus state={state.type} messages={state.message} flexBasic={'90%'} />
 				)}

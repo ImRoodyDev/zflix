@@ -1,5 +1,4 @@
 // External imports
-import { Link } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 
@@ -8,10 +7,10 @@ import config from '../../config/application';
 import { useTheme } from '../../contexts/ThemeContext';
 
 // Components
+import Link from '../../components/interactables/Link';
 import ComponentHeader from '../../components/main/ComponentHeader';
 import Page from '../../components/main/Page';
 import ThemedText from '../../components/theme/ThemedText';
-
 
 export default function Contact() {
 	const { t } = useTranslation();
@@ -45,9 +44,9 @@ export default function Contact() {
 				</ThemedText>
 
 				<View className="app-info-contact">
-					<Text className="app-info-terms-title !mt-0 !mb-0">Email:</Text>
-					<Link href={`mailto:${appEmail}`} className="app-info-terms-strong">
-						{appEmail}
+					<Text className="app-info-terms-title !mt-0 !mb-0 !font-mt_semibold !span2">Email:</Text>
+					<Link href={`mailto:${appEmail}`}>
+						<Text className="app-info-terms-strong">{appEmail}</Text>
 					</Link>
 				</View>
 

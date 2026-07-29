@@ -26,7 +26,6 @@ import Page from '../../components/main/Page';
 import ThemedText from '../../components/theme/ThemedText';
 import ThemedView from '../../components/theme/ThemedView';
 
-
 // Components
 
 function AccountInfo() {
@@ -202,7 +201,7 @@ function AccountInfo() {
 			)}
 
 			<View className="app-profiles-manage-btns">
-				{state.type == 'succeed' && (
+				{state.type == 'idle' && (
 					<Button
 						onPress={onSubmit}
 						text={t('updateAccount')}
@@ -213,8 +212,8 @@ function AccountInfo() {
 						textColor="white"
 						focusedTextColor="white"
 						backgroundColor={Colors.primary.DEFAULT}
-						selectedBackgroundColor={Colors.primary[800]}
-						pressedBackgroundColor={Colors.primary[900]}
+						selectedBackgroundColor={Colors.primary[900]}
+						pressedBackgroundColor={Colors.primary[950]}
 					/>
 				)}
 

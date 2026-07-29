@@ -1,6 +1,4 @@
 // External imports
-import { BlurView } from 'expo-blur';
-import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +7,7 @@ import {
 	NativeScrollEvent,
 	NativeSyntheticEvent,
 	Platform,
+	Image,
 	Text,
 	useWindowDimensions,
 	View,
@@ -19,13 +18,14 @@ import { InView, IOScrollView } from '@imroodydev/rn-intersection-observer';
 
 // Internal imports
 import { Colors, Images } from '../../../constants';
-import PageContext from '../../../components/main/PageShell';
+import PageShell from '../../../components/main/PageShell';
 import { useResponsiveSize } from '../../../contexts/ResponsiveContext';
 import { useMedia } from '../../../hooks/useMedia';
 import { TvEpisode } from '../../../types/Medias';
 import logger from '../../../utils/logger';
 
 // Components
+import BlurView from '../../../components/theme/BlurView';
 import Button from '../../../components/interactables/Button';
 import AppEpisodes from '../../../components/sections/Episodes';
 
@@ -88,7 +88,11 @@ function Serie() {
 			<View
 				className={'app-episodes-hd'}
 				onLayout={(event) => (stickyLayoutRef.current = event.nativeEvent.layout)}
-				style={stickyActivated && { paddingTop: sizes.sidePadding + sizes.h1 / 4 + safe.top }}
+				style={
+					Platform.OS === 'web' && stickyActivated
+						? { paddingTop: sizes.sidePadding + sizes.h1 / 4 + safe.top }
+						: undefined
+				}
 			>
 				{stickyActivated && (
 					<Animated.View
@@ -99,9 +103,10 @@ function Serie() {
 							bottom: 0,
 							width: '100%',
 							minHeight: stickyLayoutRef.current.height + safe.top + sizes.sidePadding * 4,
+							backgroundColor: Colors.zinc[950],
 						}}
 					>
-						<BlurView className={'w-full h-full flex-1'} intensity={30} tint={'systemChromeMaterialDark'} />
+						<BlurView className={'w-full h-full flex-1'} intensity={80} tint={'dark'} />
 					</Animated.View>
 				)}
 				<View className={'flex flex-col'}>
@@ -118,7 +123,7 @@ function Serie() {
 	}, [id, episodes, onEpisodePress]);
 
 	return (
-		<PageContext
+		<PageShell
 			optimized
 			statusBarStyle={'light'}
 			backgroundColor={'black'}
@@ -135,6 +140,7 @@ function Serie() {
 				stickyHeaderIndices={Platform.OS !== 'web' ? [1, 3] : undefined}
 				contentContainerStyle={{ paddingTop: safe.top, paddingBottom: safe.bottom }}
 				onScroll={onScroll}
+				fadingEdgeLength={sizes.avatarSize + sizes.topPadding}
 			>
 				{gradientAmbient}
 				{/** Header with logo and close button*/}
@@ -164,8 +170,8 @@ function Serie() {
 							focusedTextColor="black"
 							pressedScale={0.8}
 							backgroundColor={'transparent'}
-							selectedBackgroundColor={Colors.zinc[100]}
-							pressedBackgroundColor={Colors.zinc[200]}
+							selectedBackgroundColor={Colors.zinc[300]}
+							pressedBackgroundColor={Colors.zinc[400]}
 							useBlur={true}
 							blurStyle={{ intensity: 60, tint: 'regular' }}
 						/>
@@ -174,7 +180,7 @@ function Serie() {
 							<Image
 								className="component-header-hd-logo-img"
 								source={Images.appLogo}
-								contentFit="contain"
+								resizeMode="contain"
 								style={{ width: '100%', height: '100%' }}
 							/>
 						</View>
@@ -184,7 +190,7 @@ function Serie() {
 				{episodesStickyHeader}
 				{episodesList}
 			</IOScrollView>
-		</PageContext>
+		</PageShell>
 	);
 }
 

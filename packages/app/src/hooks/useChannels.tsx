@@ -13,6 +13,7 @@ import {
 	channelSearch,
 } from '../controllers/channels';
 import type { IPTVCategory, IPTVCountry } from '../types/Channels';
+import { useCarouselWindow } from './useCarouselWindow';
 import { usePersistancePage } from './usePersistancePage';
 
 // Components
@@ -45,7 +46,7 @@ export function useChannels(props: Props) {
 	const [favoriteChannelsCount, setFavoriteChannelsCount] = useState<number>(0);
 
 	const {
-		handleScroll,
+		handleScroll: persistScrollHandler,
 		data: pageData,
 		updateData,
 		hydrated,
@@ -97,6 +98,14 @@ export function useChannels(props: Props) {
 		[updateData],
 	);
 
+	// Window the filter carousels so switching to a large list (countries can be
+	// 150+) mounts a small batch first and grows as the user scrolls.
+	const totalFilters =
+		pageData?.browseMode === 'countries' ? (pageData?.countries?.length ?? 0) : (pageData?.categories?.length ?? 0);
+	const { visibleCount, handleScroll } = useCarouselWindow(totalFilters, persistScrollHandler, {
+		resetKey: pageData?.browseMode,
+	});
+
 	const favoriteCarousel = useMemo(() => {
 		return (
 			<Carousel
@@ -125,15 +134,15 @@ export function useChannels(props: Props) {
 				}}
 			/>
 		);
-	}, [recentlyWatchedCount, t]);
+	}, [favoriteChannelsCount, recentlyWatchedCount, t]);
 
 	const filterCarousels = useMemo(() => {
 		if (pageData?.browseMode === 'countries') {
-			return (pageData?.countries ?? []).map((country) => (
+			return (pageData?.countries ?? []).slice(0, visibleCount).map((country, index) => (
 				<Carousel
 					type="channel"
 					key={`channels:country:${country.code}`}
-					title={`${country.flag ? `${country.flag} ` : ''}${country.name}`}
+					title={country.name}
 					onLoadMore={async (page, signal) => {
 						const results = await channelSearch('', { page, country: country.code, signal });
 						return results;
@@ -142,7 +151,7 @@ export function useChannels(props: Props) {
 			));
 		}
 
-		return (pageData?.categories ?? []).map((category) => (
+		return (pageData?.categories ?? []).slice(0, visibleCount).map((category, index) => (
 			<Carousel
 				type="channel"
 				key={`channels:category:${category.id}`}
@@ -153,7 +162,14 @@ export function useChannels(props: Props) {
 				}}
 			/>
 		));
-	}, [pageData?.browseMode, pageData?.categories, pageData?.countries]);
+	}, [
+		favoriteChannelsCount,
+		pageData?.browseMode,
+		pageData?.categories,
+		pageData?.countries,
+		recentlyWatchedCount,
+		visibleCount,
+	]);
 
 	return {
 		handleScroll,

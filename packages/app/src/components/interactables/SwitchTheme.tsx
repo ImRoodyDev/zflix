@@ -15,27 +15,37 @@ const SchemeMapper = ['light', 'dark', 'system'] as const;
 const IconMapper: IconType[] = ['sun', 'moon', 'devices'];
 const ColorMapper = [Colors.yellow[400], Colors.blue[600], Colors.green[600]];
 
-function SwitchTheme({ className, isDisabled }: { className?: string; isDisabled?: boolean }) {
+function SwitchTheme({
+	className,
+	focusable,
+	isDisabled,
+}: {
+	className?: string;
+	focusable?: boolean;
+	isDisabled?: boolean;
+}) {
 	// Hook to get responsive sizes
-	const sizes = useResponsiveSize();
+	const { span2 } = useResponsiveSize();
 	const { themeColors, themeScheme, schemeRule, switchColorScheme } = useTheme();
-	let index = (SchemeMapper.indexOf(schemeRule) + 1) % SchemeMapper.length;
+	const index = (SchemeMapper.indexOf(schemeRule) + 1) % SchemeMapper.length;
 
+	// `index` must stay in the deps: switchColorScheme is stable, so omitting it froze
+	// this callback on the first render's index and every press re-applied 'light'.
 	const switcher = useCallback(() => {
 		switchColorScheme(SchemeMapper[index]);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [switchColorScheme]);
+	}, [switchColorScheme, index]);
 
 	if (isDisabled) return null;
 	return (
 		<Button
+			focusable={focusable}
 			//Navigate
 			onPress={switcher}
 			// Props
 			className={clsx('theme-switch-btn', className)}
 			icon={IconMapper[index]}
 			// Styling
-			iconSize={sizes.span2}
+			iconSize={span2}
 			iconVariant="Bold"
 			textColor={ColorMapper[index]}
 			focusedTextColor={ColorMapper[index]}

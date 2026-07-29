@@ -1,10 +1,11 @@
 // External imports
-import { Href, Link } from 'expo-router';
+import { Href } from 'expo-router';
 import React, { useCallback, useRef, useState, useTransition } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, Keyboard, KeyboardAvoidingView, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Keyboard, Text, type TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ToastManager, { Toast } from 'toastify-react-native';
+import { KeyboardStickyView } from 'react-native-keyboard-controller';
 
 // Internal imports
 import config from '../../config/application';
@@ -16,13 +17,13 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { sendLogin, sendReset } from '../../controllers/authentication';
 import { ModalWebIn, ModalWebOut } from '../../hooks/useAnimation';
 import { isHttpError } from '../../types/HttpError';
-import { errorFeedback, successFeedback } from '../../utils/haptrics';
 import { delay } from '../../utils/standard';
 
 // Components
 import Button from '../../components/interactables/Button';
 import CloseButton from '../../components/interactables/CloseButton';
 import LabeledInput from '../../components/interactables/LabeledInput';
+import Link from '../../components/interactables/Link';
 import SwitchTheme from '../../components/interactables/SwitchTheme';
 import Page from '../../components/main/Page';
 import ThemedText from '../../components/theme/ThemedText';
@@ -41,6 +42,7 @@ const Login = () => {
 	const [submitting, setSubmitting] = useState(false);
 	const [isTransitionPending, startTransition] = useTransition();
 	const isSubmitting = submitting || isTransitionPending;
+	const passwordInputRef = useRef<TextInput>(null);
 
 	// Components functions
 	const exitModal = useCallback(async () => {
@@ -76,7 +78,6 @@ const Login = () => {
 
 			// Send login request to server
 			const response = await sendLogin(userForm);
-			successFeedback();
 			startTransition(() => {
 				setLoggedIn?.(true);
 			});
@@ -97,7 +98,6 @@ const Login = () => {
 				window.application.navigate.replace(redirect);
 			});
 		} catch (error: any) {
-			errorFeedback();
 			if (isHttpError(error)) Toast.error(error.message);
 			else Toast.error(t('anErrorOccurred'));
 		} finally {
@@ -133,7 +133,7 @@ const Login = () => {
 			webExiting={ModalWebOut}
 		>
 			<SafeAreaView edges={['top', 'bottom']} className="flex-1">
-				<KeyboardAvoidingView behavior="height" className={'app-user-form'}>
+				<KeyboardStickyView className={'app-user-form'}>
 					<View className="app-user-form-floating-header">
 						<CloseButton className="app-user-form-header-btn" onClose={exitModal} />
 						<SwitchTheme className="app-user-form-theme-btn" />
@@ -152,7 +152,7 @@ const Login = () => {
 						</View>
 
 						<ThemedText className="font-mt_regular component-header-step !mt-0 !mb-0">
-							{t('welcomeTo', { appName: config.APP_NAME })}
+							{t('welcomeTo', { appName: config.APP_NAME.toUpperCase() })}
 						</ThemedText>
 						<ThemedText className="font-mt_semibold component-header-title app-user-form-title">
 							{t('logIn')}
@@ -166,9 +166,12 @@ const Login = () => {
 								type: 'email',
 								maxLength: 75,
 								placeholder: t('email'),
-								defaultValue: 'test@zflix.com',
+								defaultValue: userForm.email,
 								required: true,
+								returnKeyType: 'next',
+								blurOnSubmit: false,
 								onChange: (text) => updateForm((prev) => ({ ...prev, email: text })),
+								onSubmitEditing: () => passwordInputRef.current?.focus(),
 							}}
 							icon="email"
 							iconSize={sizes.span2}
@@ -182,6 +185,7 @@ const Login = () => {
 						/>
 
 						<LabeledInput
+							ref={passwordInputRef}
 							className="app-user-form-input"
 							inputConfig={{
 								secure: true,
@@ -190,9 +194,14 @@ const Login = () => {
 								type: 'text',
 								maxLength: 75,
 								placeholder: t('password'),
-								defaultValue: 'Password123',
+								defaultValue: userForm.password,
 								required: true,
+								returnKeyType: 'done',
+								blurOnSubmit: true,
 								onChange: (text) => updateForm((prev) => ({ ...prev, password: text })),
+								onSubmitEditing: () => {
+									void onLogin();
+								},
 							}}
 							icon="lock"
 							iconSize={sizes.span2}
@@ -219,8 +228,8 @@ const Login = () => {
 							textClassName="!font-mt_medium span3"
 							borderRadius={99999}
 							backgroundColor={Colors.primary.DEFAULT}
-							selectedBackgroundColor={Colors.primary[800]}
-							pressedBackgroundColor={Colors.primary[900]}
+							selectedBackgroundColor={Colors.primary[900]}
+							pressedBackgroundColor={Colors.primary[950]}
 						/>
 
 						<TouchableOpacity className="app-user-form-txt-ctn" onPress={onResetPassword}>
@@ -241,7 +250,7 @@ const Login = () => {
 							</Text>
 						</Link>
 					</View>
-				</KeyboardAvoidingView>
+				</KeyboardStickyView>
 			</SafeAreaView>
 			<ToastManager {...ToastConfig} />
 		</Page>

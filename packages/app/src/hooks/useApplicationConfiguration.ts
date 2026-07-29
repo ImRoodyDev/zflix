@@ -1,15 +1,14 @@
 // External imports
 import { useTheme } from '@react-navigation/native';
 import { SplashScreen, usePathname, useRouter, useSegments } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform } from 'react-native';
 
 // Internal imports
 import config from '../config/application';
 import { useFonts } from '../constants';
 import { getLanguages } from '../constants/application';
-import AppController from '../controllers/app';
+import AppController, { type InitPhase } from '../controllers/app';
 import { sendLogout } from '../controllers/authentication';
 import { Languages } from '../controllers/localization';
 import { LocalStorageService } from '../services/LocalStorage';
@@ -39,11 +38,25 @@ export const useApplicationConfiguration = () => {
 	// Application initialization status
 	const [initialized, setInitialized] = useState<boolean>(false);
 
+	// Current initialization phase, surfaced to the splash screen. The first
+	// step is initializing the server, so default to that.
+	const [initPhase, setInitPhase] = useState<InitPhase>('server');
+
+	// Fatal initialization error (e.g. the server could not be reached). When
+	// set, it is rethrown during render so the RouteErrorBoundary is shown.
+	const [initError, setInitError] = useState<unknown>(null);
+
 	// Check if the application is logged in
 	const [loggedIn, setLoggedIn] = useState<boolean>(false);
 
 	// Application current profile key
 	const [profileIndex, setProfileIndex] = useState<number>(0);
+
+	// Bumped whenever the current profile's data changes in place (e.g. after an
+	// edit). The profile is a mutable class instance on window.application, so its
+	// reference never changes on update — consumers subscribe to this counter to
+	// know when to re-read the profile's fields.
+	const [profileVersion, setProfileVersion] = useState<number>(0);
 
 	// State to manage previous path
 	const [previousPathName, setPrevPath] = useState<string | null>(pathname);
@@ -54,7 +67,7 @@ export const useApplicationConfiguration = () => {
 		colors.background = 'transparent';
 
 		// Initialize Application
-		AppController({ navigate, pathname })
+		AppController({ navigate, pathname, onPhase: setInitPhase })
 			.then(() => {
 				if (fontError) {
 					logger.error('Error loading fonts:', fontError);
@@ -64,7 +77,7 @@ export const useApplicationConfiguration = () => {
 				setLoggedIn(window.application.auth && window.application.auth.loggedIn);
 
 				// Initialize the current profile language
-				i18n.changeLanguage(window.application.language).catch(null);
+				i18n.changeLanguage(window.application.language).catch(() => {});
 				if (!window.application.auth.user || !window.application.auth.user.profiles) return;
 				switchProfile(window.application.currentProfileIndex % window.application.auth.user.profiles.length);
 				logger.info('Application Initialized');
@@ -72,6 +85,9 @@ export const useApplicationConfiguration = () => {
 			.catch((error) => {
 				logger.error('Error Initializing Application');
 				logger.error(error as string);
+				// Surface the failure to render so the RouteErrorBoundary is shown
+				// instead of launching the app (e.g. the server is unreachable).
+				setInitError(error);
 			})
 			.finally(() => {
 				setInitialized(true);
@@ -131,10 +147,18 @@ export const useApplicationConfiguration = () => {
 			window.application.currentProfile = window.application.auth.user?.profiles[normalizedIndex];
 			LocalStorageService.setItem(config.$CURRENT_PROFILE_INDEX_KEY, normalizedIndex);
 			setProfileIndex(normalizedIndex);
+			setProfileVersion((v) => v + 1);
 			switchLanguage(window.application.currentProfile.languageCode as Languages);
 		},
 		[switchLanguage],
 	);
+
+	// Notify subscribers that the current profile's data changed in place (used
+	// after editing the active profile so the sidebar/avatar reflects the update).
+	const refreshProfile = useCallback(() => {
+		setProfileVersion((v) => v + 1);
+	}, []);
+
 	const logout = useCallback(async () => {
 		if (!window.application.auth.user || !loggedIn) return;
 		const result = await sendLogout();
@@ -146,12 +170,8 @@ export const useApplicationConfiguration = () => {
 		window.application.currentProfile = undefined;
 		window.application.currentProfileIndex = 0;
 
-		// If web clear all cookie
-		if (Platform.OS === 'web') {
-			document.cookie.split(';').forEach(function (c) {
-				document.cookie = c.replace(/^ +/, '').replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
-			});
-		}
+		// On web, session cookies (HttpOnly) can only be expired by the server's logout
+		// endpoint (Set-Cookie with Max-Age=0) — a document.cookie loop cannot touch them.
 
 		// Clear all local storage
 		LocalStorageService.removeItem(config.$AUTH_OBJECT_KEY);
@@ -161,18 +181,47 @@ export const useApplicationConfiguration = () => {
 		// Redirect is handled reactively by the auth guard effect.
 	}, [loggedIn]);
 
-	return {
-		t,
-		initialized,
-		loggedIn,
-		profileIndex,
+	// Memoized so consumers (RootContext) can safely use this object as a dependency
+	// without re-rendering the whole tree on every render of this hook.
+	const value = useMemo(
+		() => ({
+			t,
+			initialized,
+			initPhase,
+			loggedIn,
+			profileIndex,
+			profileVersion,
+			previousPathName,
+			pathname,
+			routeName: segments.slice(1).join('/') || '/',
+			setLoggedIn,
+			logout,
+			switchLanguage,
+			switchProfile,
+			refreshProfile,
+		}),
+		[
+			t,
+			initialized,
+			initPhase,
+			loggedIn,
+			profileIndex,
+			profileVersion,
+			previousPathName,
+			pathname,
+			segments,
+			logout,
+			switchLanguage,
+			switchProfile,
+			refreshProfile,
+		],
+	);
 
-		previousPathName,
-		pathname,
-		routeName: segments[segments.length - 1] || '/',
-		setLoggedIn,
-		logout,
-		switchLanguage,
-		switchProfile,
-	};
+	// Rethrow after all hooks have run so the rules of hooks aren't violated.
+	// Throwing during render lets expo-router's RouteErrorBoundary catch it.
+	if (initError) {
+		throw initError instanceof Error ? initError : new Error(String(initError));
+	}
+
+	return value;
 };

@@ -8,7 +8,6 @@ import { fetchResponse } from '../utils/fetcher';
 import Logger from '../utils/logger';
 import { initializeAuthentication } from './app';
 
-
 /** Send Login request to server */
 export async function sendLogin(body: LoginRequest): Promise<HttpSuccess<LoginResponseData>> {
 	const response = await fetchResponse<HttpSuccess<LoginResponseData>>('/v1/api/auth/login', {
@@ -59,10 +58,12 @@ export async function sendLogout(): Promise<boolean> {
 		await fetchResponse<HttpSuccess>('/v1/api/auth/logout', {
 			method: 'POST',
 		});
-		return true;
 	} catch {
 		Logger.debug('Failed to send logout to server');
-		return false;
+		Logger.debug('Clearing local authentication data');
+	} finally {
+		await LocalStorageService.removeItem(config.$AUTH_OBJECT_KEY);
+		return true;
 	}
 }
 

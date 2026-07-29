@@ -1,9 +1,8 @@
 // External imports
-import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import React, { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform, View } from 'react-native';
+import { Image, Platform, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IOScrollView } from '@imroodydev/rn-intersection-observer';
@@ -11,7 +10,7 @@ import { IOScrollView } from '@imroodydev/rn-intersection-observer';
 // Internal imports
 import { Colors, Images } from '../../../constants';
 import { useRootContext } from '../../../contexts/AppRootContext';
-import PageContext from '../../../components/main/PageShell';
+import PageShell from '../../../components/main/PageShell';
 import { useResponsiveSize } from '../../../contexts/ResponsiveContext';
 import { mediaItemListByCode } from '../../../controllers/media';
 import { useMedia } from '../../../hooks/useMedia';
@@ -56,13 +55,15 @@ function Movie() {
 	const preview = useMemo(() => {
 		return (
 			<View className={'app-media-preview'}>
-				<View className={'app-media-preview-ctn'}>{previewElement}</View>
+				<View className={'h-full w-full'} style={{ aspectRatio: 21 / 9 }}>
+					<View className={'app-media-preview-ctn'}>{previewElement}</View>
+				</View>
 			</View>
 		);
 	}, [previewElement]);
 
 	return (
-		<PageContext
+		<PageShell
 			optimized
 			statusBarStyle={'light'}
 			backgroundColor={'black'}
@@ -78,6 +79,7 @@ function Movie() {
 				showsVerticalScrollIndicator={Platform.OS === 'web'}
 				stickyHeaderIndices={[1]}
 				contentContainerStyle={{ paddingTop: safe.top, paddingBottom: safe.bottom }}
+				fadingEdgeLength={sizes.avatarSize * 3}
 			>
 				{gradientAmbient}
 				{/** Header with logo and close button*/}
@@ -97,8 +99,8 @@ function Movie() {
 							focusedTextColor="black"
 							pressedScale={0.8}
 							backgroundColor={'transparent'}
-							selectedBackgroundColor={Colors.zinc[100]}
-							pressedBackgroundColor={Colors.zinc[200]}
+							selectedBackgroundColor={Colors.zinc[300]}
+							pressedBackgroundColor={Colors.zinc[400]}
 							useBlur={true}
 							blurStyle={{ intensity: 60, tint: 'regular' }}
 						/>
@@ -107,7 +109,7 @@ function Movie() {
 							<Image
 								className="component-header-hd-logo-img"
 								source={Images.appLogo}
-								contentFit="contain"
+								resizeMode="contain"
 								style={{ width: '100%', height: '100%' }}
 							/>
 						</View>
@@ -116,7 +118,7 @@ function Movie() {
 				{preview}
 				{recommendedCarousel}
 			</IOScrollView>
-		</PageContext>
+		</PageShell>
 	);
 }
 

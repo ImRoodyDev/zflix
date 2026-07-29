@@ -1,154 +1,42 @@
 /*#region Variables */
-/* Desktop */
+/*
+ * Base size tokens — paddings, font sizes, ratios, carousel item counts,
+ * --carousel-scroll-padding-l, --outline-width, etc. — are injected per-breakpoint
+ * from JS via ResponsiveRootView using vars(sizeToCssVars(size, tvScale)) (see
+ * constants/sizes.ts + contexts/ResponsiveContext.tsx). Breakpoint switching now
+ * happens in getSizeType(), so there are no @media overrides here anymore.
+ *
+ * Only the *derived* calc() variables that build on those injected tokens live here.
+ */
 .responsive-vars {
-	--logo-size-w: 40px;
-	--avatar-size: 54px;
-	--side-padding: 42px;
-	--top-padding: 32px;
-
-	--prrmy-btn-h: 46px;
-	--snd-btn-h: 36px;
-
-	--h1-size: 48px;
-	--h2-size: 42px;
-	--h3-size: 36px;
-	--h4-size: 32px;
-	--h5-size: 28px;
-	--span1-size: 24px;
-	--span1b-size: 20px;
-	--span2-size: 18px;
-	--span3-size: 16px;
-	--span4-size: 14px;
-	--span5-size: 12px;
-	--span6-size: 8px;
-
 	--header-size-h: calc(var(--top-padding) + var(--top-padding) + var(--avatar-size));
-	--sm-logo-ratio: calc(44 / 51);
-	--wd-logo-ratio: calc(113 / 41);
-	--outline-width: 2px;
 	--preview-cut-margin: 0.7;
 	--previews-cut-size: calc(var(--carousel-scroll-h) * var(--preview-cut-margin));
 	--preview-header-size: calc(var(--h2-size) + var(--top-padding) + var(--top-padding));
 
-	/* Carousel Default sizes */
-	--carousel-header-pd: 12px;
-
-	/* Normal Media Carousel Size*/
-	--carousel-item: 9;
-	--carousel-ratio: calc(1 / 1.5);
+	/* Normal Media Carousel Size */
 	--carousel-width: calc(100vw / var(--carousel-item));
 	--carousel-height: calc(var(--carousel-width) * 1.5);
 	--carousel-margin-y: calc(var(--carousel-height) * 0.15);
 	--carousel-scroll-h: calc(var(--carousel-height) + (var(--carousel-header-pd) * 4) + var(--span1b-size));
 	--carousel-scroll-padding-l: calc(var(--side-padding) + var(--side-padding) + var(--logo-size-w));
 
-	/* Large Channel Carousel Size*/
-	--carousel-lg-item: 6;
-	--carousel-lg-ratio: calc(16 / 9);
+	/* Large Channel Carousel Size */
 	--carousel-lg-width: calc(100vw / var(--carousel-lg-item));
 	--carousel-lg-height: calc(var(--carousel-lg-width) * 0.5625);
 	--carousel-lg-margin-y: calc(var(--carousel-lg-height) * 0.15);
 	--carousel-lg-scroll-h: calc(var(--carousel-lg-height) + (var(--carousel-header-pd) * 4) + var(--span1b-size));
 
-	/* Wide Expanded Carousel Size*/
-	--wide-carousel-lg-item: 5;
+	/* Wide Expanded Carousel Size */
 	--wide-carousel-lg-height: calc((100vw / var(--wide-carousel-lg-item)) * 1.5);
-
-	--test: red;
 }
 
 /* Tablets Portrait  */
-@media only screen and (min-width: 768px) and (max-width: 1023px) and (min-height: 480px) {
-	.responsive-vars {
-		--logo-size-w: 40px;
-		--avatar-size: 54px;
-		--side-padding: 42px;
-		--top-padding: 32px;
-
-		--h1-size: 44px;
-		--h2-size: 38px;
-		--h3-size: 32px;
-		--h4-size: 28px;
-		--h5-size: 24px;
-		--span1-size: 22px;
-		--span1b-size: 20px;
-		--span2-size: 16px;
-		--span3-size: 14px;
-		--span4-size: 12px;
-		--span5-size: 10px;
-		--span6-size: 8px;
-		--outline-width: 1px;
-
-		--carousel-scroll-padding-l: var(--side-padding);
-		--carousel-item: 6;
-		--carousel-lg-item: 5;
-		--wide-carousel-lg-item: 4;
-
-		--test: purple;
-	}
-}
-
+/* @media only screen and (max-width: 899px) */
 /* Mobile Portrait */
-@media (max-width: 767px) and (min-height: 480px) {
-	.responsive-vars {
-		--logo-size-w: 32px;
-		--avatar-size: 44px;
-		--side-padding: 22px;
-		--top-padding: 20px;
-
-		--h1-size: 36px;
-		--h2-size: 30px;
-		--h3-size: 26px;
-		--h4-size: 24px;
-		--h5-size: 22px;
-		--span1-size: 20px;
-		--span1b-size: 18px;
-		--span2-size: 16px;
-		--span3-size: 14px;
-		--span4-size: 12px;
-		--span5-size: 10px;
-		--span6-size: 6px;
-		--outline-width: 2px;
-
-		--carousel-scroll-padding-l: var(--side-padding);
-		--carousel-item: 4;
-		--carousel-lg-item: 2;
-		--wide-carousel-lg-item: 2;
-
-		--test: green;
-	}
-}
-
+/* @media only screen and (max-width: 599px)  */
 /* Mobile Landscape */
-@media only screen and (max-width: 1023px) and (max-height: 480px) {
-	.responsive-vars {
-		--logo-size-w: 32px;
-		--avatar-size: 44px;
-		--side-padding: 22px;
-		--top-padding: 20px;
-
-		--h1-size: 36px;
-		--h2-size: 30px;
-		--h3-size: 26px;
-		--h4-size: 24px;
-		--h5-size: 22px;
-		--span1-size: 20px;
-		--span1b-size: 18px;
-		--span2-size: 16px;
-		--span3-size: 14px;
-		--span4-size: 12px;
-		--span5-size: 10px;
-		--span6-size: 6px;
-		--outline-width: 2px;
-
-		--carousel-scroll-padding-l: calc(var(--side-padding) + var(--side-padding) + var(--logo-size-w));
-		--carousel-item: 6;
-		--carousel-lg-item: 4;
-		--wide-carousel-lg-item: 3;
-
-		--test: blue;
-	}
-}
+/* @media only screen and (max-width: 1023px) and (max-height: 479px)  */
 
 /*#endregion*/
 
@@ -306,8 +194,8 @@ input[data-autocompleted] {
 
 .toast-notification-ptn {
 	width: 100%;
-	max-width: 20rem;
-	max-height: 80px;
+	max-width: calc(320px * var(--pixel-ratio));
+	max-height: calc(80px * var(--pixel-ratio));
 
 	display: flex;
 	flex-wrap: nowrap;
@@ -315,8 +203,11 @@ input[data-autocompleted] {
 	justify-content: flex-start;
 	align-items: center;
 
-	gap: 12px;
-	padding: 12px 18px;
+	gap: var(--span5-size);
+	padding-top: var(--span5-size);
+	padding-bottom: var(--span5-size);
+	padding-left: var(--span2-size);
+	padding-right: var(--span2-size);
 
 	border-radius: 9999px;
 	z-index: 100;
@@ -375,8 +266,11 @@ input[data-autocompleted] {
 	width: auto;
 	height: auto;
 
-	padding: 14px 22px;
-	gap: 12px !important;
+	padding-top: var(--span4-size);
+	padding-bottom: var(--span4-size);
+	padding-left: var(--span1b-size);
+	padding-right: var(--span1b-size);
+	gap: var(--span6-size) !important;
 }
 
 .language-item-btn {
@@ -387,7 +281,10 @@ input[data-autocompleted] {
 	justify-content: center;
 	align-items: center;
 
-	padding: 14px 18px;
+	padding-top: var(--span5-size);
+	padding-bottom: var(--span5-size);
+	padding-left: var(--span2-size);
+	padding-right: var(--span2-size);
 }
 
 .language-btn-txt {
@@ -399,8 +296,11 @@ input[data-autocompleted] {
 	width: auto;
 	height: auto;
 
-	padding: 12px 18px;
-	gap: 12px !important;
+	padding-top: var(--span5-size);
+	padding-bottom: var(--span5-size);
+	padding-left: var(--span2-size);
+	padding-right: var(--span2-size);
+	gap: var(--span5-size) !important;
 }
 
 .support-btn-txt {
@@ -414,11 +314,11 @@ input[data-autocompleted] {
 
 .i-element {
 	width: 100%;
-	height: 62px;
+	height: calc(62px * var(--pixel-ratio)) !important;
 
 	outline: none;
 	border: none;
-	border-radius: 8px;
+	border-radius: var(--span6-size);
 	background-color: #f5f5f5;
 }
 
@@ -439,9 +339,10 @@ input[data-autocompleted] {
 
 /*#region Button Slider*/
 .type-slider {
-	width: 28rem !important;
+	width: calc(28px * var(--span3-size)) !important;
 	max-width: 80vw !important;
 	flex: 0;
+	padding: 0 !important;
 }
 
 .app-web-container .type-slider {
@@ -450,7 +351,7 @@ input[data-autocompleted] {
 
 .slider-btn {
 	/*width: 10vw;*/
-	height: calc(var(--span4-size) + var(--span2-size) * 2);
+	height: calc(calc(var(--span4-size) + var(--span2-size) * 2) * var(--pixel-ratio));
 	/*max-width: 240px;*/
 	/*min-width: 180px;*/
 
@@ -460,8 +361,8 @@ input[data-autocompleted] {
 }
 
 .slider-text {
-	font-family: 'Montserrat-Medium', serif;
-	font-size: var(--span4-size);
+	font-family: 'Montserrat-Medium', serif !important;
+	font-size: var(--span4-size) !important;
 	text-align: center;
 	white-space: nowrap;
 }

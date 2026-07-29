@@ -20,6 +20,8 @@ export const fr: TranslationSchema = {
 	tryAgain: 'Reessayer',
 	loading: 'Chargement',
 	appInitializing: "Initialisation de l'application",
+	initializingServer: 'Initialisation des services',
+	authenticatingUser: "Authentification de l'utilisateur",
 	backHome: "Retour a l'accueil",
 	unknownEmail: 'Adresse e-mail inconnue',
 	unknownCategory: 'Categorie inconnue',
@@ -45,6 +47,9 @@ export const fr: TranslationSchema = {
 	reloadSources: 'Recharger les sources',
 	fetchingSources: 'Recuperation des sources video...',
 	fetchSourcesFailed: 'Echec de la recuperation des sources video',
+	serverInitializationTimeout: 'Délai de connexion dépassé',
+	serverInitializationTimeoutDesc:
+		'Impossible de joindre les services. Veuillez verifier votre connexion Internet et reessayer.',
 	currentPassword: 'Mot de passe actuel',
 	newPassword: 'Nouveau mot de passe',
 	currentCountry: 'Pays actuel',
@@ -122,6 +127,7 @@ export const fr: TranslationSchema = {
 	updatingSubscriptionDescription:
 		'Nous mettons actuellement a jour votre abonnement. Si le processus echoue, actualisez la page et reessayez.',
 	updateFailedSubscription: "Echec de la mise a jour de l'abonnement",
+	samePlanSelected: 'Veuillez choisir un forfait different pour continuer.',
 	code: "Code d'activation",
 	activationCode: "Saisissez votre code d'activation",
 	codeDescription:
@@ -156,6 +162,11 @@ export const fr: TranslationSchema = {
 	paymentFailed: 'Le traitement du paiement a echoue,',
 	processingWait: 'Traitement du paiement, veuillez patienter...',
 	waitRedirected: 'Veuillez patienter pendant la redirection...',
+	redirectingPage: 'Redirection',
+	redirectingPageDescription: 'Vous allez etre redirige vers la bonne page. Cela ne prendra qu\'un instant.',
+	redirectingWait: 'Redirection en cours, veuillez patienter...',
+	redirectFailed: 'La redirection a echoue, la destination est invalide.',
+	openingApp: "Ouverture de l'application...",
 	card: 'Carte de debit ou de credit',
 	setPayment: 'Configurez votre paiement',
 	paymentMethod: 'Moyens de paiement',

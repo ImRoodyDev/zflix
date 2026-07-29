@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 // Internal imports
 import { Colors } from '../../constants';
-import { useRootContext } from '../../contexts/AppRootContext';
+import { useAppUI } from '../../contexts/AppRootContext';
 
 // Components
 import TabIcon from '../../components/interactables/TabIcon';
@@ -14,7 +14,7 @@ import AppTabBar from '../../components/nav/AppTabBar';
 const TabsLayout = () => {
 	const { t } = useTranslation();
 	const segments = useSegments();
-	const { tabBarVisible } = useRootContext();
+	const { tabBarVisible } = useAppUI();
 	const hideTab = segments[segments.length - 1]?.includes('[id]') || segments[segments.length - 1]?.includes('bunny');
 
 	return (
@@ -26,6 +26,10 @@ const TabsLayout = () => {
 			screenOptions={{
 				// Animation configs
 				lazy: true,
+				// TV: skip the scene transition entirely. 'shift' keeps both the outgoing and
+				// incoming screens mounted and animates them together on every tab switch, which
+				// is the main source of tab-switch jank on Android TV. Snappy/instant is the
+				// preferred TV UX anyway; keep 'shift' on web/mobile.
 				animation: 'shift',
 				tabBarHideOnKeyboard: true,
 				freezeOnBlur: true,

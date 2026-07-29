@@ -1,9 +1,8 @@
 // External imports
 import clsx from 'clsx';
-import { BlurView } from 'expo-blur';
 import React, { memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Text, TextInput, View } from 'react-native';
+import { Text, TextInput, View, StyleSheet } from 'react-native';
 import { CustomButton } from 'react-native-cross-elements';
 import Animated, { FadeInUp, FadeOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +17,7 @@ import { IPTVCategory } from '../../types/Channels';
 import { MediaTypeWithChannels } from '../../types/Medias';
 
 // Components
+import BlurView from '../theme/BlurView';
 import Button from '../interactables/Button';
 import ChannelFiltersList from '../main/ChannelFiltersList';
 import GenresList from '../main/GenresList';
@@ -34,13 +34,20 @@ type Props = {
 	) => void | Promise<void>;
 };
 
+// Genres/categories are near-static — cache them at module level (keyed by language,
+// since genre names are localized) so re-mounting the search screen doesn't refire
+// three API calls every visit.
+const searchFiltersCache = new Map<
+	string,
+	{ genres: { movies: Genres; series: Genres }; categories: IPTVCategory[] }
+>();
+
 function SearchHeader(props: Props) {
 	const { t } = useTranslation();
 	const tabs = window.application.features || (['movies', 'series'] as const); // Define the tabs for search
 	const sizes = useResponsiveSize();
 	const insets = useSafeAreaInsets();
 	const colorAnimation = useColorAnimation('#FFFFFF00');
-	const searchInputFontSize = Math.max(sizes.span2, 16);
 	const selectedTabIndex = Math.max(tabs.indexOf(props.selectedType), 0);
 
 	// const [isFocused, setFocused] = useState(false);
@@ -54,13 +61,19 @@ function SearchHeader(props: Props) {
 
 	useEffect(() => {
 		const initialize = async () => {
-			const [moviesGenres, seriesGenres, channelCats] = await Promise.all([
-				mediaGenres('movies'),
-				mediaGenres('series'),
-				channelCategories(),
-			]);
-			setGenres({ movies: moviesGenres, series: seriesGenres });
-			setCategories(channelCats);
+			const lang = window.application.language || 'en';
+			let cached = searchFiltersCache.get(lang);
+			if (!cached) {
+				const [moviesGenres, seriesGenres, channelCats] = await Promise.all([
+					mediaGenres('movies'),
+					mediaGenres('series'),
+					channelCategories(),
+				]);
+				cached = { genres: { movies: moviesGenres, series: seriesGenres }, categories: channelCats };
+				searchFiltersCache.set(lang, cached);
+			}
+			setGenres(cached.genres);
+			setCategories(cached.categories);
 		};
 		initialize().then(null);
 	}, []);
@@ -86,8 +99,7 @@ function SearchHeader(props: Props) {
 		return tabs.map((tab, index) => (
 			<Button
 				key={index === currentTab ? `slc_tab-${index}` : `tab-${index}`}
-				// @ts-ignore
-				text={t(tab)}
+				text={t(tab as any)}
 				onPress={() => {
 					setCurrentTab(index);
 					props.onTypeChange?.(tab as MediaTypeWithChannels);
@@ -139,11 +151,16 @@ function SearchHeader(props: Props) {
 									props.onSearch(searchText, type, genreId, categoryId);
 								}}
 								placeholderTextColor={'black'}
-								style={{
-									paddingLeft: sizes.span1 + sizes.span4 * 2,
-									paddingRight: sizes.span4,
-									fontSize: searchInputFontSize,
-								}}
+								style={[
+									{
+										paddingLeft: sizes.span1 + sizes.span4 * 2,
+										paddingRight: sizes.span4,
+										paddingTop: 0,
+										paddingBottom: 0,
+										fontSize: Math.max(sizes.span2, 16),
+									},
+									StyleSheet.absoluteFill,
+								]}
 							/>
 
 							<View className={'search-header-input-icon'}>

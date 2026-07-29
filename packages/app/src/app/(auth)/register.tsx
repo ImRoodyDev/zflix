@@ -1,10 +1,10 @@
 // External imports
-import { Link } from 'expo-router';
-import React, { useCallback, useState, useTransition } from 'react';
+import React, { useCallback, useRef, useState, useTransition } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, Keyboard, KeyboardAvoidingView, Text, View } from 'react-native';
+import { Image, Keyboard, Text, type TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ToastManager, { Toast } from 'toastify-react-native';
+import { KeyboardStickyView } from 'react-native-keyboard-controller';
 
 // Internal imports
 import { Colors, Images } from '../../constants';
@@ -15,13 +15,13 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { sendRegister } from '../../controllers/authentication';
 import { ModalWebIn, ModalWebOut } from '../../hooks/useAnimation';
 import { isHttpError } from '../../types/HttpError';
-import { errorFeedback, successFeedback } from '../../utils/haptrics';
 import { delay } from '../../utils/standard';
 
 // Components
 import Button from '../../components/interactables/Button';
 import CloseButton from '../../components/interactables/CloseButton';
 import LabeledInput from '../../components/interactables/LabeledInput';
+import Link from '../../components/interactables/Link';
 import SwitchTheme from '../../components/interactables/SwitchTheme';
 import Page from '../../components/main/Page';
 import ThemedText from '../../components/theme/ThemedText';
@@ -39,6 +39,8 @@ const Register = () => {
 	const [submitting, setSubmitting] = useState(false);
 	const [isTransitionPending, startTransition] = useTransition();
 	const isSubmitting = submitting || isTransitionPending;
+	const emailInputRef = useRef<TextInput>(null);
+	const passwordInputRef = useRef<TextInput>(null);
 
 	// Components functions
 	const exitModal = useCallback(async () => {
@@ -74,7 +76,6 @@ const Register = () => {
 
 			// Send register request to server
 			await sendRegister(userForm);
-			successFeedback();
 			startTransition(() => {
 				setLoggedIn?.(true);
 			});
@@ -87,7 +88,6 @@ const Register = () => {
 				window.application.navigate.replace('/(plan)/plan-picker');
 			});
 		} catch (error: any) {
-			errorFeedback();
 			if (isHttpError(error)) Toast.error(error.message);
 			else Toast.error(t('anErrorOccurred'));
 		} finally {
@@ -105,7 +105,7 @@ const Register = () => {
 			webExiting={ModalWebOut}
 		>
 			<SafeAreaView edges={['top', 'bottom']} className="flex-1">
-				<KeyboardAvoidingView behavior="height" className={'app-user-form'}>
+				<KeyboardStickyView className={'app-user-form'}>
 					<View className="app-user-form-floating-header">
 						<CloseButton className="app-user-form-header-btn" onClose={exitModal} />
 						<SwitchTheme className="app-user-form-theme-btn" />
@@ -138,7 +138,10 @@ const Register = () => {
 								placeholder: t('accountHolderName'),
 								defaultValue: '',
 								required: true,
+								returnKeyType: 'next',
+								blurOnSubmit: false,
 								onChange: (text) => updateForm((prev) => ({ ...prev, fullName: text })),
+								onSubmitEditing: () => emailInputRef.current?.focus(),
 							}}
 							icon="user"
 							iconSize={sizes.span2}
@@ -152,16 +155,20 @@ const Register = () => {
 						/>
 
 						<LabeledInput
+							ref={emailInputRef}
 							className="app-user-form-input"
 							inputConfig={{
 								editable: !isSubmitting,
 								focusable: false,
-								type: 'text',
+								type: 'email',
 								maxLength: 75,
 								placeholder: t('email'),
 								defaultValue: '',
 								required: true,
+								returnKeyType: 'next',
+								blurOnSubmit: false,
 								onChange: (text) => updateForm((prev) => ({ ...prev, email: text })),
+								onSubmitEditing: () => passwordInputRef.current?.focus(),
 							}}
 							icon="email"
 							iconSize={sizes.span2}
@@ -175,6 +182,7 @@ const Register = () => {
 						/>
 
 						<LabeledInput
+							ref={passwordInputRef}
 							className="app-user-form-input"
 							inputConfig={{
 								secure: true,
@@ -185,7 +193,12 @@ const Register = () => {
 								placeholder: t('password'),
 								defaultValue: '',
 								required: true,
+								returnKeyType: 'done',
+								blurOnSubmit: true,
 								onChange: (text) => updateForm((prev) => ({ ...prev, password: text })),
+								onSubmitEditing: () => {
+									void onRegister();
+								},
 							}}
 							icon="lock"
 							iconSize={sizes.span2}
@@ -211,8 +224,8 @@ const Register = () => {
 							textClassName="!font-mt_medium span3"
 							borderRadius={99999}
 							backgroundColor={Colors.primary.DEFAULT}
-							selectedBackgroundColor={Colors.primary[800]}
-							pressedBackgroundColor={Colors.primary[900]}
+							selectedBackgroundColor={Colors.primary[900]}
+							pressedBackgroundColor={Colors.primary[950]}
 						/>
 
 						<Link disabled={isSubmitting} replace href="/(auth)/login" className="app-user-form-txt-ctn">
@@ -231,7 +244,7 @@ const Register = () => {
 							</Text>
 						</Link>
 					</View>
-				</KeyboardAvoidingView>
+				</KeyboardStickyView>
 			</SafeAreaView>
 			<ToastManager {...ToastConfig} />
 		</Page>

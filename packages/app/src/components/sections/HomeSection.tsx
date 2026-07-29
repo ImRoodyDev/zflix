@@ -1,9 +1,8 @@
 // External imports
-import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform, Text, View } from 'react-native';
+import { Platform, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { clsx } from 'clsx';
 
@@ -11,23 +10,23 @@ import { clsx } from 'clsx';
 import config from '../../config/application';
 import { Colors, Images } from '../../constants';
 import { useRootContext } from '../../contexts/AppRootContext';
-import { useResponsiveSize } from '../../contexts/ResponsiveContext';
 import ShadowStyles from '../../styles/shadow.style';
 
 // Components
+import AppImage from '../elements/AppImage';
 import Button from '../interactables/Button';
 
 const AppHome = () => {
 	const { t } = useTranslation();
 	const { loggedIn } = useRootContext();
-	const sizes = useResponsiveSize();
+	const { height } = useWindowDimensions();
 
 	// Fix fot android height with css 100vh wrong
 	const inset = useSafeAreaInsets();
 	const safeAreaStyle = {
 		marginLeft: inset.left,
 		marginRight: inset.right,
-		...Platform.select({ native: { paddingBottom: inset.bottom + sizes.topPadding } }),
+		...Platform.select({ native: { paddingBottom: inset.bottom + height * 0.1 } }),
 	};
 
 	const onGetStartedPress = () => {
@@ -41,23 +40,21 @@ const AppHome = () => {
 	};
 
 	return (
-		<View className={clsx('app-home', Platform.OS === 'web' && 'app-home-web')}>
-			<ExpoImage
+		<View
+			className={clsx('app-home', Platform.OS === 'web' && 'app-home-web')}
+			renderToHardwareTextureAndroid={true}
+			shouldRasterizeIOS={true}
+		>
+			<AppImage
 				source={Images.homeBackground}
 				style={{ position: 'absolute', width: '100%', height: '100%', zIndex: -1 }}
-				contentFit="cover"
-				priority="high"
-				cachePolicy="memory-disk"
-				transition={0}
+				resizeMode="cover"
 			/>
-			<ExpoImage
-				source={Images.homeGradient}
+			<AppImage
+				source={Images.gradient}
 				// className={'app-home-image'}
 				style={{ position: 'absolute', width: '100%', height: '100%', zIndex: 0, opacity: 0.85 }}
-				contentFit="cover"
-				priority="high"
-				cachePolicy="memory-disk"
-				transition={0}
+				resizeMode="cover"
 			/>
 
 			<View className="image-tint" />
@@ -83,11 +80,10 @@ const AppHome = () => {
 							textClassName="span1b font-mt_medium"
 							// Styling
 							borderRadius={9999999}
-							iconSize={24}
 							textColor={Colors.white}
 							focusedTextColor={Colors.white}
 							backgroundColor={Colors.primary[700]}
-							selectedBackgroundColor={Colors.primary[900]}
+							selectedBackgroundColor={Colors.primary[950]}
 							pressedBackgroundColor={Colors.primary[1000]}
 						/>
 					)
@@ -110,7 +106,7 @@ const AppHome = () => {
 							textColor={Colors.white}
 							focusedTextColor={Colors.white}
 							backgroundColor={Colors.primary[700]}
-							selectedBackgroundColor={Colors.primary[900]}
+							selectedBackgroundColor={Colors.primary[950]}
 							pressedBackgroundColor={Colors.primary[1000]}
 						/>
 					)

@@ -24,7 +24,6 @@ import ComponentHeader from '../../../components/main/ComponentHeader';
 import ComponentStatus from '../../../components/main/ComponentStatus';
 import Page from '../../../components/main/Page';
 
-
 function Reset() {
 	const { t } = useTranslation();
 	const { id, token } = useLocalSearchParams<{ id: string; token: string }>();
@@ -73,7 +72,7 @@ function Reset() {
 				<Animated.View entering={FadeIn} exiting={FadeOut} className={'profile-form-grid app-reset-grid'}>
 					{/** New Password */}
 					<LabeledInput
-						className="app-account-info-lb profile-form-option-input-ptn profile-form-input"
+						className="profile-form-option-input-ptn profile-form-input"
 						inputConfig={{
 							secure: true,
 							editable: true,
@@ -89,6 +88,8 @@ function Reset() {
 						}}
 						icon="lock"
 						iconSize={sizes.span1}
+						labelFontSize={sizes.span3}
+						filledLabelFontSize={sizes.span4}
 						iconClassName={'profile-form-option-input-icon'}
 						iconColor={themeColors.lbi_text}
 						textColor={themeColors.black}
@@ -112,8 +113,8 @@ function Reset() {
 						iconSize={sizes.span2}
 						textColor={themeColors.white}
 						backgroundColor={Colors.primary.DEFAULT}
-						selectedBackgroundColor={Colors.primary[800]}
-						pressedBackgroundColor={Colors.primary[900]}
+						selectedBackgroundColor={Colors.primary[900]}
+						pressedBackgroundColor={Colors.primary[950]}
 					/>
 				)}
 
