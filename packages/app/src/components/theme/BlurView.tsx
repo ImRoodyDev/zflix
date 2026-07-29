@@ -1,8 +1,10 @@
 // External imports
 import React, { forwardRef } from 'react';
+import { Platform, View } from 'react-native';
 import { BlurView as BlurViewExpo } from 'expo-blur';
 
 // Internal imports
+import { type BlurTint, getBlurTintColor } from '../../constants';
 import { type BlurViewProps as ExpoBlurViewProps } from 'expo-blur';
 
 /**
@@ -16,10 +18,20 @@ export type BlurViewProps = ExpoBlurViewProps & {
 };
 
 const BlurView = forwardRef<React.ElementRef<typeof BlurViewExpo>, BlurViewProps>(function BlurView(
-	{ disabled, ...props },
+	{ intensity = 50, tint = 'default', disabled, style, ...props },
 	ref,
 ) {
-	return <BlurViewExpo ref={ref} {...props} />;
+	if (Platform.isTV) {
+		return (
+			<View
+				ref={ref as React.Ref<View>}
+				style={[{ backgroundColor: disabled ? 'transparent' : getBlurTintColor(tint as BlurTint, intensity) }, style]}
+				{...props}
+			/>
+		);
+	}
+
+	return <BlurViewExpo ref={ref} style={style} {...props} />;
 });
 
 export default BlurView;
