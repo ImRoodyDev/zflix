@@ -42,7 +42,6 @@ export const AuthorizationMiddleware = async (req: AuthenticatedRequest, res: Re
 			typeof sessionToken !== 'string' ||
 			typeof requestedAgent !== 'string'
 		) {
-			clearCookies(res);
 			return new HttpError({
 				code: req.t('UNAUTHORIZED_CODE'),
 				message: req.t('UNAUTHORIZED_MESSAGE'),
@@ -118,7 +117,6 @@ export const AdminAuthentication = async (req: AuthenticatedRequest, res: Respon
 			typeof sessionToken !== 'string' ||
 			typeof requestedAgent !== 'string'
 		) {
-			clearCookies(res);
 			// For dashboard routes, redirect to login page instead of returning error
 			if (isDashboardRoute) {
 				return res.redirect('/v1/dashboard/login');
@@ -206,7 +204,6 @@ export const NoAuthentication = async (req: Request, res: Response, next: NextFu
 			typeof sessionToken !== 'string' ||
 			typeof requestedAgent !== 'string'
 		) {
-			clearCookies(res);
 			return next();
 		}
 
@@ -255,7 +252,6 @@ export const ImageAuthentication = async (req: Request, res: Response, next: Nex
 			if (valid) return next();
 
 			// Access token was provided but invalid — reject immediately
-			clearCookies(res);
 			return new HttpError({
 				code: req.t('UNAUTHORIZED_CODE'),
 				message: req.t('UNAUTHORIZED_MESSAGE'),
@@ -272,7 +268,6 @@ export const ImageAuthentication = async (req: Request, res: Response, next: Nex
 		}
 
 		// Neither strategy succeeded — reject
-		// clearCookies(res);
 		return new HttpError({
 			code: req.t('UNAUTHORIZED_CODE'),
 			message: req.t('UNAUTHORIZED_MESSAGE'),
