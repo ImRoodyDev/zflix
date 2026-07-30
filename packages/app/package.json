@@ -28,6 +28,7 @@
 	},
 	"dependencies": {
 		"@expo/vector-icons": "^14.1.0",
+		"@imroodydev/legendapp-list": "latest",
 		"@imroodydev/rn-intersection-observer": "latest",
 		"@legendapp/list": "^2.0.0",
 		"@react-native-async-storage/async-storage": "2.1.2",

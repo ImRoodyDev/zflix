@@ -7,7 +7,6 @@
 		"resolveJsonModule": true,
 		"jsx": "react-jsx",
 		"paths": {
-			"@/packages/*": ["./packages/*"],
 			"@/*": ["./src/*"]
 		}
 	},
