@@ -87,7 +87,7 @@ function PlanButton({
 				/>
 			)}
 
-			<Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, gradientStyle]}>
+			<Animated.View style={[StyleSheet.absoluteFill, gradientStyle, { pointerEvents: 'none' }]}>
 				<LinearGradient
 					colors={['#ff2ad4ff', '#647effff', Colors.primary['600'], '#50aec1ff', '#42d392ff']}
 					start={{ x: 0, y: 0 }}

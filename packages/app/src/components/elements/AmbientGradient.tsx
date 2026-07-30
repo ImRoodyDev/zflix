@@ -72,8 +72,7 @@ function AmbientGradient({
 		return (
 			<View
 				className={className}
-				style={[{ width: w, height: h, alignItems: 'center', justifyContent: 'center' }, style]}
-				pointerEvents="none"
+				style={[{ width: w, height: h, alignItems: 'center', justifyContent: 'center' }, style, { pointerEvents: 'none' }]}
 			>
 				<Image
 					source={Images.radialGlow}
@@ -90,7 +89,7 @@ function AmbientGradient({
 	// Web: original SVG ellipse (unchanged — looks best and stretches with CSS transforms).
 	// -------------------------------------------------------------------------------------
 	return (
-		<View className={className} style={style} pointerEvents="none">
+		<View className={className} style={[style, { pointerEvents: 'none' }]}>
 			<Svg height={h} width={w}>
 				<Defs>
 					<RadialGradient id={gradientId} cx="0.5" cy="0.5" rx="0.5" ry="0.5" gradientUnits="objectBoundingBox">

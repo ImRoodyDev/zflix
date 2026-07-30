@@ -368,8 +368,8 @@ function Carousel<T extends MediaInfo | IPTVChannel>(props: CarouselProps<T>) {
 								aspectRatio: 1.35,
 								// left: (sizes.sidePadding * 2 + sizes.logoSizeW) * -1.6,
 								left: (sizes.sidePadding * 2 + sizes.logoSizeW) * -3.5,
+								pointerEvents: 'none',
 							}}
-							pointerEvents={'none'}
 						/>
 					)
 				}

@@ -128,9 +128,8 @@ function AvatarButton(props: AvatarButtonProps) {
 
 			{/* Profile icon (same behavior, just UI-thread fade) */}
 			<Animated.View
-				pointerEvents="none"
 				className="app-profile-btn-icon-ctn"
-				style={[iconAnimatedStyle, { backgroundColor: hexToRgba(Colors.gray[500], 0.5) }]}
+				style={[iconAnimatedStyle, { backgroundColor: hexToRgba(Colors.gray[500], 0.5), pointerEvents: 'none' }]}
 			>
 				{icon}
 			</Animated.View>

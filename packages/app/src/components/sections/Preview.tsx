@@ -567,8 +567,7 @@ const _YTPreviewSection = forwardRef(
 							    on every auto-advance otherwise. */}
 							<View
 								className={clsx('app-preview-thumbnail', props.floating && 'app-preview-thumbnail-floating')}
-								style={!isPlaying && !videoEnabled ? undefined : HIDDEN}
-								pointerEvents={'none'}
+								style={[!isPlaying && !videoEnabled ? undefined : HIDDEN, { pointerEvents: 'none' }]}
 							>
 								{memoizedImage}
 							</View>

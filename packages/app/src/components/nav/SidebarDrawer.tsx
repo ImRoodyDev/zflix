@@ -55,7 +55,6 @@ const SidebarDrawer = ({ logout, drawerToggled, toggleDrawerHandler }: Props) =>
 				// Keep the drawer subtree mounted; closed controls are non-focusable.
 				<View
 					className={'app-sidebar-ctn'}
-					pointerEvents={drawerToggled ? 'auto' : 'none'}
 					// Hide closed drawer controls from native accessibility/focus search.
 					importantForAccessibility={drawerToggled ? 'auto' : 'no-hide-descendants'}
 					style={{ pointerEvents: drawerToggled ? 'auto' : 'none' }}

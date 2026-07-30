@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Href } from 'expo-router';
 import React, { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, View, ViewStyle } from 'react-native';
-import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 // import { useWrapperStyle } from '@/packages/legend-list';
 
@@ -251,7 +251,6 @@ function CarouselChannelItem(props: CarouselItemProps) {
 					// Inset shadows and buttons
 					isWeb && (
 						<Animated.View
-							entering={FadeIn}
 							className={'carousel-actions'}
 							style={[{ pointerEvents: 'none' }, gradientAnimatedStyle]}
 						>

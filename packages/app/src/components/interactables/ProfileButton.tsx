@@ -112,7 +112,7 @@ function ProfileButton(props: ProfileButtonProps) {
 				onPointerEnter={Platform.OS === 'web' ? handleFocus : undefined}
 				onPointerLeave={Platform.OS === 'web' ? handleBlur : undefined}
 			>
-				<View className={'app-profile'} pointerEvents="box-none">
+				<View className={'app-profile'} style={{ pointerEvents: 'box-none' }}>
 					<View className={clsx('app-profile-img-ctn', isAddProfile && 'app-add-profile')}>
 						{isAddProfile ? (
 							<Icons.profile_add color={'white'} size={h1 * 1.6} variant={'Bold'} />
@@ -129,9 +129,8 @@ function ProfileButton(props: ProfileButtonProps) {
 					{/* Profile icon (same behavior, just UI-thread fade) */}
 					{!isAddProfile && (
 						<Animated.View
-							pointerEvents="none"
 							className="app-profile-btn-icon-ctn"
-							style={[iconAnimatedStyle, { backgroundColor: hexToRgba(Colors.gray[500], 0.5) }]}
+							style={[iconAnimatedStyle, { backgroundColor: hexToRgba(Colors.gray[500], 0.5), pointerEvents: 'none' }]}
 						>
 							{icon}
 						</Animated.View>

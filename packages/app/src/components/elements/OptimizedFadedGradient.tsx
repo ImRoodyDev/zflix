@@ -48,7 +48,7 @@ function OptimizedFadedGradient({
 	exiting,
 	layout,
 }: OptimizedFadedGradientProps) {
-	const containerStyle = useMemo(() => [style], [style]);
+	const containerStyle = useMemo(() => [style, { pointerEvents }], [style, pointerEvents]);
 
 	const maskStyle = useMemo(
 		() => [
@@ -63,7 +63,6 @@ function OptimizedFadedGradient({
 
 	return (
 		<Animated.View
-			pointerEvents={pointerEvents}
 			style={containerStyle}
 			className={className}
 			entering={entering}
