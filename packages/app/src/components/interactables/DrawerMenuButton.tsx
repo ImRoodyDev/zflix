@@ -1,7 +1,7 @@
 // External imports
 import React, { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, View, ViewStyle } from 'react-native';
+import { Image, Platform, View, ViewStyle } from 'react-native';
 import { CustomButton } from 'react-native-cross-elements';
 
 // Internal imports
@@ -81,6 +81,8 @@ const DrawerMenuButton = (props: DrawerMenuButtonProps) => {
 			pressedBackgroundColor={themeColors.pGrayButton}
 			onFocus={handleFocus}
 			onBlur={handleBlur}
+			onPointerEnter={Platform.OS === 'web' ? handleFocus : undefined}
+			onPointerLeave={Platform.OS === 'web' ? handleBlur : undefined}
 		>
 			<View className={'app-sidebar-menu-btn-ctn'}>
 				<View className={'app-sidebar-menu-btn-img-ctn'} style={{ pointerEvents: 'none' }}>

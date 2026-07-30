@@ -2322,8 +2322,9 @@ body {
 	height: 140% !important;
 
 	position: absolute;
-	top: 0;
+	top: 50%;
 	bottom: 0;
+	transform: translateY(-50%);
 	/* left: calc((var(--side-padding) + var(--side-padding) + var(--logo-size-w)) * -1.6); */
 	z-index: 4;
 	overflow: visible;

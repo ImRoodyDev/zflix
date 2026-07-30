@@ -54,12 +54,11 @@ function OptimizedFadedGradient({
 		() => [
 			StyleSheet.absoluteFill,
 			{
-				tintColor: tint,
 				opacity,
 			},
 			imageStyle,
 		],
-		[tint, opacity, imageStyle],
+		[opacity, imageStyle],
 	);
 
 	return (
@@ -74,6 +73,10 @@ function OptimizedFadedGradient({
 			<Image
 				source={images.carouselFadeMask}
 				style={maskStyle}
+				// expo-image reads `tintColor` from the prop, not `style`, on web (it applies an SVG
+				// color filter). Passing it in `style` only tinted on native — keep it as a prop so
+				// the mask is tinted on web too.
+				tintColor={tint}
 				contentFit={resizeMode}
 				cachePolicy="memory-disk"
 				transition={0}

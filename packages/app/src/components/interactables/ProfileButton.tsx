@@ -80,6 +80,9 @@ function ProfileButton(props: ProfileButtonProps) {
 			outlineWidth: withTiming(focused.value ? outlineWidth + 2 : 0, { duration: 120 }),
 			outlineColor: Colors.whiteTransparent[600],
 			outlineOffset: outlineWidth,
+			// Web needs an explicit outline-style; without it outline-width renders nothing
+			// (native defaults to solid, the web CSS default is `none`).
+			outlineStyle: 'solid',
 		};
 	});
 	const iconAnimatedStyle = useAnimatedStyle(() => {
@@ -106,6 +109,8 @@ function ProfileButton(props: ProfileButtonProps) {
 				onFocus={handleFocus}
 				onBlur={handleBlur}
 				onPressIn={Platform.OS === 'web' ? undefined : handleFocus}
+				onPointerEnter={Platform.OS === 'web' ? handleFocus : undefined}
+				onPointerLeave={Platform.OS === 'web' ? handleBlur : undefined}
 			>
 				<View className={'app-profile'} pointerEvents="box-none">
 					<View className={clsx('app-profile-img-ctn', isAddProfile && 'app-add-profile')}>

@@ -204,6 +204,23 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 		rel: false,
 	});
 
+	// player.play()/pause()/seekTo() can throw *synchronously* on web when the underlying
+	// iframe player was torn down (e.g. the WebView remounted after scrolling back into view)
+	// and its YT API method (playVideo/pauseVideo/…) is momentarily missing. A trailing
+	// `.catch()` only traps async rejections, not a synchronous throw, so wrap the whole call.
+	// Playback still recovers via the 'ready' event, which re-invokes startPlayAttempt once the
+	// player is usable again.
+	const safePlayerCall = useCallback(
+		(fn: () => unknown, message: string) => {
+			try {
+				Promise.resolve(fn()).catch((e: unknown) => logPreview(logging, 'warn', message, e));
+			} catch (e) {
+				logPreview(logging, 'warn', message, e);
+			}
+		},
+		[logging],
+	);
+
 	const cancelPlayAttempt = useCallback(() => {
 		if (playActionTimeoutRef.current) {
 			clearTimeout(playActionTimeoutRef.current);
@@ -230,18 +247,15 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 
 				// Guard against undefined seek
 				if (seekToStart && typeof player?.seekTo === 'function') {
-					Promise.resolve(player.seekTo(0, true)).catch((e: unknown) => {
-						logPreview(logging, 'warn', 'Failed to seek YouTube preview video:', e);
-					});
+					safePlayerCall(() => player.seekTo(0, true), 'Failed to seek YouTube preview video:');
 				}
 
-				// Guard against undefined play function
-				Promise.resolve(player.play()).catch((e: unknown) => {
-					logPreview(logging, 'warn', 'Failed to play YouTube preview video:', e);
-				});
+				// player.play() can throw synchronously if the iframe player isn't ready yet
+				// (e.g. right after the WebView remounts on scroll-back); safePlayerCall traps it.
+				safePlayerCall(() => player.play(), 'Failed to play YouTube preview video:');
 			}, 100);
 		},
-		[cancelPlayAttempt, logging, player],
+		[cancelPlayAttempt, player, safePlayerCall],
 	);
 
 	// Stop preview and optionally wait remaining preview time before calling onFinished.
@@ -251,10 +265,8 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 			cancelPlayAttempt();
 			setEnableVideo(false);
 			setPlaying(false);
-			// Ensure vieo is paused
-			Promise.resolve(player.pause()).catch((e: unknown) => {
-				logPreview(logging, 'warn', 'Failed to pause YouTube preview video:', e);
-			});
+			// Ensure video is paused
+			safePlayerCall(() => player.pause(), 'Failed to pause YouTube preview video:');
 			// Ensure in progress play is stopped and timer is cleared to avoid
 			if (timeoutRef.current) clearTimeout(timeoutRef.current);
 			timeoutRef.current = null;
@@ -289,7 +301,7 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 				onFinishedRef.current?.();
 			}, remainingTime);
 		},
-		[cancelPlayAttempt, clampedDuration, logging, player, props.autoStart, props.loop, props.previewDuration],
+		[cancelPlayAttempt, clampedDuration, logging, player, props.autoStart, props.loop, props.previewDuration, safePlayerCall],
 	);
 
 	// Start preview with delay to match teaser behavior.
@@ -458,16 +470,14 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 			if (progress.currentTime * 1000 < clampedDuration) return;
 
 			if (props.loop) {
-				Promise.resolve(player.pause()).catch((e: unknown) => {
-					logPreview(logging, 'warn', 'Failed to pause YouTube preview video:', e);
-				});
+				safePlayerCall(() => player.pause(), 'Failed to pause YouTube preview video:');
 				scheduleLoopRestart();
 				return;
 			}
 
 			stopPreviewVideo(true, false);
 		},
-		[clampedDuration, isPlaying, logging, player, props.loop, scheduleLoopRestart, stopPreviewVideo, videoEnabled],
+		[clampedDuration, isPlaying, logging, player, props.loop, safePlayerCall, scheduleLoopRestart, stopPreviewVideo, videoEnabled],
 	);
 
 	useEffect(() => {
@@ -484,9 +494,7 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 			errorModeRef.current = false;
 			forceStoppedRef.current = true;
 			cancelPlayAttempt();
-			Promise.resolve(player.pause()).catch((e: unknown) => {
-				logPreview(logging, 'warn', 'Failed to pause YouTube preview video:', e);
-			});
+			safePlayerCall(() => player.pause(), 'Failed to pause YouTube preview video:');
 			if (timeoutRef.current) clearTimeout(timeoutRef.current);
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -520,9 +528,7 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 				errorModeRef.current = false;
 				setPlaying(false);
 				setEnableVideo(false);
-				Promise.resolve(player.pause()).catch((e: unknown) => {
-					logPreview(logging, 'warn', 'Failed to pause YouTube preview video:', e);
-				});
+				safePlayerCall(() => player.pause(), 'Failed to pause YouTube preview video:');
 			} else if (canPlayYoutube) {
 				playRequestedRef.current = true;
 				errorModeRef.current = false;
@@ -532,7 +538,7 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 				startPlayAttempt();
 			}
 		},
-		[canPlayYoutube, cancelPlayAttempt, logging, player, startPlayAttempt],
+		[canPlayYoutube, cancelPlayAttempt, logging, player, safePlayerCall, startPlayAttempt],
 	);
 
 	const onMute = useCallback(() => {
