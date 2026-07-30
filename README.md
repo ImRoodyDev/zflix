@@ -239,6 +239,11 @@ For the full deployment walkthrough, see:
 
 [DEPLOYMENT.md](./DEPLOYMENT.md)
 
+For payment setup details, see:
+
+- [Stripe integration guide](./packages/server/markdown/STRIPE_README.md)
+- [PayPal integration guide](./packages/server/markdown/PAYPAL_README.md)
+
 ## License
 
 This project is licensed under `CC-BY-NC-4.0`.
