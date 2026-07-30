@@ -109,6 +109,8 @@ const nl = {
 	STREAM_SOURCE_NOT_FOUND_MESSAGE: 'Er kon geen streambron voor de opgevraagde media worden gevonden.',
 	REQUESTED_RESOURCE_NOT_FOUND_CODE: 'Opgevraagde bron niet gevonden',
 	REQUESTED_RESOURCE_NOT_FOUND_MESSAGE: 'De bron die je zoekt kon niet worden gevonden.',
+	PROXY_NOT_FOUND_CODE: 'Proxy niet gevonden',
+	PROXY_NOT_FOUND_MESSAGE: 'Er zijn geen proxies beschikbaar.',
 
 	// Success Messages
 	SUCCESS_LOGIN_MESSAGE: 'Gebruiker succesvol ingelogd.',

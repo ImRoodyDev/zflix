@@ -7,14 +7,13 @@ import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 
 // Internal imports
 import { Colors } from '../../constants';
-import { useRootContext } from '../../contexts/AppRootContext';
+import { useAppUI } from '../../contexts/AppRootContext';
 import { useResponsiveSize } from '../../contexts/ResponsiveContext';
 import ShadowStyles from '../../styles/shadow.style';
 
 // Components
 import Button from '../../components/interactables/Button';
 import CloseButton from '../../components/interactables/CloseButton';
-
 
 type Genres = { id: number; name: string }[];
 type Props = {
@@ -29,8 +28,8 @@ function GenresList(props: Props) {
 	const { type, currentSelectedId, onSelect, genres, onClose } = props;
 
 	const navigation = useNavigation();
-	const { setTabBarVisible } = useRootContext();
-	const sizes = useResponsiveSize();
+	const { setTabBarVisible } = useAppUI();
+	const { span3 } = useResponsiveSize();
 
 	useEffect(() => {
 		setTabBarVisible(false);
@@ -63,7 +62,7 @@ function GenresList(props: Props) {
 				snapToAlignment={'center'}
 				showsVerticalScrollIndicator={true}
 			>
-				{genres[type].map((genre) => {
+				{genres[type].map((genre, index) => {
 					const isSelected = currentSelectedId === genre.id;
 					const key = isSelected ? `slc_genre-${genre.id}` : `genre-${genre.id}`;
 
@@ -77,12 +76,12 @@ function GenresList(props: Props) {
 							// Styling
 							borderRadius={999999}
 							icon={isSelected ? 'x' : undefined}
-							iconSize={sizes.span3}
+							iconSize={span3}
 							textColor={isSelected ? 'black' : 'white'}
 							focusedTextColor={'black'}
 							backgroundColor={isSelected ? 'white' : 'transparent'}
-							selectedBackgroundColor={Colors.zinc[400]}
-							pressedBackgroundColor={Colors.zinc[200]}
+							selectedBackgroundColor={Colors.zinc[300]}
+							pressedBackgroundColor={Colors.zinc[400]}
 							pressedScale={0.9}
 						/>
 					);

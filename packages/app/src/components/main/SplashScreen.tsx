@@ -8,21 +8,28 @@ import { useTranslation } from 'react-i18next';
 
 // Internal imports
 import { Images } from '../../constants';
-import { useResponsiveSize } from '../../contexts/ResponsiveContext';
+import type { InitPhase } from '../../controllers/app';
+import { ResponsiveRootThemedView, useResponsiveSize } from '../../contexts/ResponsiveContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
 // Components
 import Spinner from '../indicators/Spinner';
-import ThemedView from '../theme/ThemedView';
 import ThemedText from '../theme/ThemedText';
 
-const SplashScreen = () => {
+// Maps each initialization phase to its localization key.
+const PHASE_TEXT_KEY: Record<InitPhase, string> = {
+	server: 'initializingServer',
+	auth: 'authenticatingUser',
+	finalizing: 'appInitializing',
+};
+
+const SplashScreen = ({ phase = 'server' }: { phase?: InitPhase }) => {
 	const { themeColors } = useTheme();
-	const sizes = useResponsiveSize();
+	const { h3, outlineWidth } = useResponsiveSize();
 	const { t } = useTranslation();
 
 	return (
-		<ThemedView color={themeColors.whiteBackground} className="app-splash-screen responsive-vars">
+		<ResponsiveRootThemedView color={themeColors.whiteBackground} className="app-splash-screen">
 			<StatusBar style="dark" />
 			<SafeAreaView className="app-splash-screen-ctn">
 				<View className="app-splash-screen-logo-ctn">
@@ -34,19 +41,19 @@ const SplashScreen = () => {
 					/>
 				</View>
 				<View className="app-splash-screen-spinner-ctn">
-					<Spinner size={sizes.h3} strokeWidth={2.8} />
-					<ThemedText className="app-splash-screen-spinner-text">{t('appInitializing')}...</ThemedText>
+					<Spinner size={h3} strokeWidth={outlineWidth + 1} />
+					<ThemedText className="app-splash-screen-spinner-text">{t(PHASE_TEXT_KEY[phase] as any)}...</ThemedText>
 
 					{Platform.OS !== 'web' && (
 						<View className="app-splash-screen-version">
 							<ThemedText className="app-splash-screen-version-text">
-								Version {Application.nativeApplicationVersion} ({Application.nativeBuildVersion})
+								Version {Application.nativeApplicationVersion} {Application.nativeBuildVersion}
 							</ThemedText>
 						</View>
 					)}
 				</View>
 			</SafeAreaView>
-		</ThemedView>
+		</ResponsiveRootThemedView>
 	);
 };
 

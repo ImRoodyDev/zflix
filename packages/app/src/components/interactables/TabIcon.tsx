@@ -1,10 +1,9 @@
 // External imports
 import React from 'react';
-import {Text, View} from 'react-native';
+import { Text, View } from 'react-native';
 
 // Internal imports
-import {Icons, IconType} from '../../constants';
-
+import { Icons, IconType } from '../../constants';
 
 type TabIconProps = {
 	icon: IconType;
@@ -16,8 +15,8 @@ type TabIconProps = {
 };
 
 const TabIcon = (props: TabIconProps) => {
-	const {icon, name, size, color, fColor, focused} = props;
-	
+	const { icon, name, size, color, fColor, focused } = props;
+
 	return (
 		<View className="flex items-center justify-center w-full h-auto">
 			{
@@ -32,7 +31,12 @@ const TabIcon = (props: TabIconProps) => {
 			{
 				// Wheather to display label
 				name && (
-					<Text selectable={false} style={{color}} className={`text-xs text-center`} numberOfLines={1}>
+					<Text
+						selectable={false}
+						style={{ color }}
+						className={`text-xs text-center app-tab-bar-txt`}
+						numberOfLines={1}
+					>
 						{name}
 					</Text>
 				)
@@ -42,4 +46,3 @@ const TabIcon = (props: TabIconProps) => {
 };
 
 export default TabIcon;
-

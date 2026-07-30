@@ -318,6 +318,12 @@ export const bootstrap = (sequelize: Sequelize) => {
 			price: {
 				type: DataTypes.DECIMAL(4, 2),
 				allowNull: false,
+				// Sequelize returns DECIMAL columns as strings to preserve precision;
+				// coerce to number so `price` matches its declared type everywhere
+				get(): number {
+					const rawValue = this.getDataValue('price');
+					return rawValue === null || rawValue === undefined ? rawValue : parseFloat(rawValue as unknown as string);
+				},
 			},
 			currency: {
 				type: DataTypes.STRING(4),

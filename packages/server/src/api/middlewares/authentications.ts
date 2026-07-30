@@ -42,7 +42,6 @@ export const AuthorizationMiddleware = async (req: AuthenticatedRequest, res: Re
 			typeof sessionToken !== 'string' ||
 			typeof requestedAgent !== 'string'
 		) {
-			clearCookies(res);
 			return new HttpError({
 				code: req.t('UNAUTHORIZED_CODE'),
 				message: req.t('UNAUTHORIZED_MESSAGE'),
@@ -87,6 +86,103 @@ export const AuthorizationMiddleware = async (req: AuthenticatedRequest, res: Re
 	}
 };
 
+export const AdminAuthentication = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+	try {
+		// Check if this is a dashboard route (server-rendered page)
+		const isDashboardRoute =
+			(req.originalUrl.startsWith('/v1/dashboard') || req.originalUrl.startsWith('/v1/docs/')) &&
+			!req.originalUrl.startsWith('/v1/dashboard/login');
+
+		// User Agent
+		const requestedAgent = req.headers['user-agent'] as string | undefined;
+
+		// Access token - check Authorization header first, then fallback to cookie
+		let accessToken = req.headers.authorization?.split(' ')[1] as string | undefined;
+
+		// Check if access token is not available, then get it from cookie
+		if (!accessToken) {
+			accessToken = req.cookies[ACCESS_TOKEN] as string | undefined;
+		}
+
+		// Refresh token
+		const refreshToken = req.cookies[REFRESH_TOKEN] as string | undefined;
+
+		// Session Id
+		const sessionToken = req.cookies[SESSION_TOKEN] as string | undefined;
+
+		// Check tokens
+		if (
+			typeof accessToken !== 'string' ||
+			typeof refreshToken !== 'string' ||
+			typeof sessionToken !== 'string' ||
+			typeof requestedAgent !== 'string'
+		) {
+			// For dashboard routes, redirect to login page instead of returning error
+			if (isDashboardRoute) {
+				return res.redirect('/v1/dashboard/login');
+			}
+			return new HttpError({
+				code: req.t('UNAUTHORIZED_CODE'),
+				message: req.t('UNAUTHORIZED_MESSAGE'),
+				statusCode: 401,
+				details: 'Missing authentication tokens or user agent',
+			}).sendResponse(res);
+		}
+
+		// Verify tokens
+		const { valid, userId, role, subscriptionId, updatedAccessToken } = await verifyTokens({
+			accessToken,
+			refreshToken,
+			sessionToken,
+			requestedAgent,
+		});
+
+		// Invalid tokens
+		if (!valid || !userId) {
+			clearCookies(res);
+			// For dashboard routes, redirect to login page instead of returning error
+			if (isDashboardRoute) {
+				return res.redirect('/v1/dashboard/login');
+			}
+			return new HttpError({
+				code: req.t('UNAUTHORIZED_CODE'),
+				message: req.t('UNAUTHORIZED_MESSAGE'),
+				statusCode: 401,
+				details: 'Invalid authentication tokens',
+			}).sendResponse(res);
+		}
+
+		// Check for Admin Role
+		if (role !== 'admin') {
+			// For dashboard routes, redirect to login page instead of returning error
+			if (isDashboardRoute) {
+				clearCookies(res);
+				return res.redirect('/v1/dashboard/login');
+			}
+			return new HttpError({
+				code: req.t('FORBIDDEN_CODE'),
+				message: req.t('FORBIDDEN_MESSAGE'),
+				statusCode: 403,
+				details: 'User does not have the required admin role',
+			}).sendResponse(res);
+		}
+
+		// If access token was refreshed, send the new token in response header
+		if (updatedAccessToken) res.setHeader('X-Access-Token', updatedAccessToken);
+
+		// Attach user info to request
+		req.user = {
+			userId,
+			role,
+			subscriptionId,
+		};
+
+		return next();
+	} catch (error) {
+		handleHardErrors(error, req, res);
+	}
+};
+
 export const NoAuthentication = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		// User Agent
@@ -108,7 +204,6 @@ export const NoAuthentication = async (req: Request, res: Response, next: NextFu
 			typeof sessionToken !== 'string' ||
 			typeof requestedAgent !== 'string'
 		) {
-			clearCookies(res);
 			return next();
 		}
 
@@ -157,7 +252,6 @@ export const ImageAuthentication = async (req: Request, res: Response, next: Nex
 			if (valid) return next();
 
 			// Access token was provided but invalid — reject immediately
-			clearCookies(res);
 			return new HttpError({
 				code: req.t('UNAUTHORIZED_CODE'),
 				message: req.t('UNAUTHORIZED_MESSAGE'),
@@ -174,7 +268,6 @@ export const ImageAuthentication = async (req: Request, res: Response, next: Nex
 		}
 
 		// Neither strategy succeeded — reject
-		// clearCookies(res);
 		return new HttpError({
 			code: req.t('UNAUTHORIZED_CODE'),
 			message: req.t('UNAUTHORIZED_MESSAGE'),

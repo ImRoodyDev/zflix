@@ -3,10 +3,11 @@ import clsx from 'clsx';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Href } from 'expo-router';
-import React, { memo, useMemo, useRef, useState } from 'react';
+import React, { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, View, ViewStyle } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+// import { useWrapperStyle } from '@/packages/legend-list';
 
 // Internal imports
 import { Colors } from '../../constants';
@@ -16,82 +17,111 @@ import { useScaleAnimation } from '../../hooks/useAnimation';
 import { useHoldAction } from '../../hooks/useHoldAction';
 import ShadowStyles from '../../styles/shadow.style';
 import { MediaInfo } from '../../types/Medias';
-import { getApiUrl } from '../../utils/fetcher';
-import { useLeanViewContext } from '@/packages/legend-list';
+import { getApiUrl, getAuthenticatedImageSource } from '../../utils/fetcher';
 
 // Components
 import Button from './Button';
 
-
 type CarouselItemProps = {
 	item: MediaInfo;
+	onFocus?: () => void;
 	style?: ViewStyle;
 };
 
 function CarouselMediaItem(props: CarouselItemProps) {
 	const { item, style } = props;
+	// `focused` state drives web-only subtrees. Native avoids re-rendering on
+	// focus (D-pad jank); it uses the UI-thread `focusProgress` instead.
+	const isWeb = Platform.OS === 'web';
+
 	const sizes = useResponsiveSize();
-	const { updateZIndex } = useLeanViewContext();
-	const [gotDominantColors, setGotDominantColors] = useState(false);
+	// Styles LegendList's item wrapper (the real stacking context). zIndex on our
+	// own view wouldn't affect sibling stacking. Re-renders only the wrapper.
+	// const setWrapperStyle = useWrapperStyle();
 	const [focused, setFocused] = useState(false);
 	const [bookmarked, setBookmarked] = useState(item.bookmarked);
-	const { animatedStyle, start, reset } = useScaleAnimation(1, 1.08);
-	// const [dominantInitialized, setDominantInitialized] = useState<boolean>(false);
 
-	// Gradient color
-	const dominantLoadedRef = useRef(false);
+	const lastRecycledIdRef = useRef(item.id);
+	const focusedRef = useRef(false);
 	const gradientColorsRef = useRef<string[]>(new Array(4).fill('black'));
+	const focusProgress = useSharedValue(0);
+	const { animatedStyle: scaleAnimatedStyle, start, reset } = useScaleAnimation(1, 1.08);
 
-	const handleHoverIn = () => {
-		// getDominantColors(item.poster);
-		if (!gotDominantColors && dominantLoadedRef.current) setGotDominantColors(true);
-		updateZIndex(5); // Bring this item to the front
-		setFocused(true);
-		start();
-	};
-	const handleHoverOut = () => {
-		updateZIndex(0); // Reset z-index to default
+	// Outline grows 0→2px on focus, on the inner (scaled) view.
+	const outlineAnimatedStyle = useAnimatedStyle(() => ({
+		outlineColor: '#ffffffab',
+		outlineStyle: 'solid',
+		outlineOffset: 1,
+		outlineWidth: focusProgress.value * 2,
+	}));
+	const gradientAnimatedStyle = useAnimatedStyle(() => ({
+		opacity: focusProgress.value,
+		display: focusProgress.value == 0 ? 'none' : 'flex',
+	}));
+
+	// Runs during render when the view is recycled to a new item — no effect, no extra frame
+	if (lastRecycledIdRef.current !== item.id) {
+		lastRecycledIdRef.current = item.id;
+		setBookmarked(item.bookmarked);
 		setFocused(false);
+		focusedRef.current = false;
+	}
+
+	// Clear focus state on recycle so a reused row carries no stale outline/lift.
+	useLayoutEffect(() => {
 		reset();
-	};
+		focusProgress.value = 0;
+		// setWrapperStyle(undefined); // disabled with the zIndex lift (see onFocus)
+	}, [item.id, reset, focusProgress]);
 
-	const onPlay = () => {
+	const onFocus = useCallback(() => {
+		if (focusedRef.current) return;
+		focusedRef.current = true;
+		// Outline + scale on the UI thread (all platforms).
+		focusProgress.value = withTiming(1, { duration: 150 });
+		start();
+		// NOTE: do NOT lift via setWrapperStyle({ zIndex }) on native TV. The wrapper
+		// is positioned with top/left (required for horizontal scroll + focus-scroll),
+		// so changing its zIndex re-commits the frame and the TV focus engine drops
+		// focus to the first item. (transform positioning would keep focus but breaks
+		// horizontal scroll.) carousel-item is overflow:visible + has a margin gap, so
+		// the focus scale isn't clipped in practice.
+		// setWrapperStyle({ zIndex: 10 });
+		// Web-only: mount hover glow / action buttons.
+		if (isWeb) setFocused(true);
+		// setFocused(true);
+		props.onFocus?.();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [start, props.onFocus, isWeb]);
+
+	const onBlur = useCallback(() => {
+		if (!focusedRef.current) return;
+		focusedRef.current = false;
+		focusProgress.value = withTiming(0, { duration: 150 });
+		reset();
+		// setWrapperStyle(undefined);
+		// Web-only: unmount hover subtrees. On native device it causes item focus to jank
+		if (isWeb) setFocused(false);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [reset, isWeb]);
+
+	const onPlay = useCallback(() => {
 		window.application.navigate.navigate(item.href as Href);
-	};
-	const onBookmark = () => {
-		setBookmarked(!bookmarked);
+	}, [item.href]);
 
-		if (!bookmarked)
-			createBookmark(item.type, props.item.id)
-				.then((success) => {
-					if (success != bookmarked) setBookmarked(success);
-				})
-				.catch((_) => {
-					setBookmarked(false); // Reset the bookmarked state on error
-				});
-		else
-			removeBookmark(item.type, item.id)
-				.then((success) => {
-					if (!success != bookmarked) setBookmarked(!success);
-				})
-				.catch(() => {
-					setBookmarked(true); // Reset the bookmarked state on error
-				});
-	};
+	const onBookmark = useCallback(() => {
+		const next = !bookmarked;
+		setBookmarked(next);
+
+		(next ? createBookmark : removeBookmark)(item.type, item.id)
+			.then((ok) => setBookmarked(next ? ok : !ok))
+			.catch(() => setBookmarked(!next));
+	}, [bookmarked, item.id, item.type]);
 
 	const holdBookmark = useHoldAction(onBookmark);
 
-	// const getDominantColors = (image: string) => {
-	// 	if (dominantInitialized) return;
-	// 	fetchDominantColors(getApiUrl(image), 'black').then((color) => {
-	// 		gradientColorsRef.current = color;
-	// 		dominantLoadedRef.current = true;
-	// 		setDominantInitialized(true);
-	// 	});
-	// };
-
 	const buttons = useMemo(() => {
-		if (['android', 'ios'].includes(Platform.OS) && !Platform.isTV) return;
+		if (['android', 'ios'].includes(Platform.OS)) return;
 
 		return (
 			<>
@@ -132,33 +162,34 @@ function CarouselMediaItem(props: CarouselItemProps) {
 			</>
 		);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [bookmarked, item.href, sizes.span1, sizes.span2]);
+	}, [bookmarked, item.href, sizes.span1, sizes.span2, onBookmark, onPlay]);
 	const image = useMemo(() => {
 		return (
 			<Image
 				className={'carousel-item-img'}
-				source={{ uri: getApiUrl(item.poster ?? 'undefined') }}
-				style={{ objectFit: 'contain', width: '100%', height: '100%' }}
-				cachePolicy="disk"
-				priority={'normal'}
+				source={getAuthenticatedImageSource(getApiUrl(item.poster ?? 'undefined'))}
+				contentFit="contain"
+				cachePolicy="memory-disk"
+				recyclingKey={item.id}
+				style={{ width: '100%', height: '100%' }}
 			/>
 		);
-	}, [item.poster]);
+	}, [item.poster, item.id]);
 
 	return (
 		<View
 			className={clsx('carousel-item', focused && 'carousel-item-hovered')}
-			onPointerEnter={handleHoverIn}
-			onPointerLeave={handleHoverOut}
-			removeClippedSubviews={true}
-			shouldRasterizeIOS={true}
-			renderToHardwareTextureAndroid={true}
+			onPointerEnter={onFocus}
+			onPointerLeave={onBlur}
+			{...({ onFocus, onBlur } as object)}
+			// No rasterization: it would clip the focus scale/glow that overflow.
+			// No zIndex here — the lift goes on the wrapper via setWrapperStyle.
 			style={style}
 		>
 			{
 				// Show ambient glow effect when hovered
-				focused && (
-					<Animated.View entering={FadeIn} className="carousel-item-ambient">
+				isWeb && (
+					<Animated.View className="carousel-item-ambient" style={[gradientAnimatedStyle]}>
 						<Svg className="w-full h-full">
 							<Defs>
 								<RadialGradient id="glow" cx="0.5" cy="0.5" rx="0.5" ry="0.5" gradientUnits="objectBoundingBox">
@@ -176,19 +207,26 @@ function CarouselMediaItem(props: CarouselItemProps) {
 
 			<Animated.View
 				className={clsx('carousel-item-ctn', focused && 'carousel-item-ctn-hovered')}
-				style={[animatedStyle, focused && { boxShadow: '0px 12px 50px rgba(0, 0, 0, 0.58)' }]}
+				style={[
+					scaleAnimatedStyle,
+					// UI-thread outline; web-only drop shadow.
+					outlineAnimatedStyle,
+					focused && isWeb && { boxShadow: '0px 12px 50px rgba(0, 0, 0, 0.58)' },
+				]}
+				focusable={false}
 			>
 				{image}
 				<Pressable
+					focusable
 					onPress={holdBookmark.wrapPress(onPlay)}
-					onFocus={handleHoverIn}
-					onBlur={handleHoverOut}
+					onFocus={onFocus}
+					onBlur={onBlur}
 					onPressIn={(e) => {
-						handleHoverIn();
+						onFocus();
 						holdBookmark.onPressIn(e);
 					}}
 					onPressOut={(e) => {
-						handleHoverOut();
+						onBlur();
 						holdBookmark.onPressOut(e);
 					}}
 					className={'carousel-anchor-btn'}
@@ -196,8 +234,11 @@ function CarouselMediaItem(props: CarouselItemProps) {
 				/>
 				{
 					// Inset shadows and buttons
-					focused && Platform.OS == 'web' && (
-						<Animated.View entering={FadeIn} className={'carousel-actions'} style={{ pointerEvents: 'none' }}>
+					isWeb && (
+						<Animated.View
+							className={'carousel-actions'}
+							style={[{ pointerEvents: 'none' }, gradientAnimatedStyle]}
+						>
 							<LinearGradient
 								locations={[0, 0.6]}
 								colors={['black', 'transparent']}

@@ -20,6 +20,8 @@ export const es: TranslationSchema = {
 	tryAgain: 'Intentar de nuevo',
 	loading: 'Cargando',
 	appInitializing: 'Inicializando la aplicacion',
+	initializingServer: 'Inicializando los servicios',
+	authenticatingUser: 'Autenticando usuario',
 	backHome: 'Volver al inicio',
 	unknownEmail: 'Direccion de correo desconocida',
 	unknownCategory: 'Categoria desconocida',
@@ -45,6 +47,9 @@ export const es: TranslationSchema = {
 	reloadSources: 'Recargar fuentes',
 	fetchingSources: 'Obteniendo fuentes de video...',
 	fetchSourcesFailed: 'No se pudieron obtener las fuentes de video',
+	serverInitializationTimeout: 'Tiempo de conexion agotado',
+	serverInitializationTimeoutDesc:
+		'No se pudieron alcanzar los servicios. Por favor verifica tu conexion a internet e intenta de nuevo.',
 	currentPassword: 'Contrasena actual',
 	newPassword: 'Nueva contrasena',
 	currentCountry: 'Pais actual',
@@ -122,6 +127,7 @@ export const es: TranslationSchema = {
 	updatingSubscriptionDescription:
 		'Actualmente estamos actualizando tu suscripcion. Si el proceso falla, actualiza la pagina e intentalo de nuevo.',
 	updateFailedSubscription: 'No se pudo actualizar la suscripcion',
+	samePlanSelected: 'Por favor, elige un plan diferente para continuar.',
 	code: 'Codigo de activacion',
 	activationCode: 'Introduce tu codigo de activacion',
 	codeDescription:
@@ -156,6 +162,11 @@ export const es: TranslationSchema = {
 	paymentFailed: 'El procesamiento del pago fallo,',
 	processingWait: 'Procesando el pago, espera por favor...',
 	waitRedirected: 'Espera a ser redirigido...',
+	redirectingPage: 'Redirigiendo',
+	redirectingPageDescription: 'Estas siendo redirigido a la pagina correcta. Esto solo tomara un momento.',
+	redirectingWait: 'Redirigiendo, espera por favor...',
+	redirectFailed: 'La redireccion fallo, el destino no es valido.',
+	openingApp: 'Abriendo la aplicacion...',
 	card: 'Tarjeta de debito o credito',
 	setPayment: 'Configura tu pago',
 	paymentMethod: 'Metodos de pago',

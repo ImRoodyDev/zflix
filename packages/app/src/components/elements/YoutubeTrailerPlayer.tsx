@@ -9,7 +9,7 @@ type Props = {
 };
 
 const YoutubeTrailerPlayerWeb = ({ videoId }: Pick<Props, 'videoId'>) => {
-	const src = `https://www.youtube.com/embed/${videoId}?start=0&end=120&autoplay=1&mute=1&loop=1&modestbranding=1&rel=0&cc_load_policy=1&iv_load_policy=3&fs=0&controls=0&playlist=${videoId}`;
+	const src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&controls=0&loop=1&playsinline=1&rel=0&end=120&playlist=${videoId}`;
 
 	return (
 		<iframe
@@ -36,7 +36,22 @@ const YoutubeTrailerPlayerNative = ({ videoId, style }: Props) => {
 		<YoutubeView
 			player={player}
 			style={[{ width: '100%', height: '100%', alignSelf: 'center' }, style]}
-			useInlineHtml
+			webViewProps={
+				{
+					// The trailer is decorative: keep the WebView out of the
+					// TV focus engine and away from touch/accessibility so the
+					// D-pad can never land (or get stuck) on the iframe.
+					focusable: false,
+					pointerEvents: 'none',
+					importantForAccessibility: 'no-hide-descendants',
+					accessible: false,
+					// Promote the WebView to its own hardware layer so video
+					// compositing doesn't re-rasterize while lists scroll.
+					androidLayerType: 'hardware',
+					overScrollMode: 'never',
+					setSupportMultipleWindows: false,
+				} as any
+			}
 		/>
 	);
 };

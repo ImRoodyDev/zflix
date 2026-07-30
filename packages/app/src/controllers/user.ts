@@ -10,7 +10,6 @@ import type {
 import { Profile } from '../types/User';
 import { fetchResponse } from '../utils/fetcher';
 
-
 /** Get current user info */
 export async function getUserInfo(): Promise<HttpSuccess<UserOutputInformation>> {
 	return fetchResponse<HttpSuccess<UserOutputInformation>>('/v1/api/auth/user-info');

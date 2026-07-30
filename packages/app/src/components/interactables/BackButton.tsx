@@ -2,14 +2,13 @@
 import React from 'react';
 
 // Internal imports
-import {IconType} from '../../constants';
-import {useResponsiveSize} from '../../contexts/ResponsiveContext';
-import {useTheme} from "../../contexts/ThemeContext";
-import ShadowStyles from "../../styles/shadow.style";
+import { IconType } from '../../constants';
+import { useResponsiveSize } from '../../contexts/ResponsiveContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import ShadowStyles from '../../styles/shadow.style';
 
 // Components
 import Button from './Button';
-
 
 type BackButtonProps = {
 	disable?: boolean;
@@ -18,10 +17,10 @@ type BackButtonProps = {
 	iconColor?: string;
 };
 
-function BackButton({disable, onBack, icon, iconColor}: BackButtonProps) {
+function BackButton({ disable, onBack, icon, iconColor }: BackButtonProps) {
 	// Hook to get responsive sizes
-	const sizes = useResponsiveSize();
-	const {themeColors, themeScheme} = useTheme();
+	const { span1b } = useResponsiveSize();
+	const { themeColors, themeScheme } = useTheme();
 
 	if (!onBack) {
 		return null;
@@ -37,7 +36,7 @@ function BackButton({disable, onBack, icon, iconColor}: BackButtonProps) {
 			icon={icon || 'arrow_left'}
 			className="close-btn"
 			// Styling
-			iconSize={sizes.span1b}
+			iconSize={span1b}
 			iconVariant="Linear"
 			textColor={iconColor || themeColors.black}
 			pressedScale={0.8}

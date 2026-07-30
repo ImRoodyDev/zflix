@@ -11,7 +11,6 @@ import { useTheme } from '../contexts/ThemeContext';
 import Button from '../components/interactables/Button';
 import Page from '../components/main/Page';
 
-
 export default function NotFoundScreen() {
 	const { themeColors } = useTheme();
 	const { t } = useTranslation();
@@ -51,8 +50,8 @@ export default function NotFoundScreen() {
 					textColor={Colors.white}
 					className="app-error-btn"
 					backgroundColor={Colors.primary[700]}
-					selectedBackgroundColor={Colors.primary[800]}
-					pressedBackgroundColor={Colors.primary[900]}
+					selectedBackgroundColor={Colors.primary[900]}
+					pressedBackgroundColor={Colors.primary[950]}
 				/>
 			</Page>
 		</>

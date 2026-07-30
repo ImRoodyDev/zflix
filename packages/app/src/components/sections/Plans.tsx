@@ -10,10 +10,9 @@ import { useResponsiveSize } from '../../contexts/ResponsiveContext';
 // Components
 import PlanButton from '../interactables/PlanButton';
 
-
 function AppPlans() {
 	const { t } = useTranslation();
-	const sizes = useResponsiveSize();
+	const { h1 } = useResponsiveSize();
 
 	return (
 		<ImageBackground
@@ -23,7 +22,7 @@ function AppPlans() {
 		>
 			<View className={'app-plans'}>
 				<View className={'app-plans-header'}>
-					<Icons.bag size={sizes.h1 * 1.6} variant={'Bold'} color={Colors.primary['300']} />
+					<Icons.bag size={h1 * 1.6} variant={'Bold'} color={Colors.primary['300']} />
 					<View className={'app-plans-header-info'}>
 						<Text className={'app-plans-header-title'}>{t('plans4EveryOne')}!</Text>
 						<Text className={'app-plans-header-txt'}>{t('plansSubtitle')}!</Text>

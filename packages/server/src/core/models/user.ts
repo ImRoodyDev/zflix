@@ -119,11 +119,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> {
 	 */
 	public static associate(models: any) {
 		this.belongsTo(models.Country, { foreignKey: 'countryCode', targetKey: 'code' });
-		this.belongsTo(models.Subscription, {
-			foreignKey: 'subscriptionId',
-			as: 'ActiveSubscription',
-			onDelete: 'SET NULL',
-		});
+		this.belongsTo(models.Subscription, { foreignKey: 'subscriptionId', as: 'ActiveSubscription', onDelete: 'SET NULL' });
 		this.hasMany(models.Device, { foreignKey: 'userId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 		this.hasMany(models.Profile, { foreignKey: 'userId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 		this.hasMany(models.Subscription, { foreignKey: 'userId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });

@@ -199,8 +199,10 @@ export interface ActivateCodeRequest {
 }
 
 export interface CreatePayPalSubscriptionRequest {
-	redirectURI: string;
-	cancelURI: string;
+	// Optional: only sent on web — native apps let the server fall back to its
+	// configured web frontend, since payment providers reject custom app schemes
+	redirectURI?: string;
+	cancelURI?: string;
 }
 
 export type SubscriptionRedirectResponse<T extends 'withInfo' | 'normal' = 'normal'> = {
@@ -209,8 +211,9 @@ export type SubscriptionRedirectResponse<T extends 'withInfo' | 'normal' = 'norm
 
 export interface UpdatePayPalSubscriptionRequest {
 	planId: string;
-	redirectURI: string;
-	cancelURI: string;
+	// Optional: only sent on web — see CreatePayPalSubscriptionRequest
+	redirectURI?: string;
+	cancelURI?: string;
 }
 
 // ============================================================================

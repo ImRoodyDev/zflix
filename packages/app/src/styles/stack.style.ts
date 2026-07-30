@@ -1,9 +1,22 @@
 // External imports
-import {NativeStackNavigationOptions} from "@react-navigation/native-stack";
-import {Platform} from "react-native";
+import { Stack } from 'expo-router';
+import { ComponentProps } from 'react';
+import { Platform } from 'react-native';
 
+// Native-stack screen options, derived from expo-router's <Stack.Screen> so we don't
+// need a direct dependency on @react-navigation/native-stack (which expo-router already pulls in).
+type NativeStackNavigationOptions = Exclude<NonNullable<ComponentProps<typeof Stack.Screen>['options']>, Function>;
 
-const platformModal = Platform.select<'transparentModal' | 'modal' | 'containedModal' | 'containedTransparentModal' | 'fullScreenModal' | 'formSheet' | 'card' | undefined>({
+const platformModal = Platform.select<
+	| 'transparentModal'
+	| 'modal'
+	| 'containedModal'
+	| 'containedTransparentModal'
+	| 'fullScreenModal'
+	| 'formSheet'
+	| 'card'
+	| undefined
+>({
 	web: 'transparentModal',
 	default: 'modal',
 });
@@ -18,4 +31,4 @@ const defaultModalStack: NativeStackNavigationOptions = {
 	presentation: platformModal,
 };
 
-export {defaultModalStack, defaultStack};
+export { defaultModalStack, defaultStack };

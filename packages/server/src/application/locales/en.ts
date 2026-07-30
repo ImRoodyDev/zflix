@@ -108,6 +108,8 @@ const en = {
 	STREAM_SOURCE_NOT_FOUND_MESSAGE: 'A streaming source for the requested media could not be found.',
 	REQUESTED_RESOURCE_NOT_FOUND_CODE: 'Requested resource not found',
 	REQUESTED_RESOURCE_NOT_FOUND_MESSAGE: 'The resource you are looking for could not be found.',
+	PROXY_NOT_FOUND_CODE: 'Proxy not found',
+	PROXY_NOT_FOUND_MESSAGE: 'No proxies are available.',
 
 	// Success Messages
 	SUCCESS_LOGIN_MESSAGE: 'User successfully logged in.',

@@ -109,6 +109,8 @@ const es = {
 	STREAM_SOURCE_NOT_FOUND_MESSAGE: 'No se pudo encontrar una fuente de transmision para el contenido solicitado.',
 	REQUESTED_RESOURCE_NOT_FOUND_CODE: 'Recurso solicitado no encontrado',
 	REQUESTED_RESOURCE_NOT_FOUND_MESSAGE: 'No se pudo encontrar el recurso que buscas.',
+	PROXY_NOT_FOUND_CODE: 'Proxy no encontrado',
+	PROXY_NOT_FOUND_MESSAGE: 'No hay proxies disponibles.',
 
 	// Success Messages
 	SUCCESS_LOGIN_MESSAGE: 'Usuario inicio sesion correctamente.',

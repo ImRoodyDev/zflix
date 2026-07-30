@@ -1,8 +1,7 @@
 // External imports
 import * as React from 'react';
-import {type GestureResponderEvent, Platform, Pressable, type PressableProps, type ViewStyle} from 'react-native';
-import Animated, {AnimatedStyle, Easing, useAnimatedStyle, useSharedValue, withTiming} from 'react-native-reanimated';
-
+import { type GestureResponderEvent, Platform, Pressable, type PressableProps, type ViewStyle } from 'react-native';
+import Animated, { AnimatedStyle, Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 export type Props = Omit<PressableProps, 'style' | 'onPress'> & {
 	href?: string;
@@ -16,13 +15,23 @@ export type Props = Omit<PressableProps, 'style' | 'onPress'> & {
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 function PlatformPressableInternal(
-	{disabled, onPress, onPressIn, onPressOut, android_ripple, pressColor, pressOpacity = 0.3, style, children, ...rest}: Props,
+	{
+		disabled,
+		onPress,
+		onPressIn,
+		onPressOut,
+		android_ripple,
+		pressColor,
+		pressOpacity = 0.3,
+		style,
+		children,
+		...rest
+	}: Props,
 	// ref: React.Ref<React.ComponentRef<typeof AnimatedPressable>>
 ) {
 	// const {dark} = useTheme();
 	const opacity = useSharedValue(1);
 	const animateTo = (toValue: number, duration: number) => {
-
 		opacity.value = withTiming(toValue, {
 			duration,
 			easing: Easing.inOut(Easing.quad),
@@ -37,13 +46,20 @@ function PlatformPressableInternal(
 	const handlePress = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent> | GestureResponderEvent) => {
 		if (Platform.OS === 'web' && rest.href !== null) {
 			// ignore clicks with modifier keys
-			const hasModifierKey = ('metaKey' in e && e.metaKey) || ('altKey' in e && e.altKey) || ('ctrlKey' in e && e.ctrlKey) || ('shiftKey' in e && e.shiftKey);
+			const hasModifierKey =
+				('metaKey' in e && e.metaKey) ||
+				('altKey' in e && e.altKey) ||
+				('ctrlKey' in e && e.ctrlKey) ||
+				('shiftKey' in e && e.shiftKey);
 
 			// only handle left clicks
 			const isLeftClick = 'button' in e ? e.button == null || e.button === 0 : true;
 
 			// let browser handle "target=_blank" etc.
-			const isSelfTarget = e.currentTarget && 'target' in e.currentTarget ? [undefined, null, '', 'self'].includes(e.currentTarget.target) : true;
+			const isSelfTarget =
+				e.currentTarget && 'target' in e.currentTarget
+					? [undefined, null, '', 'self'].includes(e.currentTarget.target)
+					: true;
 
 			if (!hasModifierKey && isLeftClick && isSelfTarget) {
 				e.preventDefault();
@@ -79,7 +95,7 @@ function PlatformPressableInternal(
 			onPressOut={handlePressOut}
 			// onFocus={handleFocus}
 			// onBlur={handleBlur}
-			style={[{cursor: Platform.OS === 'web' || Platform.OS === 'ios' ? 'pointer' : 'auto'}, animatedStyle, style]}
+			style={[{ cursor: Platform.OS === 'web' || Platform.OS === 'ios' ? 'pointer' : 'auto' }, animatedStyle, style]}
 			{...rest}
 		>
 			{children}
@@ -87,6 +103,4 @@ function PlatformPressableInternal(
 	);
 }
 
-export {
-	PlatformPressableInternal as PlatformPressable,
-};
+export const PlatformPressable = React.memo(PlatformPressableInternal);

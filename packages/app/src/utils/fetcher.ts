@@ -8,7 +8,6 @@ import { LocalStorageService } from '../services/LocalStorage';
 import { CachedAuthObject } from '../types/AuthObject';
 import { HttpError } from '../types/HttpError';
 import { ProcessError } from '../types/ProcessError';
-import logger from './logger';
 
 const ImageColors = (Platform.OS === 'web' && require('react-native-image-colors').default) || null;
 
@@ -50,14 +49,19 @@ export function getAuthenticationHeaders(): Record<string, string> {
 	};
 }
 
-/** Get an authenticated image source for native image components. */
+/** Get an authenticated image source for native image components.
+ * The Authorization header is only attached for our own API host — native image
+ * loaders (Glide/SDWebImage) don't share the JS fetch session, so API-served
+ * images need the token passed explicitly, while third-party hosts must never
+ * receive it. */
 export function getAuthenticatedImageSource(uri: string): { uri: string; headers: Record<string, string> } {
+	const isApiUrl = uri.startsWith(config.API_URL);
 	return {
 		uri,
 		headers: {
 			Accept: 'image/*',
 			'Accept-Language': window.application.language,
-			...getAuthenticationHeaders(),
+			...(isApiUrl && getAuthenticationHeaders()),
 			...(config.USER_AGENT && { 'User-Agent': config.USER_AGENT }),
 		},
 	};
@@ -71,9 +75,10 @@ export function getPublicImageUrl(imagePath: string): string {
 
 /** Get the avatar path by ID */
 export function getAvatarSourceById(avatarId: string | undefined): string {
-	// Check if the avatar ID is valid
-	if (!avatarId || !window.application.avatars.includes(avatarId)) {
-		return getPublicImageUrl(`avatars/${window.application.avatars[0]}.png`);
+	// Fall back to the first known avatar when the id is missing or unknown
+	const avatars = window.application.avatars;
+	if ((!avatarId || !avatars.includes(avatarId)) && avatars.length > 0) {
+		return getPublicImageUrl(`avatars/${avatars[0]}.png`);
 	}
 	return getPublicImageUrl(`avatars/${avatarId}.png`);
 }
@@ -200,10 +205,13 @@ export async function handleResponse<GeneticResponse = any, GeneticError = any>(
 /** Fetch an image from a given URI and convert it to a base64 string.*/
 export async function fetchImageBase64(imageUri: string, isApi: boolean): Promise<string | null> {
 	try {
-		// Fetch the image
+		// Fetch the image. 'cache' is a web-only fetch option ('only-if-cached' also
+		// requires same-origin and fails for cross-origin images); on native, plain fetch.
 		const response = isApi
 			? await fetch(new URL(imageUri, config.API_URL))
-			: await fetch(imageUri, { cache: 'only-if-cached', mode: 'same-origin' });
+			: Platform.OS === 'web'
+				? await fetch(imageUri, { cache: 'force-cache' })
+				: await fetch(imageUri);
 		const blob = await response.blob();
 
 		// Convert to base64

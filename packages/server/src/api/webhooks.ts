@@ -4,6 +4,7 @@ import { i18nMiddleware } from '@api/middlewares/i18n';
 import cookieParser from 'cookie-parser';
 import appConfig from '@core/infrastructure/config/application';
 import { isDevelopment } from '@utils/standard';
+import { requestLogger } from '@utils/express';
 import type { Server } from 'http';
 
 // Initialize express application
@@ -24,6 +25,7 @@ app.set('trust proxy', 1);
 // SECURITY: Hide Express server identity
 app.disable('x-powered-by');
 
+app.use(requestLogger);
 app.use(corsConfig);
 app.options('/*splat', corsConfig); // Enable pre-flight for all routes (Express v5 named wildcard)
 

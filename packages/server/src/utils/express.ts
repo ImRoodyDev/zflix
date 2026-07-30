@@ -1,6 +1,7 @@
-import type { Response, Request } from 'express';
+import type { NextFunction, Response, Request } from 'express';
 import { secondsLeftInDay } from '@utils/standard';
 import { LanguageCode } from '@core/constants/languages';
+import { requestClientIp } from '@core/infrastructure/services/tracker';
 
 /**
  * Set standard cache headers on the response.
@@ -70,4 +71,48 @@ export const getPaginations = (value: string, limit: number = 20) => {
 export const getAcceptLanguage = (req: Request): LanguageCode => {
 	const acceptLanguage = req.query.lang ?? req.headers['accept-language']?.split(',')[0] ?? 'en';
 	return acceptLanguage as LanguageCode;
+};
+
+const getRequestUrl = (req: Request): string => {
+	const host = req.get('host');
+	return host ? `${req.protocol}://${host}${req.originalUrl}` : req.originalUrl;
+};
+
+const colors = {
+	reset: '\u001b[0m',
+	badge: '\u001b[45;97m',
+	label: '\u001b[36m',
+	value: '\u001b[37m',
+	statusOk: '\u001b[32m',
+	statusRedirect: '\u001b[36m',
+	statusClientError: '\u001b[33m',
+	statusServerError: '\u001b[31m',
+};
+
+const statusColor = (statusCode: number): string => {
+	if (statusCode >= 500) return colors.statusServerError;
+	if (statusCode >= 400) return colors.statusClientError;
+	if (statusCode >= 300) return colors.statusRedirect;
+	return colors.statusOk;
+};
+
+export const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
+	if ((process.env.ENV || 'development') !== 'development') {
+		next();
+		return;
+	}
+
+	res.on('finish', () => {
+		const origin = req.get('origin') || req.get('referer') || 'unknown';
+		const clientIp = requestClientIp(req) || 'unknown';
+
+		console.log(
+			`${colors.badge}[LOG]${colors.reset} ${colors.label}URL:${colors.reset} ${colors.value}${getRequestUrl(req)}${colors.reset} ` +
+				`${colors.label}STATUS:${colors.reset} ${statusColor(res.statusCode)}${res.statusCode}${colors.reset} ` +
+				`${colors.label}IP:${colors.reset} ${colors.value}${clientIp}${colors.reset} ` +
+				`${colors.label}ORIGIN:${colors.reset} ${colors.value}${origin}${colors.reset}`,
+		);
+	});
+
+	next();
 };

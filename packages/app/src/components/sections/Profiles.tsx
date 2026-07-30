@@ -15,7 +15,6 @@ import ProfileButton from '../interactables/ProfileButton';
 import ComponentHeader from '../main/ComponentHeader';
 import Page from '../main/Page';
 
-
 type AppProfilesProps = {
 	title: string;
 	titleDescription: string | null;
@@ -45,17 +44,17 @@ function AppProfiles(props: AppProfilesProps) {
 	} = props;
 
 	const { themeColors } = useTheme();
-	const sizes = useResponsiveSize();
+	const { span2, topPadding } = useResponsiveSize();
 	const insets = useSafeAreaInsets();
 	const safeStyle = {
 		paddingTop: insets.top,
-		paddingBottom: Math.max(insets.bottom, sizes.topPadding),
+		paddingBottom: Math.max(insets.bottom, topPadding),
 		paddingLeft: insets.left,
 		paddingRight: insets.right,
 	};
 
 	const createProfile = useCallback(() => {
-		application.navigate.push('/(profile)/create-profile');
+		window.application.navigate.push('/(profile)/create-profile');
 	}, []);
 
 	return (
@@ -103,7 +102,7 @@ function AppProfiles(props: AppProfilesProps) {
 					className="app-profiles-manage-btn"
 					textClassName="app-profiles-manage-btn-text"
 					borderRadius={99999}
-					iconSize={sizes.span2}
+					iconSize={span2}
 					textColor={themeColors.black}
 					backgroundColor={themeColors.grayButton}
 					selectedBackgroundColor={themeColors.sGrayButton}

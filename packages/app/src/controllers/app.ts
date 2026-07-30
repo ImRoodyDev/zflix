@@ -3,9 +3,9 @@ import { Router } from 'expo-router';
 
 // Internal imports
 import config from '../config/application';
+import { resources } from '../config/localization';
 import { LocalStorageService } from '../services/LocalStorage';
 import { CachedAuthObject } from '../types/AuthObject';
-import { ClientGeo } from '../types/ClientGeo';
 import { isHttpError } from '../types/HttpError';
 import type { HttpSuccess } from '../types/HttpSuccess';
 import { Certification, CertificationOutputInformation } from '../types/Medias';
@@ -18,16 +18,22 @@ import type {
 	UserOutputInformation,
 } from '../types/ServerOutputs';
 import { User } from '../types/User';
-import { fetchResponse, getPublicImageUrl } from '../utils/fetcher';
+import { fetchResponse, fetchResponseWithTimeout, getPublicImageUrl } from '../utils/fetcher';
 import logger from '../utils/logger';
+import { delay } from '@/utils/standard';
+
+/** Initialization phases reported to the splash screen while the app boots. */
+export type InitPhase = 'server' | 'auth' | 'finalizing';
 
 type InitializeAppProps = {
 	navigate: Router;
 	pathname: string;
+	/** Called as the app moves through each initialization phase. */
+	onPhase?: (phase: InitPhase) => void;
 };
 
 /** Initialize application global variable */
-export default async function initializeApp({ navigate, pathname }: InitializeAppProps) {
+export default async function initializeApp({ navigate, pathname, onPhase }: InitializeAppProps) {
 	window.application = {
 		init: false,
 		pathname: pathname,
@@ -51,25 +57,44 @@ export default async function initializeApp({ navigate, pathname }: InitializeAp
 		prevSearch: LocalStorageService.getItem(config.$PREV_SEARCH_KEY),
 	};
 
-	// Initialize application features
-	await initializeAuthentication();
+	// Initialize the backend/server configuration first. The server is required
+	// for the app to function, so initializeServer rethrows on failure and the
+	// RouteErrorBoundary is shown instead of launching the app.
+	onPhase?.('server');
 	await initializeServer();
-	await initializeAvatars();
+	await delay(1000); // Small delay to ensure the server is ready before proceeding
 
+	// Authenticate the user first and load avatars. These are
+	// independent of each other so they run in parallel.
+	onPhase?.('auth');
+	await Promise.all([initializeAuthentication(), initializeAvatars()]);
+	await delay(1000); // Small delay to ensure the server is ready before proceeding
+
+	onPhase?.('finalizing');
+	await delay(1000); // Small delay to ensure the server is ready before proceeding
 	// Set the application as initialized
 	window.application.init = true;
 }
 
+/** Max time (ms) to wait for the server init request before aborting. */
+const SERVER_INIT_TIMEOUT = 15_000;
+
 /** Initialize Backend Data */
 async function initializeServer() {
 	try {
-		const response = await fetchResponse<
+		const params = new URLSearchParams({
+			...(window.application.countryCode && { country: window.application.countryCode }),
+		});
+
+		// Abort the request after SERVER_INIT_TIMEOUT so a hung/unreachable server
+		// surfaces an error (and the RouteErrorBoundary) instead of stalling the splash.
+		const response = await fetchResponseWithTimeout<
 			HttpSuccess<{
 				paymentProcessors: PaymentSource[];
 				plans: PlanOutputInformation[];
 				certifications: CertificationOutputInformation[];
 			}>
-		>(`/v1/api/init`);
+		>(`/v1/api/init?${params.toString()}`, {}, SERVER_INIT_TIMEOUT);
 
 		// Set payment sources
 		window.application.paymentSources =
@@ -87,9 +112,31 @@ async function initializeServer() {
 		window.application.plans = response.data?.plans || [];
 		window.application.certifications =
 			response.data?.certifications.map((certification) => new Certification(certification)) || [];
-	} catch {
+	} catch (error) {
+		// If the App fails to initialize the server the app should not launch;
+		// instead it should trigger the RouteErrorBoundary. Reset any partial
+		// state and rethrow so initializeApp rejects and the hook surfaces the error.
 		window.application.plans = [];
 		window.application.certifications = [];
+
+		// Handle timeout error with a nice user-friendly message
+		if (error instanceof Error && error.name === 'AbortError') {
+			const lang = window.application.language || 'en';
+			const timeoutMessage =
+				resources[lang]?.translation?.serverInitializationTimeoutDesc ||
+				resources['en']?.translation?.serverInitializationTimeoutDesc ||
+				'Unable to reach the services. Please check your connection and try again.';
+
+			throw new ProcessError({
+				code: 'SERVER_INIT_TIMEOUT',
+				message: timeoutMessage,
+				details: error,
+				expose: true,
+				status: 408, // Request Timeout status code
+			});
+		}
+
+		throw error;
 	}
 }
 
@@ -100,6 +147,8 @@ export async function initializeAuthentication() {
 	if (storedAuth) {
 		window.application.auth.loggedIn = storedAuth.loggedIn ?? false;
 		window.application.auth.accessToken = storedAuth.accessToken ?? '';
+		logger.info('User is authenticated, fetching user information...');
+		logger.debug('storedToken:', storedAuth.accessToken?.slice(0, 10) + '...' + storedAuth.accessToken?.slice(-10));
 	}
 
 	try {
@@ -129,9 +178,11 @@ export async function initializeAuthentication() {
 		window.application.auth.loggedIn = false;
 		window.application.auth.user = undefined;
 
-		// If it's a unauthorized error, do not redirect
-		if (isHttpError(error) && (error.statusCode == 401 || error.statusCode == 401)) {
-			logger.info('Clearing authentication data due to unauthorized error');
+		console.error('Error initializing authentication:', error, { status: (error as any)?.statusCode });
+
+		// If it's an unauthorized/forbidden error, clear the stale auth data
+		if (isHttpError(error) && error.statusCode === 401 /**|| error.statusCode === 403)*/) {
+			logger.info('Clearing authentication data due to unauthorized access...');
 			// Clear all storage
 			await LocalStorageService.removeItem(config.$AUTH_OBJECT_KEY);
 		} else {

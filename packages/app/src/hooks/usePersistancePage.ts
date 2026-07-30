@@ -51,7 +51,7 @@ export function usePersistancePage<T>(props: Props<T>): PersistedPage<T> {
 
 	// Scroll position ref to keep track of the current scroll position without causing re-renders
 	const scrollPositionRef = useRef<number>(0);
-	const restoreTimerRef = useRef<NodeJS.Timeout | null>(null);
+	const restoreTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const dataRef = useRef<T | undefined>(props.data);
 
 	// Generate a unique session key for this page based on the provided key and the current profile ID

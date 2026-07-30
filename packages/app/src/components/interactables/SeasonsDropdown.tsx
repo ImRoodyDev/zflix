@@ -6,7 +6,7 @@ import { Dropdown } from 'react-native-cross-elements';
 
 // Internal imports
 import { Icons } from '../../constants';
-
+import { useResponsiveSize, useResponsiveVars } from '@/contexts/ResponsiveContext';
 
 type Props = {
 	seasons: number;
@@ -16,7 +16,9 @@ type Props = {
 
 function SeasonsDropdown(props: Props) {
 	const { t } = useTranslation();
+	const { span1b, span2 } = useResponsiveSize();
 	const { seasons, currentSeason, onSeasonChange = () => {} } = props;
+	const vars = useResponsiveVars();
 
 	return (
 		<Dropdown
@@ -27,7 +29,7 @@ function SeasonsDropdown(props: Props) {
 			dropdownOverlayColor="transparent"
 			dropdownStyle={{
 				backgroundColor: 'white',
-				borderRadius: 22,
+				borderRadius: span1b,
 				marginTop: 2,
 				paddingTop: 1,
 				paddingBottom: 1,
@@ -37,13 +39,13 @@ function SeasonsDropdown(props: Props) {
 				return (
 					<View className={'season-dropdown'}>
 						<Text className={'season-dropdown-text'}>{`${t('season')} ${season ?? '#'}`}</Text>
-						<Icons.arrow_down size={18} variant={'Bold'} color="black" />
+						<Icons.arrow_down size={span2} variant={'Bold'} color="black" />
 					</View>
 				);
 			}}
 			renderItemContent={(season: number) => {
 				return (
-					<View className={'season-dropdown-item responsive-vars'}>
+					<View className={'season-dropdown-item responsive-vars'} style={[vars]}>
 						<Text className={'season-dropdown-item-text'}>{`${t('season')} ${season}`}</Text>
 					</View>
 				);

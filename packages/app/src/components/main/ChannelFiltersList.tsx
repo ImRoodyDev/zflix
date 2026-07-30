@@ -7,7 +7,7 @@ import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 
 // Internal imports
 import { Colors } from '../../constants';
-import { useRootContext } from '../../contexts/AppRootContext';
+import { useAppUI } from '../../contexts/AppRootContext';
 import { useResponsiveSize } from '../../contexts/ResponsiveContext';
 import ShadowStyles from '../../styles/shadow.style';
 import { IPTVCategory } from '../../types/Channels';
@@ -15,7 +15,6 @@ import { IPTVCategory } from '../../types/Channels';
 // Components
 import Button from '../interactables/Button';
 import CloseButton from '../interactables/CloseButton';
-
 
 type Props = {
 	categories: IPTVCategory[];
@@ -28,8 +27,8 @@ function ChannelFiltersList(props: Props) {
 	const { categories, currentSelectedId, onSelect, onClose } = props;
 
 	const navigation = useNavigation();
-	const { setTabBarVisible } = useRootContext();
-	const sizes = useResponsiveSize();
+	const { setTabBarVisible } = useAppUI();
+	const { span3 } = useResponsiveSize();
 
 	useEffect(() => {
 		setTabBarVisible(false);
@@ -58,7 +57,7 @@ function ChannelFiltersList(props: Props) {
 				snapToAlignment={'center'}
 				showsVerticalScrollIndicator={true}
 			>
-				{categories.map((category) => {
+				{categories.map((category, index) => {
 					const isSelected = currentSelectedId === category.id;
 					const key = isSelected ? `slc_cat-${category.id}` : `cat-${category.id}`;
 
@@ -71,12 +70,12 @@ function ChannelFiltersList(props: Props) {
 							textClassName={'genre-btn-text'}
 							borderRadius={999999}
 							icon={isSelected ? 'x' : undefined}
-							iconSize={sizes.span3}
+							iconSize={span3}
 							textColor={isSelected ? 'black' : 'white'}
 							focusedTextColor={'black'}
 							backgroundColor={isSelected ? 'white' : 'transparent'}
-							selectedBackgroundColor={Colors.zinc[400]}
-							pressedBackgroundColor={Colors.zinc[200]}
+							selectedBackgroundColor={Colors.zinc[300]}
+							pressedBackgroundColor={Colors.zinc[400]}
 							pressedScale={0.9}
 						/>
 					);

@@ -34,9 +34,10 @@
 	flex-direction: row;
 	justify-content: center;
 	align-self: center;
+	gap: var(--span3-size);
 
-	padding-top: 20px;
-	padding-bottom: 20px;
+	padding-top: var(--span1b-size);
+	padding-bottom: var(--span1b-size);
 	margin-left: var(--side-padding);
 	margin-right: var(--side-padding);
 }
@@ -69,24 +70,28 @@
 	justify-content: center;
 	align-items: center;
 
-	padding-top: 20px;
-	padding-bottom: 20px;
-	padding-left: 10px;
-	padding-right: 10px;
-}
-
-.app-select-plan-input-ctn {
-	width: 400px !important;
+	padding-top: var(--span1b-size);
+	padding-bottom: var(--span1b-size);
+	padding-left: var(--span6-size);
+	padding-right: var(--span6-size);
 }
 
 .app-select-plan-input {
-	font-size: var(--span1b-size) !important;
-	font-family: Montserrat-Medium, sans-serif;
+	width: calc(400px * var(--pixel-ratio)) !important;
+
+	margin-bottom: var(--span1b-size);
+	margin-top: var(--span6-size);
+}
+
+.app-select-plan-input-text {
+	font-size: var(--span4-size);
+	line-height: var(--span4-size);
+	font-family: Montserrat-Medium, sans-serif !important;
 }
 
 .code-agreement {
 	width: 100%;
-	max-width: 440px;
+	max-width: calc(440px * var(--pixel-ratio)) !important;
 
 	margin-top: 12px;
 }
@@ -99,19 +104,19 @@
 }
 
 .plan-select-btn {
-	width: 318px;
-	height: 46px;
+	width: auto;
+	min-width: calc(166px * var(--pixel-ratio));
+	gap: 6px !important;
 
-	margin-top: 16px;
-	padding-top: 12px;
-	padding-bottom: 12px;
-	padding-left: 16px;
-	padding-right: 16px;
-	border-radius: 24px;
+	padding-left: var(--span1-size);
+	padding-right: var(--span1-size);
+	padding-top: var(--span1b-size);
+	padding-bottom: var(--span1b-size);
+	align-self: center;
 }
 
 /* Mobile Portrait */
-@media only screen and (max-width: 767px) and (min-height: 480px) {
+@media only screen and (max-width: 599px) {
 	.app-plans-scroll-ctn {
 		justify-content: flex-start;
 	}
@@ -127,12 +132,12 @@
 }
 
 /* Mobile Landscape */
-@media only screen and (max-width: 1023px) and (max-height: 480px) {
+@media only screen and (max-width: 1023px) and (max-height: 479px) {
 	.activation-code-ctn {
 		flex-basis: auto !important;
 	}
 }
-@media only screen and (min-width: 768px) and (max-width: 1023px) and (min-height: 480px) {
+@media only screen and (max-width: 899px) {
 	.activation-code-ctn {
 		flex-basis: auto !important;
 	}
@@ -164,8 +169,8 @@
 }
 
 .payment-dropdown-btn {
-	width: 440px;
-	height: 60px;
+	width: calc(440px * var(--pixel-ratio));
+	height: calc(60px * var(--pixel-ratio));
 	max-width: 100%;
 
 	display: flex;
@@ -173,12 +178,12 @@
 	justify-content: flex-start;
 	align-items: center;
 
-	padding: 12px;
+	padding: var(--span5-size);
 
 	outline: none;
-	border-radius: 8px;
+	border-radius: var(--span5-size);
 	border-style: solid;
-	border-width: 1px;
+	border-width: var(--outline-width);
 	border-color: theme('colors.zinc.500');
 	background-color: transparent;
 }
@@ -197,7 +202,7 @@
 	align-items: center;
 
 	padding: var(--span6-size);
-	border-radius: 8px;
+	border-radius: var(--span5-size);
 }
 
 .payment-dropdown-item-ctn-focus {
@@ -215,17 +220,18 @@
 }
 
 .app-payment-option {
-	width: 440px !important;
+	width: calc(440px * var(--pixel-ratio)) !important;
 	max-width: 100% !important;
-	min-height: 3rem !important;
-	max-height: 4rem !important;
+	min-height: var(--h1-size) !important;
+	max-height: calc(64px * var(--pixel-ratio)) !important;
 	margin-top: var(--span5-size);
+	border-radius: var(--span5-size);
 }
 
 .app-payment-selected-plan {
 	width: 100%;
 	height: calc(var(--h1-size) * 2);
-	max-width: 440px;
+	max-width: calc(440px * var(--pixel-ratio));
 
 	display: flex;
 	flex-direction: row;
@@ -236,7 +242,7 @@
 	margin-left: 0;
 	margin-right: 0;
 
-	padding: 16px;
+	padding: var(--span3-size);
 
 	border-radius: var(--span5-size);
 	background-color: theme('colors.zinc.100');
@@ -260,8 +266,8 @@
 }
 
 .app-payment-change-btn {
-	width: 40px;
-	height: 40px;
+	width: var(--h2-size);
+	height: var(--h2-size);
 	margin-left: auto;
 
 	border-radius: 99999px;
@@ -291,31 +297,30 @@
 
 .payment-proceed-parent {
 	width: 100%;
-	max-width: 440px;
+	max-width: calc(440px * var(--pixel-ratio));
 }
 
 .payment-proceed-btn {
 	width: 100%;
-	height: 46px;
+	min-width: calc(166px * var(--pixel-ratio));
 
-	padding-top: 12px;
-	padding-bottom: 12px;
-	padding-left: 16px;
-	padding-right: 16px;
-
-	border-radius: 24px;
+	align-self: center;
+	padding-left: var(--span1-size);
+	padding-right: var(--span1-size);
+	padding-top: var(--span1b-size);
+	padding-bottom: var(--span1b-size);
 }
 
 .payment-proceed-btn-txt {
-	font-size: var(--span3-size);
+	font-size: var(--span2-size);
 	font-family: Montserrat-Medium, sans-serif;
 }
 
 .payment-agreement {
 	width: 100%;
-	max-width: 440px;
+	max-width: calc(440px * var(--pixel-ratio));
 
-	margin-top: 12px;
+	margin-top: var(--span5-size);
 }
 
 .payment-agreement-txt {
@@ -376,7 +381,7 @@
 }
 
 /* Mobile Portrait */
-@media only screen and (max-width: 767px) and (min-height: 480px) {
+@media only screen and (max-width: 599px) {
 	.app-manage-plan-ctn {
 		padding-left: var(--side-padding);
 		padding-right: var(--side-padding);
@@ -385,7 +390,7 @@
 	}
 }
 /* Tablets Portrait Small*/
-@media only screen and (min-width: 768px) and (max-width: 1023px) and (min-height: 480px) {
+@media only screen and (max-width: 899px) {
 	.app-manage-plan-ctn {
 		padding-left: 10%;
 		padding-right: 10%;
@@ -399,7 +404,7 @@
 .app-media-preview-2 {
 	width: 100%;
 	height: auto;
-	min-height: 580px;
+	min-height: calc(580px * var(--pixel-ratio));
 
 	flex: 1;
 
@@ -416,7 +421,7 @@
 .app-media-preview-ctn {
 	width: 100%;
 	height: 100%;
-	border-radius: 22px;
+	border-radius: var(--span1-size);
 }
 
 .app-media-preview-ambient {
@@ -459,7 +464,7 @@
 }
 
 /* Tablets Portrait Small*/
-@media only screen and (min-width: 768px) and (max-width: 1023px) and (min-height: 480px) {
+@media only screen and (max-width: 899px) {
 	.app-media-preview,
 	.app-media-preview-2 {
 		height: 100vh;
@@ -480,7 +485,7 @@
 	}
 }
 /* Mobile Portrait */
-@media only screen and (max-width: 767px) and (min-height: 480px) {
+@media only screen and (max-width: 599px) {
 	.app-media-preview,
 	.app-media-preview-2 {
 		height: 100vh;
@@ -509,7 +514,7 @@
 	}
 }
 /* Mobile Landscape */
-@media only screen and (max-width: 1023px) and (max-height: 480px) {
+@media only screen and (max-width: 1023px) and (max-height: 479px) {
 	.app-media-preview,
 	.app-media-preview-2 {
 		flex: none !important;
@@ -548,11 +553,13 @@
 /*#region Channel + Favorites Page */
 .channels-header {
 	width: 100%;
-	min-height: var(--h1-size);
+	min-height: calc(var(--span4-size) + var(--span2-size) * 2);
+	height: auto;
 
 	display: flex;
 	justify-content: center;
 	align-items: flex-start;
+	align-self: flex-start;
 
 	margin-top: var(--header-size-h);
 	padding-left: var(--carousel-scroll-padding-l);
@@ -574,23 +581,31 @@
 
 .fav-slider,
 .channels-slider {
-	width: auto;
+	width: auto !important;
+	flex: 0 !important;
+
+	align-self: flex-start !important;
+	height: calc(var(--span4-size) + var(--span2-size) * 2);
+
 	/* max-width: 24vw; */
 	flex: unset !important;
 }
 
 .fav-slider-btn,
 .channels-slider-btn {
+	width: calc(100px * var(--pixel-ratio)) !important;
 	height: calc(var(--span4-size) + var(--span2-size) * 2);
-	padding-left: var(--h4-size);
+
+	/* padding-left: var(--h4-size);
 	padding-right: var(--h4-size);
 	padding-top: var(--span2-size);
-	padding-bottom: var(--span2-size);
+	padding-bottom: var(--span2-size); */
+	padding: 0 !important;
 }
 
 .fav-slider-btn-txt,
 .channels-slider-btn-txt {
-	font-size: var(--span4-size);
+	font-size: var(--span4-size) !important;
 }
 /*#endregion*/
 
@@ -620,6 +635,12 @@
 	padding-right: var(--span1-size);
 	padding-top: var(--span4-size);
 	padding-bottom: var(--span4-size);
+	outline-width: var(--outline-width) !important;
+	border-width: var(--outline-width) !important;
+
+	position: absolute;
+	right: 0;
+	top: 0;
 }
 
 .player-src-btn-txt {
@@ -643,7 +664,7 @@
 	background-color: theme('colors.zinc.950');
 	border-radius: calc(var(--side-padding) / 1.4);
 	border-color: theme('colors.zinc.900');
-	border-width: 2px;
+	border-width: var(--outline-width);
 	border-style: solid;
 
 	overflow: hidden;
@@ -693,7 +714,7 @@
 	padding-top: var(--span3-size);
 	padding-bottom: var(--span3-size);
 	background-color: #18181b79;
-	border-radius: 18px;
+	border-radius: var(--span2-size);
 	overflow: hidden;
 }
 
@@ -736,9 +757,10 @@
 
 /*#region Error Pages*/
 .app-error-page {
+	/* NOTE: this class is applied to a ScrollView's `style` (see Page.tsx).
+	   alignItems/justifyContent are illegal on a ScrollView's own style and
+	   must live on the contentContainerStyle (.app-error-page-ctn) instead. */
 	flex: 1;
-	align-items: center;
-	justify-content: center;
 	padding: 20px;
 }
 
@@ -746,11 +768,12 @@
 	flex: 1;
 	align-items: center;
 	justify-content: center;
+	gap: 0px;
 }
 .app-error-img-ctn {
 	height: calc(var(--h1-size) * 4);
 	width: auto;
-	margin-bottom: var(--span5-size);
+	margin-bottom: var(--span1-size);
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -768,29 +791,36 @@
 }
 
 .app-error-title {
-	font-family: Montserrat-Bold;
+	font-family: Montserrat-Bold, sans-serif;
 	font-size: var(--h2-size);
+	line-height: var(--h2-size);
 	text-align: center;
-	margin-bottom: 8px;
+	margin-bottom: 4px;
 }
 
 .app-error-desc {
-	font-family: Montserrat-Regular;
+	font-family: Montserrat-Regular, sans-serif;
 	font-size: var(--span2-size);
 	text-align: center;
-	margin-bottom: 32px;
+	margin-bottom: var(--span1-size);
 }
 
 .app-error-actions {
 	flex-direction: row;
-	gap: 16px;
+	gap: var(--span3-size);
 }
 
 .app-error-btn {
-	padding-left: 24px;
-	padding-right: 24px;
-	padding-top: 12px;
-	padding-bottom: 12px;
-	border-radius: 99999px;
+	padding-left: var(--span1b-size);
+	padding-right: var(--span1b-size);
+	padding-top: var(--span5-size);
+	padding-bottom: var(--span5-size);
+	border-radius: 99999px !important;
 }
+
+.app-error-btn-txt {
+	font-size: var(--span2-size);
+	font-family: Montserrat-Regular, sans-serif;
+}
+
 /*#endregion*/

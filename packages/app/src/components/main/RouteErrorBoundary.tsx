@@ -5,14 +5,16 @@ import { useTranslation } from 'react-i18next';
 
 // Internal imports
 import { Images, Colors } from '../../constants';
-import { useTheme } from '../../contexts/ThemeContext';
+import { ResponsiveSizeProvider, useResponsiveSize } from '../../contexts/ResponsiveContext';
+import { ThemeProvider, useTheme } from '../../contexts/ThemeContext';
 
 // Components
 import Button from '../interactables/Button';
 import Page from './Page';
 
-const RouteErrorBoundary = ({ error, retry: onRetry }: ErrorBoundaryProps) => {
+const RouteErrorContent = ({ error, retry: onRetry }: ErrorBoundaryProps) => {
 	const { themeColors } = useTheme();
+	const sizes = useResponsiveSize();
 	const { t } = useTranslation();
 	const message = error?.message || t('unknownError' as any) || 'An unknown error occurred.';
 
@@ -28,8 +30,9 @@ const RouteErrorBoundary = ({ error, retry: onRetry }: ErrorBoundaryProps) => {
 		<Page
 			backgroundColor={themeColors.whiteBackground}
 			statusBarStyle={'dark'}
-			className="app-error-page responsive-vars"
+			className="app-error-page"
 			contentContainerClassName="app-error-page-ctn"
+			useResponsiveVars
 		>
 			<View className="app-error-img-ctn">
 				<Image className="app-error-img" source={Images.notFoundImage} resizeMode="contain" />
@@ -42,28 +45,46 @@ const RouteErrorBoundary = ({ error, retry: onRetry }: ErrorBoundaryProps) => {
 				{message}
 			</Text>
 
-			<View className="app-error-actions">
+			<View
+				className="app-error-actions"
+				style={{ flexDirection: 'row', gap: sizes.span3 }}
+			>
 				<Button
 					onPress={onRetry}
 					text={t('retry')}
-					textColor={Colors.white}
-					backgroundColor={Colors.primary[700]}
-					selectedBackgroundColor={Colors.primary[800]}
-					pressedBackgroundColor={Colors.primary[900]}
+					textColor={Colors.black}
+					backgroundColor={Colors.gray[200]}
+					selectedBackgroundColor={Colors.gray[400]}
+					pressedBackgroundColor={Colors.gray[500]}
 					className="app-error-btn"
+					focusable
 				/>
 				<Button
 					onPress={onGoHome}
 					text={t('goHome')}
-					textColor={Colors.black}
-					backgroundColor={Colors.gray[200]}
-					selectedBackgroundColor={Colors.gray[300]}
-					pressedBackgroundColor={Colors.gray[400]}
+					textColor={Colors.white}
+					backgroundColor={Colors.primary[700]}
+					selectedBackgroundColor={Colors.primary[900]}
+					pressedBackgroundColor={Colors.primary[950]}
 					className="app-error-btn"
+					focusable
 				/>
 			</View>
 		</Page>
 	);
 };
+
+// expo-router renders this boundary OUTSIDE RootContext, so the app-level
+// providers (theme, responsive sizing) aren't mounted. Page — and the
+// ThemedView / useResponsiveVars it relies on — would otherwise throw a second
+// error ("useResponsiveVars must be used within a ResponsiveSizeProvider").
+// Mount the required providers here so the error screen renders standalone.
+const RouteErrorBoundary = (props: ErrorBoundaryProps) => (
+	<ThemeProvider>
+		<ResponsiveSizeProvider>
+			<RouteErrorContent {...props} />
+		</ResponsiveSizeProvider>
+	</ThemeProvider>
+);
 
 export default RouteErrorBoundary;

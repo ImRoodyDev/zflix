@@ -1,20 +1,17 @@
 // External imports
-import React, { memo } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Internal imports
-import { useResponsiveSize } from '../../contexts/ResponsiveContext';
+import { ResponsiveRootThemedView, useResponsiveSize } from '../../contexts/ResponsiveContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
 // Components
 import Button from '../interactables/Button';
 import DrawerMenuButton from '../interactables/DrawerMenuButton';
 import SwitchTheme from '../interactables/SwitchTheme';
-import ThemedView from '../theme/ThemedView';
-
 
 type Props = {
 	logout: () => void;
@@ -22,34 +19,53 @@ type Props = {
 	drawerToggled: boolean;
 };
 
-const AnimatedThemedView = Animated.createAnimatedComponent(ThemedView);
-
 const SidebarDrawer = ({ logout, drawerToggled, toggleDrawerHandler }: Props) => {
 	const { t } = useTranslation();
-	const sizes = useResponsiveSize();
+	const { span1 } = useResponsiveSize();
 	const inset = useSafeAreaInsets();
 	const { themeColors } = useTheme();
 
-	const safeStyle = { paddingTop: inset.top, paddingRight: inset.right, paddingBottom: inset.bottom };
+	const safeStyle = useMemo(
+		() => ({ paddingTop: inset.top, paddingRight: inset.right, paddingBottom: inset.bottom }),
+		[inset.top, inset.right, inset.bottom],
+	);
 
-	const buttonStyle = {
-		iconSize: sizes.span1,
-		textColor: themeColors.black,
-		backgroundColor: 'transparent',
-		selectedBackgroundColor: themeColors.sGrayButton,
-		pressedBackgroundColor: themeColors.pGrayButton,
-	};
+	const buttonStyle = useMemo(
+		() => ({
+			iconSize: span1,
+			textColor: themeColors.black,
+			backgroundColor: 'transparent',
+			selectedBackgroundColor: themeColors.sGrayButton,
+			pressedBackgroundColor: themeColors.pGrayButton,
+			focusOutlined: false,
+		}),
+		[span1, themeColors.black, themeColors.sGrayButton, themeColors.pGrayButton],
+	);
+	const getSidebarFocusProps = useCallback(
+		(_index: number) => ({
+			// Closed drawer controls stay non-focusable.
+			focusable: drawerToggled,
+		}),
+		[drawerToggled],
+	);
 
 	return (
-		<AnimatedThemedView className={'app-sidebar h-full w-full responsive-vars'} style={safeStyle}>
+		<ResponsiveRootThemedView className={'app-sidebar h-full w-full'} style={safeStyle}>
 			{
-				// Only render the sidebar when the drawer is toggled
-				drawerToggled && (
-					<Animated.View entering={FadeIn} className={'app-sidebar-ctn'}>
+				// Keep the drawer subtree mounted; closed controls are non-focusable.
+				<View
+					className={'app-sidebar-ctn'}
+					// Hide closed drawer controls from native accessibility/focus search.
+					importantForAccessibility={drawerToggled ? 'auto' : 'no-hide-descendants'}
+					style={{ pointerEvents: drawerToggled ? 'auto' : 'none' }}
+				>
+					{/* Trap focus only while the drawer is open. */}
+					<View style={{ width: '100%' }}>
 						<View className={'app-sidebar-header'}>
-							<SwitchTheme className={'sidebar-switch-theme-bt'} />
+							<SwitchTheme className={'sidebar-switch-theme-bt'} focusable={drawerToggled} />
 							<DrawerMenuButton
 								drawerToggled={drawerToggled}
+								focusable={drawerToggled}
 								toggleDrawerHandler={toggleDrawerHandler}
 								style={{ flex: 1, outlineColor: 'transparent' }}
 							/>
@@ -57,12 +73,12 @@ const SidebarDrawer = ({ logout, drawerToggled, toggleDrawerHandler }: Props) =>
 
 						{
 							// Check to see if the user has a subscription
-							application.auth.user?.setupComplete && (
+							window.application.auth.user?.setupComplete && (
 								<>
 									<Button
 										// Props
 										onPress={() => {
-											application.navigate.replace('/(profile)/profiles');
+											window.application.navigate.replace('/(profile)/profiles');
 										}}
 										icon="profiles"
 										text={t('switchProfile')}
@@ -70,13 +86,14 @@ const SidebarDrawer = ({ logout, drawerToggled, toggleDrawerHandler }: Props) =>
 										textClassName="!font-mt_regular span2"
 										// Styling
 										{...buttonStyle}
+										{...getSidebarFocusProps(0)}
 									/>
 
 									<Button
 										// Props
 										onPress={() => {
 											toggleDrawerHandler();
-											application.navigate.push('/(plan)/manage-plan');
+											window.application.navigate.push('/(plan)/manage-plan');
 										}}
 										icon="wallet_check"
 										text={t('managePlan')}
@@ -84,13 +101,14 @@ const SidebarDrawer = ({ logout, drawerToggled, toggleDrawerHandler }: Props) =>
 										textClassName="!font-mt_regular span2"
 										// Styling
 										{...buttonStyle}
+										{...getSidebarFocusProps(1)}
 									/>
 
 									<Button
 										// Props
 										onPress={() => {
 											toggleDrawerHandler();
-											application.navigate.push('/(user)/account-info');
+											window.application.navigate.push('/(user)/account-info');
 										}}
 										icon="user_square"
 										text={t('accountInfo')}
@@ -98,6 +116,7 @@ const SidebarDrawer = ({ logout, drawerToggled, toggleDrawerHandler }: Props) =>
 										textClassName="!font-mt_regular span2"
 										// Styling
 										{...buttonStyle}
+										{...getSidebarFocusProps(2)}
 									/>
 								</>
 							)
@@ -105,11 +124,11 @@ const SidebarDrawer = ({ logout, drawerToggled, toggleDrawerHandler }: Props) =>
 
 						{
 							// If user doesn't have a subscription
-							!application.auth.user?.setupComplete && (
+							!window.application.auth.user?.setupComplete && (
 								<Button
 									// Props
 									onPress={() => {
-										application.navigate.replace('/(plan)/plan-picker');
+										window.application.navigate.replace('/(plan)/plan-picker');
 										toggleDrawerHandler();
 									}}
 									icon="wallet_add"
@@ -118,6 +137,7 @@ const SidebarDrawer = ({ logout, drawerToggled, toggleDrawerHandler }: Props) =>
 									textClassName="!font-mt_regular span2"
 									// Styling
 									{...buttonStyle}
+									{...getSidebarFocusProps(0)}
 								/>
 							)
 						}
@@ -134,11 +154,12 @@ const SidebarDrawer = ({ logout, drawerToggled, toggleDrawerHandler }: Props) =>
 							textClassName="!font-mt_regular span2"
 							// Styling
 							{...buttonStyle}
+							{...getSidebarFocusProps(window.application.auth.user?.setupComplete ? 3 : 1)}
 						/>
-					</Animated.View>
-				)
+					</View>
+				</View>
 			}
-		</AnimatedThemedView>
+		</ResponsiveRootThemedView>
 	);
 };
 

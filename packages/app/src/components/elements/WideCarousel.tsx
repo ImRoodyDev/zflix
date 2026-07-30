@@ -3,6 +3,7 @@ import React, {
 	forwardRef,
 	memo,
 	Ref,
+	startTransition,
 	useCallback,
 	useEffect,
 	useImperativeHandle,
@@ -13,6 +14,7 @@ import React, {
 import { useTranslation } from 'react-i18next';
 import { ScrollView, ScrollViewProps, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LegendList, LegendListRenderItemProps } from '@/packages/legend-list';
 
 // Internal imports
 import { useResponsiveSize } from '../../contexts/ResponsiveContext';
@@ -20,7 +22,6 @@ import { useComponentStateReducer } from '../../hooks/useComponentState';
 import { IPTVChannel } from '../../types/Channels';
 import { MediaInfo } from '../../types/Medias';
 import { isChannelItem } from '../../utils/media';
-import { LegendList, LegendListRenderItemProps } from '@/packages/legend-list';
 
 // Components
 import BouncingCarouselItem from '../interactables/BouncingCarouselItem';
@@ -164,31 +165,31 @@ const WideCarousel = forwardRef(<T extends MediaInfo | IPTVChannel>(props: Props
 
 			// Get the next page
 			const nextPage = currentPage.current + 1;
-			let newItems = await onLoadMore(nextPage);
+			let fetchedItems = await onLoadMore(nextPage);
 
 			// If the request ID has changed, discard the results
 			if (currentRequestId !== requestId.current) return;
 
 			// Update hasMore based on the number of items returned
-			if (newItems.length === 0) {
+			if (fetchedItems.length === 0) {
 				hasMore.current = false;
 			} else {
 				// If it's the first page and perPageItems is not set, we assume there might be more if we got items
-				hasMore.current = perPageItems.current === 0 || newItems.length >= perPageItems.current;
+				hasMore.current = perPageItems.current === 0 || fetchedItems.length >= perPageItems.current;
 			}
 
-			// Update items with filtering duplicates using the most recent state
-			setItems((prevItems) => {
-				const uniqueNewItems = newItems.filter(
-					(item) => !prevItems.some((existingItem) => existingItem.id === item.id),
-				);
-
-				// If no items were previously in the list, set perPageItems based on the first page
-				if (prevItems.length === 0 && newItems.length > 0) {
-					perPageItems.current = newItems.length;
-				}
-
-				return [...prevItems, ...uniqueNewItems];
+			// The fetch landing should not block the frame. Marking the append as a
+			// transition lets React yield to scrolling and flush the new rows when idle,
+			// rather than committing them synchronously the instant the response arrives.
+			startTransition(() => {
+				// Use functional updater to compare against the latest prev items and avoid race conditions
+				setItems((prev) => {
+					const seen = new Set(prev.map((p) => p.id));
+					const uniqueNew = fetchedItems.filter((n) => !seen.has(n.id));
+					if (uniqueNew.length === 0) return prev;
+					if (prev.length === 0) perPageItems.current = fetchedItems.length;
+					return [...prev, ...uniqueNew];
+				});
 			});
 
 			currentPage.current = nextPage;
@@ -242,6 +243,8 @@ const WideCarousel = forwardRef(<T extends MediaInfo | IPTVChannel>(props: Props
 		[carouselItemWidth],
 	);
 
+	const keyExtractor = useCallback((item: T) => `wide-carousel:${item.id}`, []);
+
 	return (
 		<View className={'app-wide-carousel'}>
 			{items.length == 0 && initialized ? (
@@ -251,11 +254,11 @@ const WideCarousel = forwardRef(<T extends MediaInfo | IPTVChannel>(props: Props
 					key={numColumns}
 					data={items}
 					renderItem={legendItem}
-					keyExtractor={(item) => `wide-carousel:${item.id}`}
+					keyExtractor={keyExtractor}
 					extraData={carouselItemWidth}
 					style={scrollStyle}
 					columnWrapperStyle={columnWrapperStyle}
-					recycleItems={false}
+					recycleItems={true}
 					estimatedItemSize={carouselItemHeight}
 					numColumns={numColumns}
 					maintainVisibleContentPosition

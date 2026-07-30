@@ -7,7 +7,7 @@ import Animated, { FadeIn, FadeInLeft, FadeOut, FadeOutRight } from 'react-nativ
 
 // Internal imports
 import { Colors, Icons } from '../../constants';
-import PageContext from '../../components/main/PageShell';
+import PageShell from '../../components/main/PageShell';
 import { useResponsiveSize } from '../../contexts/ResponsiveContext';
 import { channelBookmarks } from '../../controllers/channels';
 import { mediaItemListByCode } from '../../controllers/media';
@@ -89,22 +89,27 @@ function Watchlist() {
 					options={OPTIONS.map((option) => t(option))}
 					initialIndex={selectedIndex}
 					onSelect={onSliderButtonClicked}
-					className={'fav-slider'}
+					className={'type-slider fav-slider'}
 					buttonClassName={'slider-btn fav-slider-btn'}
 					textClassName={'slider-text fav-slider-btn-txt'}
 					sliderRoundClassName={'slider-bg-color'}
-					sliderStyle={{ backgroundColor: Colors.zinc[800] }}
+					// Styling
 					style={{ backgroundColor: Colors.zinc[950] }}
+					sliderContainerStyle={{ padding: sizes.outlineWidth + 1 }}
+					sliderStyle={{ backgroundColor: Colors.zinc[800] }}
 					sliderItemTextStyle={({ focused, isSelected }) => ({
 						color: focused || isSelected ? Colors.primary.DEFAULT : 'white',
 					})}
+					sliderItemButtonStyle={{
+						height: '100%',
+					}}
 				/>
 			</View>
 		);
-	}, [hydrated, selectedIndex, onSliderButtonClicked, t]);
+	}, [hydrated, selectedIndex, onSliderButtonClicked, sizes.outlineWidth, t]);
 
 	return (
-		<PageContext
+		<PageShell
 			optimized
 			statusBarStyle={'light'}
 			backgroundColor={'black'}
@@ -124,7 +129,7 @@ function Watchlist() {
 				ListEmptyComponent={favoriteEmpty}
 				ListHeaderComponent={<View className={'fav-header-placeholder'} />}
 			/>
-		</PageContext>
+		</PageShell>
 	);
 }
 

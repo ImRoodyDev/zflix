@@ -1,8 +1,8 @@
 // External imports
 import clsx from 'clsx';
-import React from 'react';
-import { ColorValue, InputModeOptions, Platform, View } from 'react-native';
-import { LabeledInputFieldWeb } from 'react-native-cross-elements';
+import React, { forwardRef } from 'react';
+import { ColorValue, InputModeOptions, TextInput, TextInputProps, View } from 'react-native';
+import { LabeledInputField } from 'react-native-cross-elements';
 
 // Internal imports
 import { Icons, IconType } from '../../constants';
@@ -33,7 +33,18 @@ type LabeledInputProps = {
 		onChange?: (text: string) => void;
 		/** Text class name */
 		placeholderClassName?: string;
-	};
+	} & Omit<
+		TextInputProps,
+		| 'style'
+		| 'onChange'
+		| 'onChangeText'
+		| 'secureTextEntry'
+		| 'inputMode'
+		| 'maxLength'
+		| 'placeholder'
+		| 'defaultValue'
+		| 'editable'
+	>;
 	/** Icon to display with the input */
 	icon: IconType;
 	/** CSS class for the icon */
@@ -52,7 +63,7 @@ type LabeledInputProps = {
 	pressedBackgroundColor?: string;
 };
 
-function LabeledInput(props: LabeledInputProps) {
+const LabeledInput = forwardRef<TextInput, LabeledInputProps>((props, ref) => {
 	// Default values for optional props
 	const {
 		className,
@@ -67,6 +78,7 @@ function LabeledInput(props: LabeledInputProps) {
 			type,
 			className: inputClassName,
 			placeholderClassName,
+			...inputProps
 		},
 		icon,
 		iconClassName,
@@ -81,11 +93,14 @@ function LabeledInput(props: LabeledInputProps) {
 	} = props;
 	const inputTextStyle = {
 		color: textColor,
-		...(Platform.OS === 'web' && !inputClassName ? { fontSize: Math.max(labelFontSize ?? 16, 16) } : null),
+		fontSize: Math.max(labelFontSize ?? 16, 16),
+		padding: 0,
+		paddingLeft: 0,
 	};
 
 	return (
-		<LabeledInputFieldWeb
+		<LabeledInputField
+			ref={ref}
 			onChange={onChange}
 			className={clsx('i-element', className)}
 			inputConfig={{
@@ -97,6 +112,7 @@ function LabeledInput(props: LabeledInputProps) {
 				maxLength,
 				placeholder,
 				defaultValue,
+				...inputProps,
 			}}
 			leftComponent={
 				icon && (
@@ -114,8 +130,15 @@ function LabeledInput(props: LabeledInputProps) {
 			selectedBackgroundColor={selectedBackgroundColor as ColorValue}
 			labelStyle={{ color: iconColor, labelFilledFontSize: filledLabelFontSize ?? 13, fontSize: labelFontSize ?? 16 }}
 			textStyle={inputTextStyle}
+			style={{
+				gap: 12,
+				paddingVertical: 12,
+				paddingHorizontal: 18,
+			}}
 		/>
 	);
-}
+});
+
+LabeledInput.displayName = 'LabeledInput';
 
 export default LabeledInput;

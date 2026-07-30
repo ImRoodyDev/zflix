@@ -1,6 +1,5 @@
 // External imports
-import {Platform, StyleSheet} from 'react-native';
-
+import { Platform, StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
 	topShadow: {
@@ -33,9 +32,7 @@ const styles = StyleSheet.create({
 		elevation: 8,
 	},
 	shadowLight3: {
-		boxShadow: Platform.OS === 'web'
-			? '0 0 18px 0 rgba(0, 0, 0, 0.20)'
-			: '0 0 14px 0 rgba(0, 0, 0, 0.14)',
+		boxShadow: Platform.OS === 'web' ? '0 0 18px 0 rgba(0, 0, 0, 0.20)' : '0 0 18px 0 rgba(0, 0, 0, 0.12)',
 		elevation: 3,
 	},
 
@@ -48,11 +45,9 @@ const styles = StyleSheet.create({
 		elevation: 8,
 	},
 	shadowDark3: {
-		boxShadow: Platform.OS === 'web'
-			? '0 0 22px 0 black'
-			: '0 0 14px 0 black',
+		boxShadow: Platform.OS === 'web' ? '0 0 22px 0 black' : '0 0 14px 0 black',
 		elevation: 3,
-	}
+	},
 });
 
 export default styles;

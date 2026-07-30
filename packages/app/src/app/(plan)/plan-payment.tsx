@@ -2,9 +2,10 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Linking from 'expo-linking';
 import { Href, useLocalSearchParams } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Text, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Internal imports
@@ -17,6 +18,7 @@ import { createOneTimeSubscription, createSubscription } from '../../controllers
 import { useComponentStateReducer } from '../../hooks/useComponentState';
 import { PlanOutputInformation } from '../../types/ServerOutputs';
 import { delay, isValidUrl } from '../../utils/standard';
+import logger from '@/utils/logger';
 
 // Components
 import Button from '../../components/interactables/Button';
@@ -26,8 +28,6 @@ import ComponentHeader from '../../components/main/ComponentHeader';
 import ComponentStatus from '../../components/main/ComponentStatus';
 import Page from '../../components/main/Page';
 import ThemedText from '../../components/theme/ThemedText';
-
-// Components
 
 function PlanPayment() {
 	const sizes = useResponsiveSize();
@@ -75,13 +75,36 @@ function PlanPayment() {
 			if (response) {
 				dispatch({ type: 'loading', message: response.message || [] });
 				await delay(3000);
-				if (response.data?.url && isValidUrl(response.data?.url)) await Linking.openURL(response.data.url);
-				else if (response.data?.url) window.application.navigate.replace(response.data.url as Href);
+				if (response.data?.url && isValidUrl(response.data.url)) {
+					const checkoutUrl = response.data.url;
+
+					// Web: navigate the current tab to the checkout page; the payment
+					// provider redirects back to the /redirect page afterwards
+					if (Platform.OS === 'web') {
+						await Linking.openURL(checkoutUrl);
+						return;
+					}
+
+					// Native: open the checkout in the in-app browser — the promise
+					// resolves once the browser is dismissed (paid or cancelled)
+					const result = await WebBrowser.openBrowserAsync(checkoutUrl).catch(() => null);
+					if (result) {
+						// Skip if the /redirect deep link already brought the app to the
+						// processing page while the browser was closing
+						if (!window.application.pathname?.includes('process-plan')) {
+							window.application.navigate.replace('/(plan)/process-plan');
+						}
+					} else {
+						// No in-app browser available (e.g. some TV devices) — fall back
+						// to the external browser and hold until the deep link returns
+						await Linking.openURL(checkoutUrl);
+						window.application.navigate.replace({ pathname: '/(plan)/process-plan', params: { hold: 'true' } });
+					}
+				} else if (response.data?.url) window.application.navigate.replace(response.data.url as Href);
 				else changePlan();
 			}
-
-			dispatch({ type: 'idle' });
-		} catch {
+		} catch (e) {
+			logger.error('Error creating subscription', e);
 			dispatch({ type: 'error', message: t('errorCreatingSubscription') });
 		}
 
@@ -173,7 +196,6 @@ function PlanPayment() {
 										selectedBackgroundColor={'white'}
 										pressedBackgroundColor={'white'}
 										focusOutlineColor={Colors.zinc[800]}
-										style={{ outlineWidth: 1 }}
 									/>
 								</View>
 
@@ -193,8 +215,8 @@ function PlanPayment() {
 										textClassName="payment-proceed-btn-txt"
 										borderRadius={99999}
 										backgroundColor={Colors.primary.DEFAULT}
-										selectedBackgroundColor={Colors.primary[800]}
-										pressedBackgroundColor={Colors.primary[900]}
+										selectedBackgroundColor={Colors.primary[900]}
+										pressedBackgroundColor={Colors.primary[950]}
 									/>
 
 									<View className="payment-agreement">

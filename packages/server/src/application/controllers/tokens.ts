@@ -10,6 +10,7 @@ import { isDevelopment } from '@/utils/standard';
 import { isProcessError, ProcessError } from '@/types/ProcessError';
 import config from '@core/infrastructure/config/application';
 import adminConfig from '@core/infrastructure/config/admin';
+import logger from '@utils/logger';
 
 // Environment
 export const REFRESH_TOKEN = 'R_AUTH_ID';
@@ -19,6 +20,16 @@ const CONFIG = tokensConfig[config.ENV as keyof typeof tokensConfig];
 const CACHE_TTL = 300; // Cache TTL in seconds
 const BCRYPT_CACHE_TTL = 600; // bcrypt compare results are deterministic — safe to cache longer
 const USER_CACHE_TTL = 120; // User DB lookups — shorter TTL so subscription/reset changes propagate
+
+// Cookie options derived from env - used for both setting and clearing cookies.
+// Browsers only delete a cookie when clearCookie is called with the same
+// path/sameSite/secure/partitioned attributes that were used when the cookie was set.
+const COOKIE_OPTIONS = {
+	path: '/',
+	sameSite: config.CookieSameSite as 'lax' | 'strict' | 'none',
+	secure: config.CookieSecure,
+	partitioned: config.CookiePartitioned,
+};
 
 interface GenerateRefreshTokenParams {
 	uuid: string;
@@ -196,6 +207,39 @@ export const generateAuthenticationTokens = async function ({
 };
 
 /**
+ * Normalizes an error raised while verifying a token.
+ *
+ * A rejected credential and a broken server are two very different things to a client:
+ * the first should end the session (401), the second should be retried (500). Collapsing
+ * both into a generic 500 leaves clients unable to tell them apart and hides the real
+ * cause from the logs, so classify the error and log anything unexpected with its cause.
+ */
+const toVerificationError = (error: unknown, action: string): ProcessError => {
+	// Already classified upstream — keep the original status.
+	if (isProcessError(error)) return error;
+
+	// jsonwebtoken signals a bad/expired/not-yet-valid credential through these names.
+	const name = (error as { name?: string } | null)?.name;
+	if (name === 'TokenExpiredError' || name === 'JsonWebTokenError' || name === 'NotBeforeError') {
+		return new ProcessError({
+			code: 'UNAUTHORIZED',
+			message: `Invalid or expired token while ${action}`,
+			status: 401,
+		});
+	}
+
+	// Anything else is a genuine server fault (database down, models not bootstrapped,
+	// crypto failure). Log the underlying error — it is the only record of the cause.
+	logger.force('error', `Unexpected failure while ${action}.`, error);
+
+	return new ProcessError({
+		status: 500,
+		code: 'INTERNAL_SERVER_ERROR',
+		message: `An error occurred while ${action}`,
+	});
+};
+
+/**
  * Verifies and decrypts a JWT token, utilizing caching.
  */
 const verifyToken = (token: string, publicKey: string, options: VerifyOptions): Promise<any> => {
@@ -345,12 +389,7 @@ export const verifyRefreshToken = async function ({
 			};
 		}
 	} catch (error) {
-		if (isProcessError(error)) throw error;
-		throw new ProcessError({
-			status: 500,
-			code: 'INTERNAL_SERVER_ERROR',
-			message: 'An error occurred while verifying the refresh token',
-		});
+		throw toVerificationError(error, 'verifying the refresh token');
 	}
 };
 
@@ -486,23 +525,8 @@ export const verifyResetToken = async function (resetToken: string, resetId: str
 			decoded,
 		};
 	} catch (error) {
-		if (isProcessError(error)) throw error;
-		throw new ProcessError({
-			status: 500,
-			code: 'INTERNAL_SERVER_ERROR',
-			message: 'An error occurred while verifying the refresh token',
-		});
+		throw toVerificationError(error, 'verifying the reset token');
 	}
-};
-
-// Cookie options derived from env — used for both setting and clearing cookies.
-// Browsers only delete a cookie when clearCookie is called with the same
-// path/sameSite/secure/partitioned attributes that were used when the cookie was set.
-const COOKIE_OPTIONS = {
-	path: '/',
-	sameSite: config.CookieSameSite as 'lax' | 'strict' | 'none',
-	secure: config.CookieSecure,
-	partitioned: config.CookiePartitioned,
 };
 
 /**

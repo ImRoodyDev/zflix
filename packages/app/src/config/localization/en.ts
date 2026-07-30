@@ -17,6 +17,8 @@ export const en = {
 	tryAgain: 'Try again',
 	loading: 'Loading',
 	appInitializing: 'Initializing application',
+	initializingServer: 'Initializing services',
+	authenticatingUser: 'Authenticating user',
 	backHome: 'Back to home',
 	unknownEmail: 'Unknown email address',
 	unknownCategory: 'Unknown category',
@@ -34,6 +36,11 @@ export const en = {
 	unavailable: 'Unavailable',
 	categories: 'Categories',
 	countries: 'Countries',
+
+	// Server & Connection
+	serverInitializationTimeout: 'Connection timeout',
+	serverInitializationTimeoutDesc:
+		'Unable to reach the services. Please check your internet connection and try again.',
 
 	// Player labels
 	link: 'Link',
@@ -133,6 +140,7 @@ export const en = {
 	updatingSubscriptionDescription:
 		'We are currently updating your subscription. If the process fails, please refresh the page and try again.',
 	updateFailedSubscription: 'Failed to update subscription',
+	samePlanSelected: 'Please choose a different plan to continue.',
 
 	// ============ Activation Codes ============
 	code: 'Activation Code',
@@ -171,6 +179,11 @@ export const en = {
 	paymentFailed: 'Payment processing failed,',
 	processingWait: 'Processing payment, please wait...',
 	waitRedirected: 'Please wait to be redirected...',
+	redirectingPage: 'Redirecting',
+	redirectingPageDescription: 'You are being redirected to the right page. This should only take a moment.',
+	redirectingWait: 'Redirecting, please wait...',
+	redirectFailed: 'Redirection failed, the destination is invalid.',
+	openingApp: 'Opening the application...',
 	card: 'Debit or Credit Card',
 	setPayment: 'Set up your payment',
 	paymentMethod: 'Payment Methods',

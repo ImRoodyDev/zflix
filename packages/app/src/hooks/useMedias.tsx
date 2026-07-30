@@ -8,11 +8,12 @@ import Animated from 'react-native-reanimated';
 import { mediaCategories, mediaGenres, mediaItemListByCode, mediaPreviews } from '../controllers/media';
 import { MediaCategory, MediaGenre, MediaListCode, MediaType, MovieDetails, TvDetails } from '../types/Medias';
 import logger from '../utils/logger';
+import { useCarouselWindow } from './useCarouselWindow';
 import { usePersistancePage } from './usePersistancePage';
 
 // Components
 import Carousel from '../components/elements/Carousel';
-import Previews from '../components/elements/Previews';
+import Previews from '../components/elements/OPTPreviews';
 
 type Props = {
 	type: MediaType;
@@ -39,7 +40,7 @@ export function useMedias(props: Props) {
 
 	// Custom hook to manage scroll position saving and restoring
 	const {
-		handleScroll,
+		handleScroll: persistScrollHandler,
 		data: pageData,
 		updateData,
 		hydrated,
@@ -51,6 +52,11 @@ export function useMedias(props: Props) {
 		data: { genres: [], categories: [], previews: [] },
 		disable: !cacheItems,
 	});
+
+	// Window the carousels so a long categories + genres list mounts in small
+	// batches and grows on scroll instead of freezing the JS thread in one commit.
+	const totalCarousels = (pageData?.categories?.length ?? 0) + (pageData?.genres?.length ?? 0);
+	const { visibleCount, handleScroll } = useCarouselWindow(totalCarousels, persistScrollHandler, { resetKey: type });
 
 	// Effect to track whenever the page is focused
 	// Whenever the page is focused again update the recommendation with the new watched id from the profile
@@ -105,6 +111,8 @@ export function useMedias(props: Props) {
 				}) as MovieDetails[] | TvDetails[])
 			: (pageData?.previews ?? []);
 
+		// TV previews should use the YouTube trailer key by default. Passing
+		// false here forced the local teaser player and bypassed ytKey entirely.
 		return <Previews previews={_previews} />;
 	}, [pageData?.previews, restored, type]);
 
@@ -117,7 +125,11 @@ export function useMedias(props: Props) {
 					key={`${type}c:${category.id}`}
 					title={category.category}
 					onLoadMore={(page, signal) =>
-						mediaItemListByCode(type, category.id as any, { page, id: recommendationId || undefined, signal })
+						mediaItemListByCode(type, category.id as any, {
+							page,
+							id: recommendationId || undefined,
+							signal,
+						})
 					}
 				/>
 			));
@@ -129,13 +141,18 @@ export function useMedias(props: Props) {
 					key={`${type}g:${genre.id}`}
 					title={genre.name}
 					onLoadMore={(page, signal) =>
-						mediaItemListByCode(type, MediaListCode.Discover, { page, srtg: genre.id?.toString(), signal })
+						mediaItemListByCode(type, MediaListCode.Discover, {
+							page,
+							srtg: genre.id?.toString(),
+							signal,
+						})
 					}
 				/>
 			));
 
-		return [...categoryCarousels, ...genreCarousels];
-	}, [pageData?.categories, pageData?.genres, recommendationId, type]);
+		// Only mount the current window; the rest follow as the user scrolls down.
+		return [...categoryCarousels, ...genreCarousels].slice(0, visibleCount);
+	}, [pageData?.categories, pageData?.genres, recommendationId, type, visibleCount]);
 
 	const recentlyWatched = useMemo(() => {
 		const recentlyWatched = (
@@ -143,7 +160,11 @@ export function useMedias(props: Props) {
 				key={`${type}r:recentlyWatched:${recentlyWatchedCount}`}
 				title={t('continuePlaying')}
 				onLoadMore={(page, signal) =>
-					mediaItemListByCode(type, MediaListCode.Watching, { page, id: recommendationId || undefined, signal })
+					mediaItemListByCode(type, MediaListCode.Watching, {
+						page,
+						id: recommendationId || undefined,
+						signal,
+					})
 				}
 			/>
 		);

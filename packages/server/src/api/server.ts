@@ -5,6 +5,7 @@ import { MaintenanceMiddleware } from '@api/middlewares/maintenance';
 import cookieParser from 'cookie-parser';
 import appConfig from '@core/infrastructure/config/application';
 import { isDevelopment } from '@utils/standard';
+import { requestLogger } from '@utils/express';
 import type { Server } from 'http';
 
 // Initialize express application
@@ -29,6 +30,8 @@ app.set('trust proxy', 1);
 
 // SECURITY: Prevent server fingerprinting — removes the "X-Powered-By: Express" header
 app.disable('x-powered-by');
+
+app.use(requestLogger);
 
 // SECURITY: Set protective HTTP response headers (similar to helmet defaults)
 app.use((_req, res, next) => {
@@ -62,7 +65,6 @@ export default () => {
 	);
 	if (isDevelopment()) app.get('/', (req, res) => res.send('Application Server is running'));
 
-	// Swagger available routes
 	app.use('/v1/docs', require('./routers/swagger').default);
 
 	// Application available routes

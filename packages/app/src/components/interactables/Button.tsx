@@ -1,6 +1,5 @@
 // External imports
 import clsx from 'clsx';
-import { BlurTint, BlurView } from 'expo-blur';
 import React, { memo, Ref, useMemo } from 'react';
 import { ColorValue, Platform, Text, TextStyle, View } from 'react-native';
 import {
@@ -12,8 +11,9 @@ import {
 } from 'react-native-cross-elements';
 
 // Internal imports
-import { Icons, IconType } from '../../constants';
-
+import { type BlurTint, Icons, IconType } from '../../constants';
+import BlurView from '../theme/BlurView';
+import { useResponsiveSize } from '@/contexts/ResponsiveContext';
 
 // Type definitions
 type HighlightButtonProps = {
@@ -39,6 +39,22 @@ type HighlightButtonProps = {
 	borderRadius?: number;
 } & Omit<CustomButtonProps, 'children'>;
 
+type ButtonIconProps = {
+	icon: IconType;
+	variant: NonNullable<HighlightButtonProps['iconVariant']>;
+	size: number;
+	color: string;
+	className: string;
+};
+
+// Memo boundary around the SVG icon. CustomButton's render-prop re-runs on every focus/press
+// change, which otherwise rebuilds the whole icon SVG (Svg→G→Path) on each D-pad move
+// (see PROFILING.md → header focus re-renders). With React.memo, the icon only re-renders when its
+// color/size/variant actually change — so when focusedTextColor === textColor the SVG is skipped.
+const ButtonIcon = memo(function ButtonIcon({ icon, variant, size, color, className }: ButtonIconProps) {
+	return Icons[icon]({ className, variant, color, size });
+});
+
 const Button = React.forwardRef((props: HighlightButtonProps, ref?: Ref<View>) => {
 	// Destructure props with defaults
 	const {
@@ -52,11 +68,12 @@ const Button = React.forwardRef((props: HighlightButtonProps, ref?: Ref<View>) =
 		useBlur,
 		blurStyle = { intensity: 50, tint: 'default' },
 		borderRadius,
-		focusOutlined = false,
+		focusOutlined = false, // Default to true on web for better accessibility
 		focusOutlineColor = 'white',
 		className,
 		...baseButtonProps
 	} = props;
+	const { outlineWidth } = useResponsiveSize();
 
 	// Memoized style extraction to handle dynamic styles
 	const extractedStyle = useMemo((): PressableStyle => {
@@ -71,7 +88,7 @@ const Button = React.forwardRef((props: HighlightButtonProps, ref?: Ref<View>) =
 				borderRadius,
 				...(focused &&
 					focusOutlined && {
-						outlineWidth: 2,
+						outlineWidth: outlineWidth,
 						outlineOffset: 0,
 						outlineStyle: 'solid',
 						outlineColor: focusOutlineColor,
@@ -84,7 +101,7 @@ const Button = React.forwardRef((props: HighlightButtonProps, ref?: Ref<View>) =
 					}),
 			};
 		};
-	}, [borderRadius, focusOutlineColor, focusOutlined, style]);
+	}, [borderRadius, focusOutlineColor, focusOutlined, style, outlineWidth]);
 
 	return (
 		<CustomButton
@@ -102,13 +119,15 @@ const Button = React.forwardRef((props: HighlightButtonProps, ref?: Ref<View>) =
 							tint={blurStyle.tint}
 						/>
 					)}
-					{icon &&
-						Icons[icon]({
-							className: clsx('base-btn-icon', joinClsx(className?.split(' ').toReversed()[0], 'icon')),
-							variant: iconVariant,
-							color: currentTextColor as string,
-							size: iconSize,
-						})}
+					{icon && (
+						<ButtonIcon
+							icon={icon}
+							variant={iconVariant}
+							size={iconSize}
+							color={currentTextColor as string}
+							className={clsx('base-btn-icon', joinClsx(className?.split(' ').toReversed()[0], 'icon'))}
+						/>
+					)}
 					{text && (
 						<Text
 							selectable={false}

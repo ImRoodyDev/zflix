@@ -20,6 +20,8 @@ export const nl: TranslationSchema = {
 	tryAgain: 'Probeer opnieuw',
 	loading: 'Laden',
 	appInitializing: 'Applicatie wordt geinitialiseerd',
+	initializingServer: 'Services worden geinitialiseerd',
+	authenticatingUser: 'Gebruiker wordt geverifieerd',
 	backHome: 'Terug naar home',
 	unknownEmail: 'Onbekend e-mailadres',
 	unknownCategory: 'Onbekende categorie',
@@ -45,6 +47,9 @@ export const nl: TranslationSchema = {
 	reloadSources: 'Bronnen opnieuw laden',
 	fetchingSources: 'Videobronnen ophalen...',
 	fetchSourcesFailed: 'Ophalen van videobronnen mislukt',
+	serverInitializationTimeout: 'Verbindingstijdslimiet verlopen',
+	serverInitializationTimeoutDesc:
+		'Kan de services niet bereiken. Controleer uw internetverbinding en probeer het opnieuw.',
 	currentPassword: 'Huidig wachtwoord',
 	newPassword: 'Nieuw wachtwoord',
 	currentCountry: 'Huidig land',
@@ -121,6 +126,7 @@ export const nl: TranslationSchema = {
 	updatingSubscriptionDescription:
 		'We werken momenteel je abonnement bij. Als het proces mislukt, vernieuw dan de pagina en probeer het opnieuw.',
 	updateFailedSubscription: 'Bijwerken van abonnement mislukt',
+	samePlanSelected: 'Kies alstublieft een ander plan om door te gaan.',
 	code: 'Activeringscode',
 	activationCode: 'Voer je activeringscode in',
 	codeDescription:
@@ -155,6 +161,11 @@ export const nl: TranslationSchema = {
 	paymentFailed: 'Betalingsverwerking mislukt,',
 	processingWait: 'Betaling wordt verwerkt, even geduld...',
 	waitRedirected: 'Wacht tot je wordt doorgestuurd...',
+	redirectingPage: 'Doorsturen',
+	redirectingPageDescription: 'Je wordt doorgestuurd naar de juiste pagina. Dit duurt slechts een moment.',
+	redirectingWait: 'Doorsturen, even geduld...',
+	redirectFailed: 'Doorsturen mislukt, de bestemming is ongeldig.',
+	openingApp: 'De app wordt geopend...',
 	card: 'Debet- of creditcard',
 	setPayment: 'Stel je betaling in',
 	paymentMethod: 'Betaalmethoden',

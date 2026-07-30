@@ -1,6 +1,7 @@
 // External imports
 import React, { memo, useCallback } from 'react';
-import { Platform } from 'react-native';
+import { View } from 'react-native';
+import Animated, { useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 
 // Internal imports
 import { Colors } from '../../constants';
@@ -9,7 +10,6 @@ import { useResponsiveSize } from '../../contexts/ResponsiveContext';
 // Components
 import { PlatformPressable } from '../../components/interactables/PlatformPressable';
 import TabIcon from '../../components/interactables/TabIcon';
-
 
 type Props = {
 	label: string;
@@ -48,22 +48,47 @@ function TabBarButton(props: Props) {
 		testID,
 		accessibilityState,
 	} = props;
-	const sizes = useResponsiveSize();
-	const [isHovered, setIsHovered] = React.useState(false);
+	const { span1 } = useResponsiveSize();
 
-	const handleFocus = () => {
-		setIsHovered(true);
-	};
-	const handleBlur = () => {
-		setIsHovered(false);
-	};
+	// UI-thread progress keeps TV focus movement smooth.
+	const hoverProgress = useSharedValue(0);
+	// Selected tabs stay filled even when they are not hovered.
+	const activeProgress = useDerivedValue(() => Math.max(isFocused ? 1 : 0, hoverProgress.value));
 
+	const iconWrapperStyle = useAnimatedStyle(() => ({
+		transform: [{ scale: 1 + hoverProgress.value * 0.1 }],
+	}));
+	const linearIconStyle = useAnimatedStyle(() => ({
+		opacity: 1 - activeProgress.value,
+	}));
+	const filledIconStyle = useAnimatedStyle(() => ({
+		opacity: activeProgress.value,
+	}));
+
+	const handleFocus = useCallback(() => {
+		hoverProgress.value = withTiming(1, { duration: 100 });
+	}, [hoverProgress]);
+	const handleBlur = useCallback(() => {
+		hoverProgress.value = withTiming(0, { duration: 100 });
+	}, [hoverProgress]);
 	const onPressHandler = useCallback(() => {
 		onPress(routeKey, routeName, routeParams, isFocused);
 	}, [isFocused, onPress, routeKey, routeName, routeParams]);
 	const onLongPressHandler = useCallback(() => {
 		onLongPress(routeKey);
 	}, [onLongPress, routeKey]);
+
+	const inactiveColor = tabBarInactiveTintColor || Colors.zinc['500'];
+	const activeColor = tabBarActiveTintColor || Colors.zinc['500'];
+	const filledColor = isFocused ? activeColor : 'white';
+
+	// Tab bar icon
+	const renderIcon = (focused: boolean, color: string) =>
+		tabBarIcon ? (
+			tabBarIcon({ focused, color, size: span1 })
+		) : (
+			<TabIcon icon={'circle'} name={label} color={color} focused={focused} size={span1} />
+		);
 
 	return (
 		<PlatformPressable
@@ -78,33 +103,18 @@ function TabBarButton(props: Props) {
 			onPointerEnter={handleFocus}
 			onPointerLeave={handleBlur}
 			className={'app-tab-btn'}
-			style={
-				isHovered && Platform.OS == 'android'
-					? {
-							borderStyle: 'solid',
-							borderWidth: sizes.outlineWidth,
-							borderColor: 'white',
-						}
-					: {}
-			}
 		>
-			{
-				// Render the icon for the tab
-				tabBarIcon ? (
-					tabBarIcon({
-						focused: isFocused || isHovered,
-						color: (isFocused ? tabBarActiveTintColor : !isHovered ? tabBarInactiveTintColor : 'white') || Colors.zinc['500'],
-						size: sizes.span1,
-					})
-				) : (
-					<TabIcon
-						icon={'circle'}
-						name={label}
-						color={(isFocused ? tabBarActiveTintColor : !isHovered ? tabBarInactiveTintColor : 'white') || Colors.zinc['500']}
-						size={sizes.span1}
-					/>
-				)
-			}
+			<Animated.View style={iconWrapperStyle}>
+				{/* Crossfade keeps hover/focus fill cheap on TV. */}
+				<View>
+					<Animated.View style={linearIconStyle}>
+						{renderIcon(false, isFocused ? activeColor : inactiveColor)}
+					</Animated.View>
+					<Animated.View style={[filledIconStyle, { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }]}>
+						{renderIcon(true, filledColor)}
+					</Animated.View>
+				</View>
+			</Animated.View>
 		</PlatformPressable>
 	);
 }

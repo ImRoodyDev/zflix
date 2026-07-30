@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Internal imports
 import { Colors, Images } from '../../constants';
-import { useRootContext } from '../../contexts/AppRootContext';
+import { useAppUI, useRootContext } from '../../contexts/AppRootContext';
 import { useResponsiveSize } from '../../contexts/ResponsiveContext';
 import { usePageName } from '../../hooks/usePage';
 
@@ -37,7 +37,8 @@ const AppHeader = ({ style }: Props) => {
 	const { t } = useTranslation();
 
 	const sizes = useResponsiveSize();
-	const { loggedIn, routeName, pathname, toggleDrawerHandler } = useRootContext();
+	const { loggedIn, routeName, pathname } = useRootContext();
+	const { toggleDrawerHandler } = useAppUI();
 
 	// Get the page name based on the pathname
 	const pageName = usePageName();
@@ -123,7 +124,7 @@ const AppHeader = ({ style }: Props) => {
 						textClassName="span4"
 						borderRadius={99999}
 						backgroundColor={Colors.primary[700]}
-						selectedBackgroundColor={Colors.primary[900]}
+						selectedBackgroundColor={Colors.primary[1000]}
 						pressedBackgroundColor={Colors.primary[1000]}
 					/>
 				</View>
@@ -143,6 +144,8 @@ const AppHeader = ({ style }: Props) => {
 				exiting={FadeOutUp}
 				className="app-header"
 				style={[animatedContainerStyle, { pointerEvents: Platform.OS === 'web' ? 'none' : 'box-none' }]}
+				renderToHardwareTextureAndroid={true}
+				shouldRasterizeIOS={true}
 			>
 				<View className="app-header-ctn">
 					<View className="app-header-logo" onPointerUp={() => window.application.navigate.replace('/')}>

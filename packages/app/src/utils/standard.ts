@@ -1,3 +1,14 @@
+export function smartRound(num: number, threshold = 0.3) {
+	const whole = Math.round(num);
+	const diff = Math.abs(num - whole);
+	// If the number is within the threshold of a whole number, round it
+	if (diff <= threshold) {
+		return whole;
+	}
+	// Otherwise, return the original number
+	return Math.floor(num);
+}
+
 /**
  * Wait for the provided amount of time in milliseconds.
  *
@@ -113,4 +124,25 @@ export function hexToRgba(hex: string, alpha: number): string {
 	const b = parseInt(cleanHex.substring(4, 6), 16);
 
 	return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+export function lightenHexColor(hex: string, amount = 0.18): string {
+	const cleanHex = hex.replace('#', '');
+	const normalizedHex =
+		cleanHex.length === 3
+			? cleanHex
+					.split('')
+					.map((char) => char + char)
+					.join('')
+			: cleanHex;
+
+	if (!/^[0-9a-fA-F]{6}$/.test(normalizedHex)) return hex;
+
+	const clampedAmount = Math.min(Math.max(amount, 0), 1);
+	const r = parseInt(normalizedHex.substring(0, 2), 16);
+	const g = parseInt(normalizedHex.substring(2, 4), 16);
+	const b = parseInt(normalizedHex.substring(4, 6), 16);
+	const lighten = (channel: number) => Math.round(channel + (255 - channel) * clampedAmount);
+
+	return `#${[lighten(r), lighten(g), lighten(b)].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
 }

@@ -3,7 +3,7 @@ import path from 'path';
 import image from '@app/routes/media/image';
 import optimizedImage from '@app/routes/media/optimized-image';
 import teaser from '@app/routes/media/teaser';
- import { RateLimiterMemory } from 'rate-limiter-flexible';
+import { RateLimiterMemory } from 'rate-limiter-flexible';
 import { rateLimiterMiddleware } from '@api/middlewares/rate-limiters';
 import { SubscriptionMiddleware } from '@api/middlewares/subscription';
 import { AuthorizationMiddleware, ImageAuthentication } from '@api/middlewares/authentications';
@@ -46,10 +46,6 @@ router.use(
 
 /////
 ////
-//// Protected Routes
-////
-////
- 
 //// Apply Authorization Middleware
 router.use(ImageAuthentication);
 router.use(

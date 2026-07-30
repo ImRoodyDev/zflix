@@ -3,6 +3,8 @@ import fs from 'fs';
 import { Router } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import appConfig from '@core/infrastructure/config/application';
+import { AdminAuthentication } from '@api/middlewares/authentications';
+import { isDevelopment } from '@/utils/standard';
 
 // Load the pre-written OpenAPI document from the docs directory so the router stays lean
 const swaggerDocumentPath = path.join(process.cwd(), 'src', 'api', 'public', 'docs', 'swagger.json');
@@ -21,6 +23,7 @@ try {
 const router = Router();
 
 // Protected routes (require admin authentication)
+if (!isDevelopment()) router.use(AdminAuthentication);
 router.use('/', swaggerUi.serve);
 router.get('/', swaggerUi.setup(swaggerDocument, { explorer: true }));
 router.get('/swagger.json', (req, res) => res.json(swaggerDocument));

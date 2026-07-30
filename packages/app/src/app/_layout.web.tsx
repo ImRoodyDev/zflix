@@ -4,7 +4,7 @@ import Head from 'expo-router/head';
 
 // Internal imports
 import RouteErrorBoundary from '../components/main/RouteErrorBoundary';
-import { RootContext } from '../contexts/AppRootContext';
+import { RootContext } from '../contexts/RootProvider';
 import { useTheme } from '../contexts/ThemeContext';
 import { defaultModalStack, defaultStack } from '../styles/stack.style';
 
@@ -29,6 +29,7 @@ const RootLayout = () => {
 				<Stack.Screen name="(profile)" options={defaultStack} />
 				<Stack.Screen name="(tabs)" options={{ ...defaultStack, gestureEnabled: false }} />
 				<Stack.Screen name="(plan)" options={defaultStack} />
+				<Stack.Screen name="redirect" options={defaultStack} />
 			</Stack>
 		</RootContext>
 	);

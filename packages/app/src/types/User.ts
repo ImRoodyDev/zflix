@@ -103,7 +103,7 @@ export class Profile {
 	public updateActivities(id: string, epIdOrRuntime: `${number}x${number}` | number, runtime?: number): void {
 		const activityIndex = this.activities.findIndex((activity) => activity.id === id);
 
-		if (typeof epIdOrRuntime == 'number') {
+		if (typeof epIdOrRuntime === 'number') {
 			if (activityIndex < 0) this.activities.push(new WatchActivity({ id, type: 'series', runtimes: epIdOrRuntime }));
 			else this.activities[activityIndex].runtimes = epIdOrRuntime;
 		} else {

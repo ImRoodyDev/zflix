@@ -1,25 +1,27 @@
 // External imports
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useLinkBuilder } from '@react-navigation/native';
-import React, { memo, useCallback } from 'react';
+import { Tabs } from 'expo-router';
+import React, { ComponentProps, memo, useCallback } from 'react';
 import { View } from 'react-native';
 
 // Internal imports
-import { useResponsiveSize } from '../../contexts/ResponsiveContext';
-import { lightFeedback } from '../../utils/haptrics';
+import { ResponsiveRootView, useResponsiveSize } from '../../contexts/ResponsiveContext';
 
 // Components
 import TabBarButton from '../../components/interactables/TabBarButton';
 
+// Props passed to the custom tabBar renderer, derived from expo-router's <Tabs> so we don't
+// need a direct dependency on @react-navigation/bottom-tabs (which expo-router already pulls in).
+type BottomTabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 
 function AppTabBar(props: BottomTabBarProps) {
 	const { state, descriptors, navigation, insets } = props;
 	const { buildHref } = useLinkBuilder();
-	const sizes = useResponsiveSize();
+	const { sidePadding } = useResponsiveSize();
 
 	const safeStyle = {
 		paddingBottom: insets.bottom,
-		left: Math.max(insets.left - sizes.sidePadding, 0),
+		left: Math.max(insets.left - sidePadding, 0),
 	};
 
 	// Filter out routes that are not top-level (i.e., those that include a slash in their name)
@@ -34,7 +36,6 @@ function AppTabBar(props: BottomTabBarProps) {
 			});
 			if (!event.defaultPrevented) {
 				navigation.navigate(routeName, params);
-				lightFeedback();
 			}
 		},
 		[navigation],
@@ -56,14 +57,14 @@ function AppTabBar(props: BottomTabBarProps) {
 	);
 
 	return (
-		<View className={'app-tab-bar responsive-vars'} style={[safeStyle, { pointerEvents: 'box-none' }]}>
+		<ResponsiveRootView className={'app-tab-bar'} style={[safeStyle, { pointerEvents: 'box-none' }]}>
 			<View className={'app-tab-bar-ctn'}>
 				{
 					// Map through the routes and create a tab for each
 					routes.map((route) => {
 						const { options } = descriptors[route.key];
 						const label =
-							options.tabBarLabel !== undefined && typeof options.tabBarLabel == 'string'
+							options.tabBarLabel !== undefined && typeof options.tabBarLabel === 'string'
 								? options.tabBarLabel
 								: options.title !== undefined
 									? options.title
@@ -92,7 +93,7 @@ function AppTabBar(props: BottomTabBarProps) {
 					})
 				}
 			</View>
-		</View>
+		</ResponsiveRootView>
 	);
 }
 

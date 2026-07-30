@@ -1,6 +1,6 @@
 @import 'default.css';
-@import 'pages.css';
 @import 'components.css';
+@import 'pages.css';
 @import 'react-native-cross-player/dist/css/styles.css';
 
 @tailwind base;
@@ -69,3 +69,84 @@
 		font-family: 'Montserrat-Regular', serif;
 	}
 }
+
+/*#region Blur Tint Fallback
+ * Native fallback for expo-blur's <BlurView tint=... />. expo-blur is disabled on
+ * this TV platform, so instead of a real backdrop blur we paint a translucent
+ * background-color that approximates each material/tint. Apply on the same
+ * absolutely-positioned overlay you'd give <BlurView> (e.g. alongside
+ * .base-btn-blur or .app-plan-blur). Mirrors BlurTintColors in constants/blur.ts
+ * — keep both in sync.
+ */
+@layer components {
+	/* Adaptive / system default — matches the light tint */
+	.blur-tint,
+	.blur-tint-default {
+		background-color: rgba(255, 255, 255, 0.4);
+	}
+	.blur-tint-regular {
+		background-color: rgba(30, 30, 30, 0.45);
+	}
+	.blur-tint-prominent {
+		background-color: rgba(0, 0, 0, 0.55);
+	}
+	.blur-tint-system-ultra-thin-material {
+		background-color: rgba(30, 30, 30, 0.25);
+	}
+	.blur-tint-system-thin-material {
+		background-color: rgba(30, 30, 30, 0.35);
+	}
+	.blur-tint-system-material {
+		background-color: rgba(30, 30, 30, 0.45);
+	}
+	.blur-tint-system-thick-material {
+		background-color: rgba(30, 30, 30, 0.6);
+	}
+	.blur-tint-system-chrome-material {
+		background-color: rgba(30, 30, 30, 0.5);
+	}
+
+	/* Light family — frosted white */
+	.blur-tint-light {
+		background-color: rgba(255, 255, 255, 0.4);
+	}
+	.blur-tint-extra-light {
+		background-color: rgba(255, 255, 255, 0.5);
+	}
+	.blur-tint-system-ultra-thin-material-light {
+		background-color: rgba(255, 255, 255, 0.28);
+	}
+	.blur-tint-system-thin-material-light {
+		background-color: rgba(255, 255, 255, 0.36);
+	}
+	.blur-tint-system-material-light {
+		background-color: rgba(255, 255, 255, 0.46);
+	}
+	.blur-tint-system-thick-material-light {
+		background-color: rgba(255, 255, 255, 0.58);
+	}
+	.blur-tint-system-chrome-material-light {
+		background-color: rgba(244, 244, 245, 0.52);
+	}
+
+	/* Dark family — frosted dark */
+	.blur-tint-dark {
+		background-color: rgba(0, 0, 0, 0.42);
+	}
+	.blur-tint-system-ultra-thin-material-dark {
+		background-color: rgba(30, 30, 30, 0.34);
+	}
+	.blur-tint-system-thin-material-dark {
+		background-color: rgba(30, 30, 30, 0.44);
+	}
+	.blur-tint-system-material-dark {
+		background-color: rgba(30, 30, 30, 0.54);
+	}
+	.blur-tint-system-thick-material-dark {
+		background-color: rgba(30, 30, 30, 0.64);
+	}
+	.blur-tint-system-chrome-material-dark {
+		background-color: rgba(0, 0, 0, 0.5);
+	}
+}
+/*#endregion*/

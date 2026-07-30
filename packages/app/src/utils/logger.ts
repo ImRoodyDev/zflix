@@ -34,7 +34,7 @@ class Logger {
 	 * @example
 	 * logger.info('Server started', { port: 3000 });
 	 */
-	public static info(message: string, ...optionalParams: unknown[]): void {
+	public static info(message: string | object, ...optionalParams: unknown[]): void {
 		// Only log info messages in development/staging environments
 		if (!this.isProduction) {
 			console.log(`[INFO] ${message}`, ...optionalParams);
@@ -50,7 +50,7 @@ class Logger {
 	 * @example
 	 * logger.warn('API rate limit approaching', { remaining: 10 });
 	 */
-	public static warn(message: string, ...optionalParams: unknown[]): void {
+	public static warn(message: string | object, ...optionalParams: unknown[]): void {
 		// Only log warnings in development/staging environments
 		if (!this.isProduction) {
 			console.warn(`[WARN] ${message}`, ...optionalParams);
@@ -66,7 +66,7 @@ class Logger {
 	 * @example
 	 * logger.error('Failed to connect to database', error);
 	 */
-	public static error(message: string, ...optionalParams: unknown[]): void {
+	public static error(message: string | object, ...optionalParams: unknown[]): void {
 		// Always log errors regardless of environment (critical information)
 		console.error(`[ERROR] ${message}`, ...optionalParams);
 	}
@@ -80,7 +80,7 @@ class Logger {
 	 * @example
 	 * logger.debug('Processing request', { headers, body, query });
 	 */
-	public static debug(message: string, ...optionalParams: unknown[]): void {
+	public static debug(message: string | object, ...optionalParams: unknown[]): void {
 		// Only log debug messages in development/staging environments
 		if (!this.isProduction) {
 			console.debug(`[DEBUG] ${message}`, ...optionalParams);
@@ -98,7 +98,7 @@ class Logger {
 	 * logger.log('info', 'Application started');
 	 * logger.log('error', 'Connection failed', error);
 	 */
-	public static log(level: LogLevel, message: string, ...optionalParams: unknown[]): void {
+	public static log(level: LogLevel, message: string | object, ...optionalParams: unknown[]): void {
 		// Delegate to the appropriate log method based on level
 		switch (level) {
 			case 'info':

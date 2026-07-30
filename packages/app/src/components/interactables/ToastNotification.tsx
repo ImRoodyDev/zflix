@@ -8,10 +8,11 @@ import { ToastShowParams } from 'toastify-react-native/utils/interfaces';
 import Colors from '../../constants/colors';
 import Icons from '../../constants/icons';
 import ShadowStyles from '../../styles/shadow.style';
-
+import { useResponsiveVars } from '@/contexts/ResponsiveContext';
 
 function ToastNotification(props: ToastShowParams) {
 	const { t } = useTranslation();
+	const responsiveVars = useResponsiveVars();
 
 	function sanitizeText(text: string | undefined): string {
 		if (!text || text.length > 200 || /<\/?[a-z][\s\S]*>/i.test(text)) {
@@ -38,7 +39,7 @@ function ToastNotification(props: ToastShowParams) {
 	};
 
 	return (
-		<View className="toast-notification-ptn responsive-vars" style={ShadowStyles.shadowLight1}>
+		<View className="toast-notification-ptn responsive-vars" style={[ShadowStyles.shadowLight1, responsiveVars]}>
 			{iconElement()}
 			<Text className="toast-notification-txt">{sanitizeText(props.text1)}</Text>
 		</View>

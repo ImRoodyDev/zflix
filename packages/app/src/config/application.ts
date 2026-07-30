@@ -2,16 +2,17 @@
 import { createUserAgent } from '../constants/application';
 import { commaSplitter } from '../utils/standard';
 
-
 const config = {
 	USER_AGENT: createUserAgent(),
 	APP_NAME: process.env.EXPO_PUBLIC_APP_NAME!,
 	ENV: process.env.EXPO_PUBLIC_APP_ENV! as 'development' | 'production',
 	API_URL: process.env.EXPO_PUBLIC_API_URL!,
 	APP_EMAIL: process.env.EXPO_PUBLIC_APP_EMAIL!,
+	// Must match the "scheme" in app.json — used to deep link back into the native app
+	APP_SCHEME: 'zflix',
 
 	// Pages and navigation
-	UNAUTH_PAGES: ['/', 'index', 'login', 'register'],
+	UNAUTH_PAGES: ['/', 'index', 'login', 'register', 'redirect'],
 	PROTECTED_GROUPS: ['(tabs)', '(profile)', '(plan)'] as string[],
 	PROTECTED_SUBPATHS: { '(user)': ['account-info'] } as Record<string, string[]>,
 
@@ -23,7 +24,7 @@ const config = {
 	// Headers keys
 	UPDATE_TOKEN_HEADER: 'X-Access-Token',
 
-	// TMDB KEYS
+	// KEYS
 	TMDB_API_KEYS: commaSplitter(process.env.EXPO_PUBLIC_TMDB_API_KEYS!),
 
 	// LocalStorage keys
