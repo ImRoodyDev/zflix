@@ -162,7 +162,12 @@ function AppAvatars(props: AppAvatarsProps) {
 	);
 	const renderListHeader = useCallback(() => {
 		return (
-			<View className={'app-avatars-header-blur'} renderToHardwareTextureAndroid={true} shouldRasterizeIOS={true}>
+			<View
+				className={'app-avatars-header-blur'}
+				renderToHardwareTextureAndroid={true}
+				shouldRasterizeIOS={true}
+				style={[Platform.OS === 'web' && { marginLeft: sizes.sidePadding * -1 }]}
+			>
 				<AnimatedBlurView
 					intensity={Platform.OS === 'web' ? 50 : 100}
 					tint={themeScheme}
@@ -187,7 +192,7 @@ function AppAvatars(props: AppAvatarsProps) {
 			</View>
 		);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [onStickyLayout, props.onClose, safeStyle, sizes.h3, sizes.sidePadding, themeScheme, t]);
+	}, [onStickyLayout, props.onClose, safeStyle, sizes.h3, sizes.sidePadding, sizes.sidePadding, themeScheme, t]);
 
 	return (
 		<Modal
