@@ -107,8 +107,7 @@
 			]
 		],
 		"experiments": {
-			"typedRoutes": true,
-			"autolinkingModuleResolution": true
+			"typedRoutes": true
 		}
 	}
 }
