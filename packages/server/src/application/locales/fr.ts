@@ -112,6 +112,8 @@ const fr = {
 	STREAM_SOURCE_NOT_FOUND_MESSAGE: "Aucune source de streaming pour le media demande n'a ete trouvee.",
 	REQUESTED_RESOURCE_NOT_FOUND_CODE: 'Ressource demandee introuvable',
 	REQUESTED_RESOURCE_NOT_FOUND_MESSAGE: 'La ressource que vous recherchez est introuvable.',
+	PROXY_NOT_FOUND_CODE: 'Proxy introuvable',
+	PROXY_NOT_FOUND_MESSAGE: 'Aucun proxy n est disponible.',
 
 	// Success Messages
 	SUCCESS_LOGIN_MESSAGE: 'Utilisateur connecte avec succes.',

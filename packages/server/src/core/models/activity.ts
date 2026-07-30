@@ -49,6 +49,7 @@ class Activity extends Model<ActivityAttributes, ActivityCreationAttributes> {
 
 	/**
 	 * Create or update an activity
+	 * In the id please provide the encrypted TMDB id
 	 * @param payload
 	 */
 	public static async createOrUpdate(payload: ActivityCreationAttributes) {

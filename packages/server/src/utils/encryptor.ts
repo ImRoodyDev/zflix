@@ -78,7 +78,7 @@ export class Encryptor {
 	}
 
 	/**
-	 * Decrypt a value using AES-128-CBC
+	 * Decrypt ID using AES-128-CBC
 	 * @param encryptedValue - IV + encrypted hex string
 	 * @param encryptionKey - 32-character hex key (16 bytes)
 	 * @returns Decrypted ID
@@ -111,9 +111,9 @@ export class Encryptor {
 
 		// Decrypt the data using the key and IV.
 		const decipher = crypto.createDecipheriv('aes-128-cbc', key, iv);
-		let decryptedValue = decipher.update(encryptedHex, 'hex', 'utf-8');
-		decryptedValue += decipher.final('utf-8');
+		let decryptedId = decipher.update(encryptedHex, 'hex', 'utf-8');
+		decryptedId += decipher.final('utf-8');
 
-		return decryptedValue;
+		return decryptedId;
 	}
 }

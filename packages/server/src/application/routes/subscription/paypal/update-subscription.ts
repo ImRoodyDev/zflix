@@ -7,6 +7,7 @@ import { HttpError } from '@/types/HttpError';
 import { HttpSuccess } from '@/types/HttpSuccess';
 import { validateUrl } from '@utils/validator';
 import { handleHardErrors } from '@utils/standard';
+import config from '@core/infrastructure/config/application';
 
 const router = Router();
 
@@ -15,9 +16,15 @@ router.post('/:subscriptionId', async (req: AuthenticatedRequest, res: Response)
 		const subscriptionId = req.params.subscriptionId;
 		const planPublicId = req.body.planId;
 
-		// Redirect URI pathname
-		let returnLocation = req.body.redirectURI || '';
-		let cancelLocation = req.body.cancelURI || '';
+		// Redirect URIs provided by the client — native apps omit them (payment
+		// providers reject custom app schemes), so fall back to the web frontend's
+		// /redirect page, which forwards the browser to the target page
+		const returnLocation: string =
+			req.body.redirectURI ||
+			`${config.frontendBaseUrl}/redirect?page=${encodeURIComponent('/check-plan')}&platform=native`;
+		const cancelLocation: string =
+			req.body.cancelURI ||
+			`${config.frontendBaseUrl}/redirect?page=${encodeURIComponent('/manage-plan')}&platform=native`;
 
 		// Validations
 		if (!validateUrl(returnLocation) || !validateUrl(cancelLocation)) {

@@ -64,7 +64,7 @@ router.post('/', async (req, res) => {
 		// Find user in the database
 		const user = await User.findOne({ where: { email: login.email } });
 
-		// Check wheather user exsist
+		// Check whether user exists
 		if (!user) {
 			return new HttpError({
 				code: req.t('INVALID_CREDENTIALS_CODE'),

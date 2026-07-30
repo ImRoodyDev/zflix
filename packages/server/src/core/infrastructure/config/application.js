@@ -10,7 +10,7 @@ const config = {
 	WebhooksOrigins: process.env.WEBHOOK_ORIGINS ? commaSplitter(process.env.WEBHOOK_ORIGINS) : 'undefined',
 	NoReplyEmail: process.env.NOREPLY_EMAIL ?? process.env.MAILER_EMAIL ?? 'undefined',
 
-	// Cookie configuration — required when server and frontend are on different domains.
+	// Cookie configuration - required when server and frontend are on different domains.
 	// Set COOKIE_SAME_SITE=none and COOKIE_SECURE=true for cross-domain production deployments.
 	CookieSameSite: process.env.COOKIE_SAME_SITE ?? 'undefined',
 	CookieSecure: process.env.COOKIE_SECURE === 'true',
@@ -32,6 +32,10 @@ const config = {
 	// Frontend configuration
 	serverDomain: process.env.SERVER_DOMAIN ?? 'undefined',
 	frontEndDomain: process.env.FRONTEND_DOMAINS ?? 'undefined',
+	// First FRONTEND_DOMAINS entry, without trailing slash — used to build payment
+	// redirect fallbacks when the client can't provide web URLs itself (native apps
+	// only have custom schemes, which PayPal/Stripe reject as return URLs)
+	frontendBaseUrl: (commaSplitter(process.env.FRONTEND_DOMAINS)[0] || 'undefined').replace(/\/+$/, ''),
 	frontendCheckSubscriptionUrl: '/check-plan',
 	frontendProfilesUrl: '(profile)/profiles',
 	frontendPlanPickerUrl: '(plan)/plan-picker',

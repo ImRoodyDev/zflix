@@ -102,7 +102,21 @@ export const handleHardErrors = (error: any, req: Request, res: Response) => {
 		}).sendResponse(res);
 	}
 
-	return res.status(500).json({
+	// Production: never leak internals, but preserve the status code the error carried.
+	// Forcing every thrown error to 500 makes a rejected session indistinguishable from a
+	// server fault, so clients can neither clear stale credentials nor safely retry.
+	const statusCode = isHttpError(error) ? error.statusCode : isProcessError(error) ? (error.status ?? 500) : 500;
+
+	// Client errors (4xx) carry no sensitive internals in their code, and the client needs
+	// it to react correctly. Server errors (5xx) stay fully generic.
+	if (statusCode < 500) {
+		return res.status(statusCode).json({
+			code: error?.code || req.t('SERVER_ERROR_CODE'),
+			message: statusCode === 401 || statusCode === 403 ? req.t('UNAUTHORIZED_MESSAGE') : req.t('SERVER_BAD_REQUEST_MESSAGE'),
+		});
+	}
+
+	return res.status(statusCode).json({
 		code: req.t('SERVER_ERROR_CODE'),
 		message: req.t('SERVER_ERROR_MESSAGE'),
 	});

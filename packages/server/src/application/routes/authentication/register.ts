@@ -2,11 +2,7 @@ import { Router } from 'express';
 import User from '@core/models/user';
 import { generateAuthenticationTokens, saveProtectedTokens } from '@app/controllers/tokens';
 import { validateRegister, validateDevice } from '@/utils/validator';
-import {
-	getClientLocation as getLocationTime,
-	isPublicIPv4,
-	requestClientIp,
-} from '@core/infrastructure/services/tracker';
+import { getClientLocation, isPublicIPv4, requestClientIp } from '@core/infrastructure/services/tracker';
 import { parseDeviceHeader } from '@/utils/parser';
 import { MailerController } from '@core/infrastructure/services/mailer';
 import { handleHardErrors, isDevelopment } from '@/utils/standard';
@@ -56,7 +52,7 @@ router.post('/', async (req, res) => {
 		}
 
 		// Device geolocation and time information
-		const deviceGeolocation = await getLocationTime(clientIp);
+		const deviceGeolocation = await getClientLocation(clientIp);
 		const loggedAt = deviceGeolocation.datetime ? new Date(deviceGeolocation.datetime) : new Date();
 
 		// Check if country is allowed

@@ -3,13 +3,18 @@ import path from 'path';
 import fs from 'fs';
 import config from '@core/infrastructure/config/database';
 import appConfig from '@core/infrastructure/config/application';
-import { isDevelopment } from '@utils/standard';
+import { delay, isDevelopment } from '@utils/standard';
 import logger from '@utils/logger';
 
 const { database, username, password, host, dialect, port, logging } = config[appConfig.ENV as keyof typeof config];
 
 export class DatabaseService {
 	private static initialized = false;
+
+	// A restart is usually triggered by the same outage that took the database down, so the
+	// first connection is retried with exponential backoff rather than failing the boot outright.
+	private static readonly CONNECT_ATTEMPTS = 5;
+	private static readonly CONNECT_BASE_DELAY = 1000;
 
 	private static readonly sequelize = new Sequelize(database as string, username as string, password as string, {
 		host,
@@ -18,25 +23,52 @@ export class DatabaseService {
 		logging: logging == 'true' && isDevelopment() ? (message: string) => logger.debug(message) : false,
 	});
 
+	/**
+	 * Connects to the database and bootstraps the Sequelize models.
+	 *
+	 * Models are only `init()`-ed here, so until this resolves every model (User included)
+	 * is an uninitialized class and any query against it throws. Callers must await it
+	 * before accepting traffic, otherwise requests served during startup fail with an
+	 * opaque 500 and clients treat perfectly valid saved tokens as a dead session.
+	 *
+	 * Rejects only once every attempt has been exhausted.
+	 */
 	public static async initialize(): Promise<void> {
-		try {
-			if (this.initialized) return;
+		if (this.initialized) return;
 
-			await DatabaseService.sequelize.authenticate();
-			logger.info(`Database connected successfully in ${appConfig.ENV} environment.`);
+		for (let attempt = 1; attempt <= this.CONNECT_ATTEMPTS; attempt += 1) {
+			try {
+				await this.connect();
+				return;
+			} catch (error) {
+				if (attempt === this.CONNECT_ATTEMPTS) {
+					logger.force('error', 'Unable to connect to the database.', error);
+					throw error;
+				}
 
-			await this.bootstrapModels();
-
-			if (isDevelopment()) {
-				// NOTE: In production, use migrations instead of sync().
+				const retryDelay = this.CONNECT_BASE_DELAY * 2 ** (attempt - 1);
+				logger.force(
+					'error',
+					`Database initialization failed (attempt ${attempt}/${this.CONNECT_ATTEMPTS}), retrying in ${retryDelay}ms.`,
+					error,
+				);
+				await delay(retryDelay);
 			}
-
-			this.initialized = true;
-			logger.info('Database synchronized successfully.');
-		} catch (error) {
-			logger.force('error', 'Unable to connect to the database.', error);
-			throw error;
 		}
+	}
+
+	private static async connect(): Promise<void> {
+		await DatabaseService.sequelize.authenticate();
+		logger.info(`Database connected successfully in ${appConfig.ENV} environment.`);
+
+		await this.bootstrapModels();
+
+		if (isDevelopment()) {
+			// NOTE: In production, use migrations instead of sync().
+		}
+
+		this.initialized = true;
+		logger.info('Database synchronized successfully.');
 	}
 
 	public static async disconnect(): Promise<void> {

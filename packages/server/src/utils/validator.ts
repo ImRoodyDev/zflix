@@ -182,9 +182,9 @@ export const validateDevice = (data: DevicePayload, t: TFunction): ValidationRes
 			.messages({
 				'any.required': t('VALIDATION_DEVICE_TYPE_REQUIRED'),
 			}),
-		country: Joi.string().trim().min(3).max(30).allow(''),
-		countryCode: Joi.string().trim().max(3).allow(''),
-		city: Joi.string().trim().min(3).max(30).allow(''),
+		country: Joi.string().trim().min(3).max(30),
+		countryCode: Joi.string().trim().max(3),
+		city: Joi.string().trim().min(3).max(30),
 		loggedAt: Joi.date()
 			.required()
 			.allow(null)
@@ -533,4 +533,11 @@ export const validateAppConfiguration = (payload: any): ValidationResult<any> =>
 	});
 	const { error, value } = schema.validate(payload);
 	return [error, value];
+};
+
+export const validateProxyUrl = (url: string): boolean => {
+	return validateUrl(url, {
+		require_protocol: true,
+		protocols: ['http', 'https', 'socks', 'socks4', 'socks5'],
+	});
 };

@@ -1,7 +1,7 @@
 import { Router } from 'express';
- import { handleHardErrors } from '@/utils/standard';
-import { HttpSuccess } from '@/types/HttpSuccess';
 import { clearCookies } from '@app/controllers/tokens';
+import { handleHardErrors } from '@/utils/standard';
+import { HttpSuccess } from '@/types/HttpSuccess';
 
 const router = Router();
 
