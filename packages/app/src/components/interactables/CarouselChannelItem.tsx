@@ -7,7 +7,7 @@ import React, { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } 
 import { Platform, Pressable, View, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
-// import { useWrapperStyle } from '@/packages/legend-list';
+// import { useWrapperStyle } from '@imroodydev/legendapp-list';
 
 // Internal imports
 import { Colors } from '../../constants';
@@ -200,10 +200,7 @@ function CarouselChannelItem(props: CarouselItemProps) {
 			{
 				// Show ambient glow effect when hovered
 				isWeb && (
-					<Animated.View
-						className={'carousel-item-ambient carousel-item-lg-ambient'}
-						style={[gradientAnimatedStyle]}
-					>
+					<Animated.View className={'carousel-item-ambient carousel-item-lg-ambient'} style={[gradientAnimatedStyle]}>
 						<Svg className="w-full h-full">
 							<Defs>
 								<RadialGradient id="glow" cx="0.5" cy="0.5" rx="0.5" ry="0.5" gradientUnits="objectBoundingBox">
@@ -250,10 +247,7 @@ function CarouselChannelItem(props: CarouselItemProps) {
 				{
 					// Inset shadows and buttons
 					isWeb && (
-						<Animated.View
-							className={'carousel-actions'}
-							style={[{ pointerEvents: 'none' }, gradientAnimatedStyle]}
-						>
+						<Animated.View className={'carousel-actions'} style={[{ pointerEvents: 'none' }, gradientAnimatedStyle]}>
 							<LinearGradient
 								locations={[0, 0.6]}
 								colors={['black', 'transparent']}

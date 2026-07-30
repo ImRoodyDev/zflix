@@ -14,7 +14,7 @@ import React, {
 import { useTranslation } from 'react-i18next';
 import { ScrollView, ScrollViewProps, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LegendList, LegendListRenderItemProps } from '@/packages/legend-list';
+import { LegendList, LegendListRenderItemProps } from '@imroodydev/legendapp-list/react-native';
 
 // Internal imports
 import { useResponsiveSize } from '../../contexts/ResponsiveContext';

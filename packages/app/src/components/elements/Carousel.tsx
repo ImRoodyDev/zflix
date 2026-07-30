@@ -16,7 +16,7 @@ import {
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { InView } from '@imroodydev/rn-intersection-observer';
-import { LegendList, LegendListRenderItemProps } from '@/packages/legend-list';
+import { LegendList, LegendListRenderItemProps } from '@imroodydev/legendapp-list/react-native';
 
 // Internal imports
 import { useResponsiveSize } from '../../contexts/ResponsiveContext';
@@ -255,18 +255,15 @@ function Carousel<T extends MediaInfo | IPTVChannel>(props: CarouselProps<T>) {
 	}, []);
 
 	// Render function for each item in the carousel
-	const legendItem = useCallback(
-		(props: LegendListRenderItemProps<T | null>) => {
-			if (isChannelItem(props.item)) {
-				if (!props.item) return <CarouselChannelSkeleton />;
-				return <CarouselChannelItem item={props.item} />;
-			} else {
-				if (!props.item) return <CarouselMediaSkeleton />;
-				return <CarouselMediaItem item={props.item} />;
-			}
-		},
-		[],
-	);
+	const legendItem = useCallback((props: LegendListRenderItemProps<T | null>) => {
+		if (isChannelItem(props.item)) {
+			if (!props.item) return <CarouselChannelSkeleton />;
+			return <CarouselChannelItem item={props.item} />;
+		} else {
+			if (!props.item) return <CarouselMediaSkeleton />;
+			return <CarouselMediaItem item={props.item} />;
+		}
+	}, []);
 
 	// Render function for the scroll component
 	const legendScrollRender = useCallback(
