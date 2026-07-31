@@ -2,6 +2,7 @@ import {
 	ACCESS_TOKEN,
 	clearCookies,
 	REFRESH_TOKEN,
+	saveProtectedTokens,
 	SESSION_TOKEN,
 	verifyAccessToken,
 	verifyRefreshToken,
@@ -51,7 +52,7 @@ export const AuthorizationMiddleware = async (req: AuthenticatedRequest, res: Re
 		}
 
 		// Verify tokens
-		const { valid, userId, role, subscriptionId, updatedAccessToken } = await verifyTokens({
+		const { valid, userId, role, subscriptionId, updatedAccessToken, renewedSession } = await verifyTokens({
 			accessToken,
 			refreshToken,
 			sessionToken,
@@ -71,6 +72,9 @@ export const AuthorizationMiddleware = async (req: AuthenticatedRequest, res: Re
 
 		// If access token was refreshed, send the new token in response header
 		if (updatedAccessToken) res.setHeader('X-Access-Token', updatedAccessToken);
+
+		// If the session slid forward, write the renewed refresh/session cookies
+		if (renewedSession) saveProtectedTokens(res, renewedSession);
 
 		// Attach user info to request
 		req.user = {
@@ -130,7 +134,7 @@ export const AdminAuthentication = async (req: AuthenticatedRequest, res: Respon
 		}
 
 		// Verify tokens
-		const { valid, userId, role, subscriptionId, updatedAccessToken } = await verifyTokens({
+		const { valid, userId, role, subscriptionId, updatedAccessToken, renewedSession } = await verifyTokens({
 			accessToken,
 			refreshToken,
 			sessionToken,
@@ -169,6 +173,9 @@ export const AdminAuthentication = async (req: AuthenticatedRequest, res: Respon
 
 		// If access token was refreshed, send the new token in response header
 		if (updatedAccessToken) res.setHeader('X-Access-Token', updatedAccessToken);
+
+		// If the session slid forward, write the renewed refresh/session cookies
+		if (renewedSession) saveProtectedTokens(res, renewedSession);
 
 		// Attach user info to request
 		req.user = {
@@ -250,15 +257,12 @@ export const ImageAuthentication = async (req: Request, res: Response, next: Nex
 		if (accessToken) {
 			const { valid } = await verifyAccessToken({ accessToken });
 			if (valid) return next();
-			// Access token was provided but invalid/expired — do NOT reject yet.
-			// The access token lives only 10h, so a stale one attached to a long-lived
-			// <img> request is expected. Fall through to the refresh-cookie check below
-			// so the image still loads as long as the session (refresh token) is valid.
+			// Expired/invalid access token on a long-lived <img> is expected — fall through
+			// to the refresh-cookie check instead of rejecting.
 		}
 
-		// Strategy 2: Fall back to refresh token from cookies. This covers browser-initiated
-		// image requests (<img>, CSS background, etc.) where setting an Authorization header
-		// is not feasible, as well as requests whose access token has expired.
+		// Strategy 2: Fall back to the refresh cookie (browser image requests can't set an
+		// Authorization header, and the access token may have expired).
 		if (requestedAgent && refreshToken && sessionToken) {
 			const { valid, user } = await verifyRefreshToken({ refreshToken, sessionToken, requestedAgent });
 			if (valid && user) return next();
