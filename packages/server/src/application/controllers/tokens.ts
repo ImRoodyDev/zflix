@@ -224,13 +224,14 @@ const toVerificationError = (error: unknown, action: string): ProcessError => {
 		return new ProcessError({
 			code: 'UNAUTHORIZED',
 			message: `Invalid or expired token while ${action}`,
+			details: `Invalid or expired token while ${action}`,
 			status: 401,
 		});
 	}
 
 	// Anything else is a genuine server fault (database down, models not bootstrapped,
 	// crypto failure). Log the underlying error — it is the only record of the cause.
-	logger.force('error', `Unexpected failure while ${action}.`, error);
+	logger.error('error', `Unexpected failure while ${action}.`, error);
 
 	return new ProcessError({
 		status: 500,
