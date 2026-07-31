@@ -31,10 +31,10 @@ const COOKIE_OPTIONS = {
 	partitioned: config.CookiePartitioned,
 };
 
-logger.info({
+logger.info('TOKENS:', {
 	AUTH_CONFIG: CONFIG,
 	COOKIE_OPTIONS,
-} as any);
+});
 
 interface GenerateRefreshTokenParams {
 	uuid: string;
