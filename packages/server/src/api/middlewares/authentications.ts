@@ -250,18 +250,15 @@ export const ImageAuthentication = async (req: Request, res: Response, next: Nex
 		if (accessToken) {
 			const { valid } = await verifyAccessToken({ accessToken });
 			if (valid) return next();
-
-			// Access token was provided but invalid — reject immediately
-			return new HttpError({
-				code: req.t('UNAUTHORIZED_CODE'),
-				message: req.t('UNAUTHORIZED_MESSAGE'),
-				statusCode: 401,
-			}).sendResponse(res);
+			// Access token was provided but invalid/expired — do NOT reject yet.
+			// The access token lives only 10h, so a stale one attached to a long-lived
+			// <img> request is expected. Fall through to the refresh-cookie check below
+			// so the image still loads as long as the session (refresh token) is valid.
 		}
 
-		// Strategy 2: No access token — fall back to refresh token from cookies
-		// This covers browser-initiated image requests (<img>, CSS background, etc.)
-		// where setting an Authorization header is not feasible.
+		// Strategy 2: Fall back to refresh token from cookies. This covers browser-initiated
+		// image requests (<img>, CSS background, etc.) where setting an Authorization header
+		// is not feasible, as well as requests whose access token has expired.
 		if (requestedAgent && refreshToken && sessionToken) {
 			const { valid, user } = await verifyRefreshToken({ refreshToken, sessionToken, requestedAgent });
 			if (valid && user) return next();

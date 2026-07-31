@@ -445,15 +445,19 @@ export const verifyTokens = async function ({
 				algorithms: ['RS256'],
 			})) as DecodedAccessToken;
 
-			// Check if the access token is valid by matching the jti with the refresh token jti
+			// The access token is only valid if its jti matches the refresh token's jti.
+			// A mismatch means the presented access token belongs to a different session, so
+			// fail authentication rather than silently issuing a new one.
 			accessTokenValid = accessDecoded.jti === decoded.jti;
 		} catch (error: any) {
-			// In the verifyTokens function, change the line where updatedAccesstoken is generated
-			if (error.name === 'TokenExpiredError') {
-				// Generate new access token
+			// Only a genuinely expired access token is refreshed: the refresh token was already
+			// verified above, so a new access token can be safely minted from its trusted jti.
+			// Every other failure — malformed, wrong signature/key, not-yet-valid, or any
+			// unexpected fault — fails authentication instead of re-issuing.
+			logger.error(`Access token verification failed: ${error?.message}`, error);
+			if (error?.name === 'TokenExpiredError') {
+				// Generate new access token from the already-trusted refresh token
 				updatedAccessToken = generateAccessToken(decoded.jti);
-
-				// Set access token identifier
 				accessTokenValid = true;
 			} else {
 				// Return if not valid

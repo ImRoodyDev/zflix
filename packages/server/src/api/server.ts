@@ -20,6 +20,10 @@ const corsConfig = cors({
 	credentials: true,
 	methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
 	allowedHeaders: ['Content-Type', 'Authorization', 'X-Platform', 'X-CSRF-Token', 'Cookie'],
+	// The access token is silently refreshed server-side and returned in X-Access-Token.
+	// Without exposing it, browsers block JS from reading the header, so the client keeps
+	// using the expired token and the session appears to die ~10h after login.
+	exposedHeaders: ['X-Access-Token'],
 	optionsSuccessStatus: 204,
 });
 
