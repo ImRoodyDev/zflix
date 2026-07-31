@@ -10,6 +10,8 @@ module.exports = {
 			public_key: process.env.REFRESH_PUBLICKEY,
 			private_key: process.env.REFRESH_PRIVATEKEY,
 			expiry: process.env.REFRESH_TOKEN_EXPIRY,
+			// How often an active session re-issues its refresh token (ms format, e.g. "1d").
+			slide_interval: process.env.REFRESH_SLIDE_INTERVAL,
 		},
 
 		reset_token: {
@@ -29,6 +31,8 @@ module.exports = {
 			public_key: process.env.REFRESH_TOKEN_PUBLIC_KEY,
 			private_key: process.env.REFRESH_TOKEN_PRIVATE_KEY,
 			expiry: process.env.REFRESH_TOKEN_EXPIRY,
+			// How often an active session re-issues its refresh token (ms format, e.g. "1d").
+			slide_interval: process.env.REFRESH_SLIDE_INTERVAL,
 		},
 
 		reset_token: {

@@ -1,4 +1,5 @@
 import jwt, { VerifyOptions } from 'jsonwebtoken';
+import ms, { StringValue } from 'ms';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
 import { Response } from 'express';
@@ -13,10 +14,10 @@ import adminConfig from '@core/infrastructure/config/admin';
 import logger from '@utils/logger';
 
 // Environment
+const CONFIG = tokensConfig[config.ENV as keyof typeof tokensConfig];
 export const REFRESH_TOKEN = 'R_AUTH_ID';
 export const SESSION_TOKEN = 'SESSION_ID';
 export const ACCESS_TOKEN = 'AUTH_ACCESS_TOKEN';
-const CONFIG = tokensConfig[config.ENV as keyof typeof tokensConfig];
 const CACHE_TTL = 300; // Cache TTL in seconds
 const BCRYPT_CACHE_TTL = 600; // bcrypt compare results are deterministic — safe to cache longer
 const USER_CACHE_TTL = 120; // User DB lookups — shorter TTL so subscription/reset changes propagate
@@ -30,6 +31,23 @@ const COOKIE_OPTIONS = {
 	secure: config.CookieSecure,
 	partitioned: config.CookiePartitioned,
 };
+
+// Cookie lifetimes match the JWT expiries, parsed with the same `ms` jsonwebtoken uses, so a
+// cookie never outlives or dies before its token. The session cookie has no JWT, so it is
+// pinned to the refresh lifetime (its partner credential).
+const REFRESH_COOKIE_MAX_AGE = ms(CONFIG.refresh_token.expiry as StringValue);
+const ACCESS_COOKIE_MAX_AGE = ms(CONFIG.access_code.expiry as StringValue);
+
+// Sliding session: re-issue the refresh token once it is older than this interval, so an active
+// session keeps extending and never forces a re-login. Throttled to avoid rewriting cookies every request.
+const REFRESH_SLIDE_INTERVAL_MS = ms(CONFIG.refresh_token.slide_interval as StringValue);
+
+logger.info('TOKENS:', {
+	ACCESS_CODE_EXPIRY: CONFIG.access_code.expiry,
+	REFRESH_TOKEN_EXPIRY: CONFIG.refresh_token.expiry,
+	REFRESH_SLIDE_INTERVAL: CONFIG.refresh_token.slide_interval,
+	COOKIE_OPTIONS,
+});
 
 interface GenerateRefreshTokenParams {
 	uuid: string;
@@ -65,6 +83,8 @@ type DecodedRefreshToken = {
 	resetCount: number;
 	role: UserRoles;
 	userAgent: string;
+	iat: number; // issued-at (epoch seconds), set by jwt — used to decide sliding renewal
+	exp: number; // expiry (epoch seconds), set by jwt
 };
 
 type DecodedAccessToken = {
@@ -112,6 +132,35 @@ export const generateRefreshToken = async function ({
 		},
 	);
 	return [token, jti];
+};
+
+/**
+ * Re-signs a verified refresh token with a fresh expiry, keeping its identity (same jti, user
+ * hash, claims). Extends the session without rotating it, so the paired access token stays valid.
+ */
+const slideRefreshToken = function (decoded: DecodedRefreshToken): string {
+	if (!CONFIG.refresh_token.private_key)
+		throw new ProcessError({
+			code: 'ERROR_MISSING_AUTH_KEY',
+			message: 'Unable to renew refresh token',
+			status: 500,
+		});
+
+	// Re-sign the same payload (reusing the existing user hash avoids another bcrypt round).
+	return jwt.sign(
+		{
+			jti: decoded.jti,
+			user: decoded.user,
+			resetCount: decoded.resetCount,
+			role: decoded.role,
+			userAgent: decoded.userAgent,
+		},
+		CONFIG.refresh_token.private_key,
+		{
+			algorithm: 'RS256',
+			expiresIn: CONFIG.refresh_token.expiry as any,
+		},
+	);
 };
 
 /**
@@ -224,13 +273,14 @@ const toVerificationError = (error: unknown, action: string): ProcessError => {
 		return new ProcessError({
 			code: 'UNAUTHORIZED',
 			message: `Invalid or expired token while ${action}`,
+			details: `Invalid or expired token while ${action}`,
 			status: 401,
 		});
 	}
 
 	// Anything else is a genuine server fault (database down, models not bootstrapped,
 	// crypto failure). Log the underlying error — it is the only record of the cause.
-	logger.force('error', `Unexpected failure while ${action}.`, error);
+	logger.error('error', `Unexpected failure while ${action}.`);
 
 	return new ProcessError({
 		status: 500,
@@ -429,6 +479,8 @@ export const verifyTokens = async function ({
 	// Access token indentifier
 	let accessTokenValid = false;
 	let updatedAccessToken: string | undefined;
+	// Set when the session slides forward and fresh refresh/session cookies must be written.
+	let renewedSession: { refreshToken: string; sessionToken: string } | undefined;
 
 	// Verify access token
 	if (validRefreshToken) {
@@ -445,20 +497,30 @@ export const verifyTokens = async function ({
 				algorithms: ['RS256'],
 			})) as DecodedAccessToken;
 
-			// Check if the access token is valid by matching the jti with the refresh token jti
+			// Valid only if its jti matches the refresh token's — a mismatch means the access
+			// token is from another session, so fail rather than silently re-issue.
 			accessTokenValid = accessDecoded.jti === decoded.jti;
 		} catch (error: any) {
-			// In the verifyTokens function, change the line where updatedAccesstoken is generated
-			if (error.name === 'TokenExpiredError') {
-				// Generate new access token
+			// Only an expired access token is refreshed (from the already-trusted refresh jti);
+			// every other failure — malformed, bad signature, not-yet-valid — fails auth.
+			logger.error(`Access token verification failed: ${error?.message}`, error);
+			if (error?.name === 'TokenExpiredError') {
+				// Generate new access token from the already-trusted refresh token
 				updatedAccessToken = generateAccessToken(decoded.jti);
-
-				// Set access token identifier
 				accessTokenValid = true;
 			} else {
 				// Return if not valid
 				accessTokenValid = false;
 			}
+		}
+
+		// Sliding session: once fully authenticated, re-issue the refresh token if it has aged
+		// past the slide interval, so active sessions never reach their absolute expiry.
+		if (accessTokenValid && userId && Date.now() - decoded.iat * 1000 > REFRESH_SLIDE_INTERVAL_MS) {
+			renewedSession = {
+				refreshToken: slideRefreshToken(decoded),
+				sessionToken: generateSessionToken(userId),
+			};
 		}
 	}
 
@@ -468,6 +530,7 @@ export const verifyTokens = async function ({
 		subscriptionId: user?.subscriptionId || null, // Admin doesn't have subscription
 		role: decoded.role,
 		updatedAccessToken,
+		renewedSession, // present only when the session slid; middleware writes the new cookies
 	};
 };
 
@@ -539,13 +602,13 @@ export const saveProtectedTokens = function (
 	response.cookie(REFRESH_TOKEN, refreshToken, {
 		...COOKIE_OPTIONS,
 		httpOnly: true,
-		expires: new Date(Date.now() + 1 * 365 * 24 * 60 * 60 * 1000),
+		maxAge: REFRESH_COOKIE_MAX_AGE, // matches the refresh JWT lifetime (REFRESH_TOKEN_EXPIRY)
 	});
 
 	response.cookie(SESSION_TOKEN, sessionToken, {
 		...COOKIE_OPTIONS,
 		httpOnly: true,
-		expires: new Date(Date.now() + 1 * 365 * 24 * 60 * 60 * 1000),
+		maxAge: REFRESH_COOKIE_MAX_AGE, // pinned to the refresh token — its partner credential
 	});
 };
 
@@ -559,7 +622,7 @@ export const saveAccessToken = function (response: Response, accessToken: string
 	response.cookie(ACCESS_TOKEN, accessToken, {
 		...COOKIE_OPTIONS,
 		httpOnly: false,
-		expires: new Date(Date.now() + 1 * 60 * 60 * 1000), // 1 hour (access tokens are short-lived)
+		maxAge: ACCESS_COOKIE_MAX_AGE, // matches the access JWT lifetime (ACCESS_TOKEN_EXPIRY)
 	});
 };
 

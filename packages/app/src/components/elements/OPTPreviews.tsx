@@ -429,7 +429,7 @@ function OPTPreviews(props: PreviewsProps) {
 			<View ref={parentRef} className="app-previews" onLayout={onLayout}>
 				<View style={{ width: '100%' }}>
 					{/* Clipping viewport; aspectRatio prevents layout jump. */}
-					<View style={{ width: '100%', aspectRatio: 21 / 9, overflow: 'hidden' }}>{previewsElements}</View>
+					<View className="app-previews-layout">{previewsElements}</View>
 				</View>
 			</View>
 		</InView>

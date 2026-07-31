@@ -1,4 +1,5 @@
 const commaSplitter = require('../../../utils/standard').commaSplitter;
+const ms = require('ms');
 
 const config = {
 	// Application configuration
@@ -71,6 +72,25 @@ if (Object.values(config).some((value) => value === 'undefined')) {
 	);
 } else if (config.CookiePartitioned && (!config.CookieSecure || config.CookieSameSite !== 'none')) {
 	throw new Error('COOKIE_PARTITIONED requires COOKIE_SAME_SITE=none and COOKIE_SECURE=true');
+}
+
+// REFRESH_SLIDE_INTERVAL must be a valid ms duration shorter than REFRESH_TOKEN_EXPIRY, else the
+// token would expire before aging past the interval, disabling sliding. (ms() throws on empty.)
+const slideIntervalRaw = process.env.REFRESH_SLIDE_INTERVAL;
+const refreshExpiryRaw = process.env.REFRESH_TOKEN_EXPIRY;
+const slideIntervalMs = slideIntervalRaw ? ms(slideIntervalRaw) : undefined;
+const refreshExpiryMs = refreshExpiryRaw ? ms(refreshExpiryRaw) : undefined;
+
+if (!slideIntervalRaw) {
+	throw new Error('Missing required configuration: REFRESH_SLIDE_INTERVAL');
+} else if (typeof slideIntervalMs !== 'number') {
+	throw new Error(
+		`Invalid REFRESH_SLIDE_INTERVAL value "${slideIntervalRaw}". Must be an ms-format duration (e.g. "1d", "12h").`,
+	);
+} else if (typeof refreshExpiryMs === 'number' && slideIntervalMs >= refreshExpiryMs) {
+	throw new Error(
+		`REFRESH_SLIDE_INTERVAL ("${slideIntervalRaw}") must be shorter than REFRESH_TOKEN_EXPIRY ("${refreshExpiryRaw}").`,
+	);
 }
 
 module.exports = config;
