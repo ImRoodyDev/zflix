@@ -13,8 +13,10 @@ import {
 	generateAccessToken,
 	generateResetToken,
 	saveProtectedTokens,
+	saveAccessToken,
 	REFRESH_TOKEN,
 	SESSION_TOKEN,
+	ACCESS_TOKEN,
 } from '@app/controllers/tokens';
 import tokensConfig from '@core/infrastructure/config/tokens';
 
@@ -108,30 +110,46 @@ describe('token lifetimes', () => {
 		).not.toThrow();
 	});
 
-	it('writes the R_AUTH_ID and SESSION_ID cookies with a ~1 year expiry', () => {
+	/** Capture the cookies a save-* function writes onto a fake Express response. */
+	const captureCookies = (write: (res: Response) => void) => {
 		const cookies: Record<string, { value: string; options: Record<string, any> }> = {};
 		const fakeResponse = {
 			cookie: (name: string, value: string, options: Record<string, any>) => {
 				cookies[name] = { value, options };
 			},
 		} as unknown as Response;
+		write(fakeResponse);
+		return cookies;
+	};
 
-		const issuedAt = Date.now();
-		saveProtectedTokens(fakeResponse, { refreshToken: 'refresh', sessionToken: 'session' });
+	it('sets the R_AUTH_ID and SESSION_ID cookie lifetimes to the refresh JWT lifetime (365d)', () => {
+		const cookies = captureCookies((res) =>
+			saveProtectedTokens(res, { refreshToken: 'refresh', sessionToken: 'session' }),
+		);
 
-		const oneYearMs = 365 * DAY * 1000;
+		// The cookie must live exactly as long as the token it carries — no drift, no same-day death.
+		const expectedMs = durationToSeconds(CONFIG.refresh_token.expiry) * 1000;
+		expect(expectedMs).toBe(365 * DAY * 1000);
 
 		for (const name of [REFRESH_TOKEN, SESSION_TOKEN]) {
 			const cookie = cookies[name];
 			expect(cookie).toBeDefined();
 			expect(cookie.options.httpOnly).toBe(true);
-
-			const expires = cookie.options.expires as Date;
-			expect(expires).toBeInstanceOf(Date);
-
-			// The cookie must outlive the browser session by ~1 year, not expire same-day.
-			const ttlMs = expires.getTime() - issuedAt;
-			expect(Math.abs(ttlMs - oneYearMs)).toBeLessThan(5000); // 5s tolerance for call latency
+			expect(cookie.options.maxAge).toBe(expectedMs);
 		}
+	});
+
+	it('sets the access cookie lifetime to the access JWT lifetime (10h, not 1h)', () => {
+		const cookies = captureCookies((res) => saveAccessToken(res, 'access-token'));
+
+		// Regression guard: the cookie previously expired after 1h while the JWT lived 10h,
+		// deleting the credential 9h early. They must now agree.
+		const expectedMs = durationToSeconds(CONFIG.access_code.expiry) * 1000;
+		expect(expectedMs).toBe(10 * HOUR * 1000);
+
+		const cookie = cookies[ACCESS_TOKEN];
+		expect(cookie).toBeDefined();
+		expect(cookie.options.httpOnly).toBe(false); // readable by JS for Authorization headers
+		expect(cookie.options.maxAge).toBe(expectedMs);
 	});
 });

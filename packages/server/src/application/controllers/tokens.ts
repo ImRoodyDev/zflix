@@ -1,4 +1,5 @@
 import jwt, { VerifyOptions } from 'jsonwebtoken';
+import ms, { StringValue } from 'ms';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
 import { Response } from 'express';
@@ -30,6 +31,14 @@ const COOKIE_OPTIONS = {
 	secure: config.CookieSecure,
 	partitioned: config.CookiePartitioned,
 };
+
+// Cookie lifetimes are derived from the SAME ms-format expiry strings used to sign the JWTs
+// (via jsonwebtoken's `expiresIn`), so the cookie can never outlive — or, worse, die before —
+// the token it carries. `ms` is the exact parser jsonwebtoken uses internally, guaranteeing parity.
+// The session cookie has no JWT of its own; it is the refresh token's partner (decrypts to the
+// userId used alongside it), so it is pinned to the refresh lifetime.
+const REFRESH_COOKIE_MAX_AGE = ms(CONFIG.refresh_token.expiry as StringValue);
+const ACCESS_COOKIE_MAX_AGE = ms(CONFIG.access_code.expiry as StringValue);
 
 logger.info('TOKENS:', {
 	ACCESS_CODE_EXPIRY: CONFIG.access_code.expiry,
@@ -550,13 +559,13 @@ export const saveProtectedTokens = function (
 	response.cookie(REFRESH_TOKEN, refreshToken, {
 		...COOKIE_OPTIONS,
 		httpOnly: true,
-		expires: new Date(Date.now() + 1 * 365 * 24 * 60 * 60 * 1000),
+		maxAge: REFRESH_COOKIE_MAX_AGE, // matches the refresh JWT lifetime (REFRESH_TOKEN_EXPIRY)
 	});
 
 	response.cookie(SESSION_TOKEN, sessionToken, {
 		...COOKIE_OPTIONS,
 		httpOnly: true,
-		expires: new Date(Date.now() + 1 * 365 * 24 * 60 * 60 * 1000),
+		maxAge: REFRESH_COOKIE_MAX_AGE, // pinned to the refresh token — its partner credential
 	});
 };
 
@@ -570,7 +579,7 @@ export const saveAccessToken = function (response: Response, accessToken: string
 	response.cookie(ACCESS_TOKEN, accessToken, {
 		...COOKIE_OPTIONS,
 		httpOnly: false,
-		expires: new Date(Date.now() + 1 * 60 * 60 * 1000), // 1 hour (access tokens are short-lived)
+		maxAge: ACCESS_COOKIE_MAX_AGE, // matches the access JWT lifetime (ACCESS_TOKEN_EXPIRY)
 	});
 };
 
