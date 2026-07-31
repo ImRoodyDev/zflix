@@ -231,7 +231,7 @@ const toVerificationError = (error: unknown, action: string): ProcessError => {
 
 	// Anything else is a genuine server fault (database down, models not bootstrapped,
 	// crypto failure). Log the underlying error — it is the only record of the cause.
-	logger.error('error', `Unexpected failure while ${action}.`, error);
+	logger.error('error', `Unexpected failure while ${action}.`);
 
 	return new ProcessError({
 		status: 500,
