@@ -94,6 +94,8 @@ services:
         sync: false
       - key: REFRESH_TOKEN_EXPIRY
         sync: false
+      - key: REFRESH_SLIDE_INTERVAL
+        sync: false
       - key: REFRESH_TOKEN_PUBLIC_KEY
         sync: false
       - key: REFRESH_TOKEN_PRIVATE_KEY
