@@ -32,7 +32,8 @@ const COOKIE_OPTIONS = {
 };
 
 logger.info('TOKENS:', {
-	AUTH_CONFIG: CONFIG,
+	ACCESS_CODE_EXPIRY: CONFIG.access_code.expiry,
+	REFRESH_TOKEN_EXPIRY: CONFIG.refresh_token.expiry,
 	COOKIE_OPTIONS,
 });
 
