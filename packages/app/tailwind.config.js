@@ -1,13 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-	content: [
-		'./App.tsx',
-		'./src/app/**/*.{js,jsx,ts,tsx}',
-		'./src/components/**/*.{js,jsx,ts,tsx}',
-		'./src/contexts/**/*.{js,jsx,ts,tsx}',
-		'./src/constants/icons/**/*.{js,jsx,ts,tsx}',
-		'./src/styles/**/*.{css}',
-	],
+	content: ['./src/**/*.{js,jsx,ts,tsx}', './src/styles/**/*.css'],
 	presets: [require('nativewind/preset')],
 	darkMode: 'class', // or 'media' or 'class'
 	// This will override the default themeScheme color
