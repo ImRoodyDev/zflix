@@ -78,6 +78,9 @@ export async function saveAuthentication(
 		return;
 	}
 
+	// Set authentication data in memory
+	window.application.auth.accessToken = authResponse.access;
+
 	// Store auth data in localStorage as fallback
 	await LocalStorageService.setItem(config.$AUTH_OBJECT_KEY, {
 		loggedIn: true,

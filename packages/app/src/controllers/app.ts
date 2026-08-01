@@ -142,13 +142,16 @@ async function initializeServer() {
 
 /** See if account is authorized or authenticating account */
 export async function initializeAuthentication() {
-	// Authenticated user data
-	const storedAuth = await LocalStorageService.getItem<CachedAuthObject>(config.$AUTH_OBJECT_KEY);
-	if (storedAuth) {
-		window.application.auth.loggedIn = storedAuth.loggedIn ?? false;
-		window.application.auth.accessToken = storedAuth.accessToken ?? '';
-		logger.info('User is authenticated, fetching user information...');
-		logger.debug('storedToken:', storedAuth.accessToken?.slice(0, 10) + '...' + storedAuth.accessToken?.slice(-10));
+	// Cold-start seed: load the stored token only if a fresher one isn't already in memory
+	// (e.g. login just set it), so we never overwrite a newer token with a stale stored one.
+	if (!window.application.auth.accessToken) {
+		const storedAuth = await LocalStorageService.getItem<CachedAuthObject>(config.$AUTH_OBJECT_KEY);
+		if (storedAuth) {
+			window.application.auth.loggedIn = storedAuth.loggedIn ?? false;
+			window.application.auth.accessToken = storedAuth.accessToken ?? '';
+			logger.info('User is authenticated, fetching user information...');
+			logger.debug('storedToken:', storedAuth.accessToken?.slice(0, 10) + '...' + storedAuth.accessToken?.slice(-10));
+		}
 	}
 
 	try {
@@ -167,8 +170,6 @@ export async function initializeAuthentication() {
 
 		// Set user data based on subscription
 		window.application.auth.user = new User(response.data);
-		window.application.auth.accessToken =
-			(await LocalStorageService.getItem<CachedAuthObject>(config.$AUTH_OBJECT_KEY))?.accessToken ?? '';
 		window.application.currentProfileIndex =
 			((await LocalStorageService.getItem<number>(config.$CURRENT_PROFILE_INDEX_KEY)) ?? 0) %
 			window.application.auth.user.profiles.length;

@@ -32,6 +32,37 @@ async function resolveAccessToken(request: string): Promise<string | null> {
 	return cachedAccessToken;
 }
 
+/** Epoch ms the access token was issued (server stamps `createdAt`); 0 if undecodable. */
+function accessTokenIssuedAt(token: string): number {
+	try {
+		let b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+		b64 += '='.repeat((4 - (b64.length % 4)) % 4);
+		return JSON.parse((globalThis as any).atob(b64))?.createdAt ?? 0;
+	} catch {
+		return 0;
+	}
+}
+
+/**
+ * Adopt an access token into memory (and persist it), ignoring stale ones from out-of-order
+ * renewals. Memory is updated first so in-flight requests/images use it immediately.
+ */
+export function applyAccessToken(token: string | null | undefined, force = false): void {
+	const next = token ?? '';
+	if (!next) return;
+
+	const current = window.application.auth.accessToken;
+	// Newest-wins: a late-arriving older renewal must not overwrite a newer token.
+	if (!force && current && accessTokenIssuedAt(next) < accessTokenIssuedAt(current)) return;
+
+	window.application.auth.accessToken = next;
+	window.application.auth.loggedIn = true;
+	void LocalStorageService.setItem(config.$AUTH_OBJECT_KEY, {
+		loggedIn: true,
+		accessToken: next,
+	} satisfies CachedAuthObject);
+}
+
 /** Get the API URL with an optional path */
 export function getApiUrl(path?: string | null): string {
 	// Check if the path already starts with a protocol (http:// or https://)
@@ -148,15 +179,9 @@ export async function handleResponse<GeneticResponse = any, GeneticError = any>(
 	// Get the content type from the requestResponse headers
 	const contentType = requestResponse.headers.get('content-type');
 
-	// Check for the x-new-token header in the requestResponse
+	// Adopt a server-renewed access token (newest-wins, so out-of-order renewals can't regress it)
 	if (requestResponse.headers.has(config.UPDATE_TOKEN_HEADER)) {
-		const newAccessToken = requestResponse.headers.get(config.UPDATE_TOKEN_HEADER);
-		window.application.auth.accessToken = newAccessToken ?? '';
-		// Store auth data in localStorage as fallback
-		await LocalStorageService.setItem(config.$AUTH_OBJECT_KEY, {
-			loggedIn: true,
-			accessToken: newAccessToken ?? '',
-		} satisfies CachedAuthObject);
+		applyAccessToken(requestResponse.headers.get(config.UPDATE_TOKEN_HEADER));
 	}
 
 	// Check if the requestResponse status indicates success
