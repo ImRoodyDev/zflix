@@ -180,6 +180,7 @@ export function useMedia(
 					currentSeason={episodesController.currentSeason}
 					onSeasonChange={episodesController.changeSeason}
 					style={previewStyle}
+					previewDuration={60_000}
 				/>
 			);
 		} else {
@@ -193,6 +194,7 @@ export function useMedia(
 					floating
 					autoStart
 					style={previewStyle}
+					previewDuration={60_000}
 				/>
 			);
 		}

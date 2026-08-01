@@ -115,7 +115,7 @@ function AvatarButton(props: AvatarButtonProps) {
 					source={avatarSource}
 					withAuthHeaders
 					resizeMode="contain"
-					// No crossfade: with ~210 avatars mounting, the transition layer doubles expo-image's
+					// No crossfade: with ~210 avatars mounting, the transition layer doubles image's
 					// views per item and slows the grid mount. See PROFILING.md → avatar picker.
 					transition={0}
 					style={{

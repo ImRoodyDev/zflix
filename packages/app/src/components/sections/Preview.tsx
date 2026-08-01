@@ -28,7 +28,7 @@ import BlurView from '../theme/BlurView';
 import Button from '../interactables/Button';
 import SeasonsDropdown from '../interactables/SeasonsDropdown';
 
-const LOGGING = false;
+const LOGGING = true;
 
 // Toggling `display` keeps the subtree mounted; conditional rendering made the
 // pager rebuild it on every auto-advance.
@@ -42,7 +42,7 @@ const DECORATION_MOUNT_DELAY_MS = 500;
 // Runs on the UI thread, so a busy JS thread can't stutter it.
 const FADE_DELAY_MS = 380;
 const FADE_DURATION_MS = 260;
-// expo-image's own crossfade — native, costs no JS or worklet.
+// image's own crossfade — native, costs no JS or worklet.
 const IMAGE_FADE_MS = 220;
 
 // Fades the metadata without putting an animated style on a className element:
@@ -113,7 +113,7 @@ const PreviewInfos = memo(
 							withAuthHeaders
 							contentFit={'contain'}
 							cachePolicy={'memory-disk'}
-							// expo-image has no intrinsic size: fill the aspect-ratio wrapper.
+							// image has no intrinsic size: fill the aspect-ratio wrapper.
 							style={{ width: '100%', height: '100%' }}
 							onError={() => setLogoFailed(true)}
 							alt={preview.title}
@@ -192,11 +192,7 @@ const PreviewInfos = memo(
 						</View>
 					)}
 
-					<Text
-						className={'app-preview-txt'}
-						numberOfLines={4}
-						ellipsizeMode={'tail'}
-					>
+					<Text className={'app-preview-txt'} numberOfLines={4} ellipsizeMode={'tail'}>
 						{preview.summary}
 					</Text>
 
@@ -381,7 +377,7 @@ const _YTPreviewSection = forwardRef(
 				<Image
 					src={props.preview.backdrop ? getApiUrl(props.preview.backdrop) : undefined}
 					withAuthHeaders
-					// expo-image crossfades on decode: the thumbnail eases in instead of
+					// image crossfades on decode: the thumbnail eases in instead of
 					// popping, and it costs nothing on the JS or UI thread.
 					transition={IMAGE_FADE_MS}
 					alt={props.preview.title}

@@ -1,6 +1,6 @@
 // External imports
 import { Href } from 'expo-router';
-import React, { useCallback, useRef, useState, useTransition } from 'react';
+import React, { useCallback, useMemo, useRef, useState, useTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Keyboard, Text, type TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -124,6 +124,12 @@ const Login = () => {
 		}
 	};
 
+	// On Web className for keyboard sticky view is not being passed
+	const keyboardViewStyle = useMemo(
+		() => ({ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }),
+		[],
+	);
+
 	return (
 		<Page
 			backgroundColor={themeColors.whiteBackground}
@@ -133,7 +139,7 @@ const Login = () => {
 			webExiting={ModalWebOut}
 		>
 			<SafeAreaView edges={['top', 'bottom']} className="flex-1">
-				<KeyboardStickyView className={'app-user-form'}>
+				<KeyboardStickyView className={'app-user-form'} style={keyboardViewStyle as any}>
 					<View className="app-user-form-floating-header">
 						<CloseButton className="app-user-form-header-btn" onClose={exitModal} />
 						<SwitchTheme className="app-user-form-theme-btn" />

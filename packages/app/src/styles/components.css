@@ -381,10 +381,6 @@ body {
 	}
 }
 
-/* Tablets Portrait */
-@media only screen and (max-width: 899px) {
-}
-
 /*#endregion*/
 
 /*#region App Home */
@@ -2393,6 +2389,10 @@ body {
 	padding-top: var(--carousel-lg-margin-y) !important;
 }
 
+div:has(> .carousel-item) {
+	contain: layout style !important; /**Fix issue with overflow in new legend-list */
+}
+
 .carousel-item {
 	width: var(--carousel-width);
 	height: var(--carousel-height);
@@ -2406,6 +2406,11 @@ body {
 	border-radius: 16px;
 	overflow: visible;
 	z-index: 0;
+
+	user-select: none;
+	-webkit-user-select: none; /* Safari/iOS */
+	-moz-user-select: none; /* Firefox */
+	-ms-user-select: none; /* old IE */
 }
 
 .carousel-item-lg {
@@ -2558,6 +2563,11 @@ body {
 	width: 100%;
 	height: auto;
 	margin-bottom: calc(var(--previews-cut-size) * -1);
+
+	user-select: none;
+	-webkit-user-select: none; /* Safari/iOS */
+	-moz-user-select: none; /* Firefox */
+	-ms-user-select: none; /* old IE */
 }
 
 .app-previews-scroll {
@@ -2593,6 +2603,11 @@ body {
 
 	scroll-snap-align: start;
 	aspect-ratio: 21 / 9;
+
+	user-select: none;
+	-webkit-user-select: none; /* Safari/iOS */
+	-moz-user-select: none; /* Firefox */
+	-ms-user-select: none; /* old IE */
 }
 
 .app-preview-floating {

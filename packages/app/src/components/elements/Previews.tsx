@@ -1,5 +1,4 @@
 // External imports
-import { Image } from 'expo-image';
 import { Href, useFocusEffect } from 'expo-router';
 import React, { memo, startTransition, useCallback, useMemo, useRef, useState } from 'react';
 import {
@@ -21,6 +20,7 @@ import { smartRound } from '@/utils/standard';
 import logger from '../../utils/logger';
 
 // Components
+import AppImage from './AppImage';
 import { PreviewSectionRef, YTPreviewSection } from '../sections/Preview';
 
 // Minimum time a page stays active before an onFinished may advance the pager.
@@ -291,7 +291,7 @@ function Previews(props: PreviewsProps) {
 			if (circularDistance > 1) {
 				return (
 					<View key={`preview:${preview.id}`} className="app-preview">
-						<Image
+						<AppImage
 							source={preview.backdrop ? getAuthenticatedImageSource(getApiUrl(preview.backdrop)) : undefined}
 							style={{ width: '100%', height: '100%' }}
 							contentFit="cover"

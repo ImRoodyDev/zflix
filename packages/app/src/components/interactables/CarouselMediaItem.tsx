@@ -1,6 +1,5 @@
 // External imports
 import clsx from 'clsx';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Href } from 'expo-router';
 import React, { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -20,6 +19,7 @@ import { MediaInfo } from '../../types/Medias';
 import { getApiUrl, getAuthenticatedImageSource } from '../../utils/fetcher';
 
 // Components
+import AppImage from '../elements/AppImage';
 import Button from './Button';
 
 type CarouselItemProps = {
@@ -28,11 +28,19 @@ type CarouselItemProps = {
 	style?: ViewStyle;
 };
 
+const canHover =
+	Platform.OS === 'web' && typeof window !== 'undefined' && !!window.matchMedia?.('(hover: hover)').matches;
+
 function CarouselMediaItem(props: CarouselItemProps) {
 	const { item, style } = props;
 	// `focused` state drives web-only subtrees. Native avoids re-rendering on
 	// focus (D-pad jank); it uses the UI-thread `focusProgress` instead.
 	const isWeb = Platform.OS === 'web';
+
+	// On web touch the focus scale (a transform on the Pressable's parent) moves
+	// the hit rect mid-press, so a slow tap lands "outside" and onPress never
+	// fires. Skip the press animation there; native/mouse keep it.
+	const isTouchWeb = isWeb && !canHover;
 
 	const sizes = useResponsiveSize();
 	// Styles LegendList's item wrapper (the real stacking context). zIndex on our
@@ -165,7 +173,7 @@ function CarouselMediaItem(props: CarouselItemProps) {
 	}, [bookmarked, item.href, sizes.span1, sizes.span2, onBookmark, onPlay]);
 	const image = useMemo(() => {
 		return (
-			<Image
+			<AppImage
 				className={'carousel-item-img'}
 				source={getAuthenticatedImageSource(getApiUrl(item.poster ?? 'undefined'))}
 				contentFit="contain"
@@ -179,9 +187,10 @@ function CarouselMediaItem(props: CarouselItemProps) {
 	return (
 		<View
 			className={clsx('carousel-item', focused && 'carousel-item-hovered')}
-			onPointerEnter={onFocus}
-			onPointerLeave={onBlur}
-			{...({ onFocus, onBlur } as object)}
+			// Hover only where a pointer can hover (see canHover).
+			onPointerEnter={canHover ? onFocus : undefined}
+			onPointerLeave={canHover ? onBlur : undefined}
+			{...({ onFocus: isTouchWeb ? undefined : onFocus, onBlur: isTouchWeb ? undefined : onBlur } as object)}
 			// No rasterization: it would clip the focus scale/glow that overflow.
 			// No zIndex here — the lift goes on the wrapper via setWrapperStyle.
 			style={style}
@@ -217,19 +226,20 @@ function CarouselMediaItem(props: CarouselItemProps) {
 			>
 				{image}
 				<Pressable
+					className={'carousel-anchor-btn'}
 					focusable
 					onPress={holdBookmark.wrapPress(onPlay)}
-					onFocus={onFocus}
-					onBlur={onBlur}
+					onFocus={isTouchWeb ? undefined : onFocus}
+					onBlur={isTouchWeb ? undefined : onBlur}
 					onPressIn={(e) => {
-						onFocus();
+						// Web touch: skip focus scale so it can't move the hit rect mid-press.
+						if (!isTouchWeb) onFocus();
 						holdBookmark.onPressIn(e);
 					}}
 					onPressOut={(e) => {
-						onBlur();
+						if (!isTouchWeb) onBlur();
 						holdBookmark.onPressOut(e);
 					}}
-					className={'carousel-anchor-btn'}
 					{...({ onKeyDown: holdBookmark.onKeyDown, onKeyUp: holdBookmark.onKeyUp } as object)}
 				/>
 				{

@@ -29,7 +29,7 @@ import BlurView from '../theme/BlurView';
 import Button from '../interactables/Button';
 import SeasonsDropdown from '../interactables/SeasonsDropdown';
 
-const LOGGING = false;
+const LOGGING = true;
 let HIDE_OVERVIEW: boolean | undefined = undefined;
 
 const PreviewInfos = memo(
@@ -84,7 +84,7 @@ const PreviewInfos = memo(
 							withAuthHeaders
 							contentFit={'contain'}
 							cachePolicy={'memory-disk'}
-							// expo-image has no intrinsic size: fill the aspect-ratio wrapper.
+							// image has no intrinsic size: fill the aspect-ratio wrapper.
 							style={{ width: '100%', height: '100%' }}
 							onError={() => setLogoFailed(true)}
 							alt={preview.title}

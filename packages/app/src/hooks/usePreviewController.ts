@@ -190,7 +190,7 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 
 	// Clamped video duration
 	const clampedDuration = useMemo(
-		() => Math.min(props.previewDuration ?? PREVIEW_VIDEO_DURATION, PREVIEW_VIDEO_DURATION),
+		() => Math.max(props.previewDuration ?? PREVIEW_VIDEO_DURATION, PREVIEW_VIDEO_DURATION),
 		[props.previewDuration],
 	);
 
@@ -301,7 +301,16 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 				onFinishedRef.current?.();
 			}, remainingTime);
 		},
-		[cancelPlayAttempt, clampedDuration, logging, player, props.autoStart, props.loop, props.previewDuration, safePlayerCall],
+		[
+			cancelPlayAttempt,
+			clampedDuration,
+			logging,
+			player,
+			props.autoStart,
+			props.loop,
+			props.previewDuration,
+			safePlayerCall,
+		],
 	);
 
 	// Start preview with delay to match teaser behavior.
@@ -460,14 +469,22 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 		[cancelPlayAttempt, logging, props.preview.title, props.preview.ytKey, stopPreviewVideo],
 	);
 
-	// Clamp successful playback to max duration. Subscribed as a callback, not state:
-	// the state form re-rendered the whole preview section on every progress tick.
+	// Finish on the max preview duration OR just before the video's real end.
+	// ENDED is unreliable for muted autoplay, so short trailers used to freeze
+	// on the end thumbnail instead of looping. Callback (not state) to avoid a
+	// re-render every progress tick.
 	useYouTubeEvent(
 		player,
 		'progress',
 		(progress) => {
 			if (!progress || !videoEnabled || !isPlaying) return;
-			if (progress.currentTime * 1000 < clampedDuration) return;
+
+			const positionMs = progress.currentTime * 1000;
+			const durationMs = (progress.duration ?? 0) * 1000;
+			const reachedCap = positionMs >= clampedDuration;
+			// Trigger ~1s early so we loop while still playing, before ENDED.
+			const reachedEnd = durationMs > 0 && positionMs >= durationMs - 1000;
+			if (!reachedCap && !reachedEnd) return;
 
 			if (props.loop) {
 				safePlayerCall(() => player.pause(), 'Failed to pause YouTube preview video:');
@@ -477,7 +494,17 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 
 			stopPreviewVideo(true, false);
 		},
-		[clampedDuration, isPlaying, logging, player, props.loop, safePlayerCall, scheduleLoopRestart, stopPreviewVideo, videoEnabled],
+		[
+			clampedDuration,
+			isPlaying,
+			logging,
+			player,
+			props.loop,
+			safePlayerCall,
+			scheduleLoopRestart,
+			stopPreviewVideo,
+			videoEnabled,
+		],
 	);
 
 	useEffect(() => {
