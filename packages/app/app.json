@@ -31,7 +31,6 @@
 			"react-native-video",
 			"expo-secure-store",
 			"expo-web-browser",
-			"@react-native-tvos/config-tv",
 			[
 				"expo-font",
 				{
