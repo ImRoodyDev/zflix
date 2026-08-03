@@ -10,6 +10,7 @@ import { isNotEmpty } from '../utils/standard';
 import logger from '../utils/logger';
 
 // Constants
+const LOG_PREFIX = '[YTPreviewCtrl]';
 const DEFAULT_PREVIEW_DURATION = 6_000; // Default duration for the preview in milliseconds
 const DEFAULT_PLAY_TIMEOUT = 3_000; // Default timeout for starting the preview in milliseconds
 const PREVIEW_VIDEO_DURATION = 20_000; // Maximum duration for the preview youtube trailer video in milliseconds
