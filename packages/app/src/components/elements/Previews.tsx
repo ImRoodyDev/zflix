@@ -1,6 +1,6 @@
 // External imports
 import { Href, useFocusEffect } from 'expo-router';
-import React, { memo, startTransition, useCallback, useMemo, useRef, useState } from 'react';
+import React, { memo, startTransition, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
 	LayoutChangeEvent,
 	InteractionManager,
@@ -25,7 +25,7 @@ import { PreviewSectionRef, YTPreviewSection } from '../sections/Preview';
 
 // Minimum time a page stays active before an onFinished may advance the pager.
 const MIN_PAGE_DWELL_MS = 1500;
-const LOGGING = false;
+const LOGGING = true;
 
 type PreviewsProps = {
 	previews: MovieDetails[] | TvDetails[];
@@ -157,8 +157,10 @@ function Previews(props: PreviewsProps) {
 			}
 
 			// Mounting a new preview can be heavy; keep it below D-pad focus work.
+			// startCurrentPreview() itself runs from the activeIndex layout effect
+			// below, once the new page has actually re-rendered as active — calling
+			// it here would still see the outgoing page's stale ignoreVideo prop.
 			startTransition(() => setActiveIndex(trackedCurrentPreview));
-			startCurrentPreview();
 		}
 	};
 
@@ -180,6 +182,20 @@ function Previews(props: PreviewsProps) {
 			currentPreview.startPreview();
 		}
 	};
+
+	// Runs after activeIndex commits, so the new page has already re-rendered
+	// with isActivePreview=true before we call startPreview() on it — calling
+	// it any earlier would hand it a stale (still-inactive) ignoreVideo prop.
+	// Initial mount is handled by useFocusEffect(initialize) instead.
+	const isFirstActiveIndexRef = useRef(true);
+	useLayoutEffect(() => {
+		if (isFirstActiveIndexRef.current) {
+			isFirstActiveIndexRef.current = false;
+			return;
+		}
+		startCurrentPreview();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [activeIndex]);
 
 	const runScrollToPreview = (index: number, animated: boolean) => {
 		if (!componentInViewRef.current || !scrollRef.current || previewWidthRef.current <= 0) return;

@@ -13,11 +13,16 @@ import logger from '../utils/logger';
 const DEFAULT_PREVIEW_DURATION = 6_000; // Default duration for the preview in milliseconds
 const DEFAULT_PLAY_TIMEOUT = 3_000; // Default timeout for starting the preview in milliseconds
 const PREVIEW_VIDEO_DURATION = 20_000; // Maximum duration for the preview youtube trailer video in milliseconds
+const PLAY_MOUNT_DELAY = 150; // Wait for the WebView/iframe to mount before the first play attempt
+const PLAY_RETRY_INTERVAL = 700; // Delay between play retries
+const PLAY_RETRY_BUDGET = 6_000; // Keep retrying play() for this long before giving up
+
+const LOG_PREFIX = '[YTPreview]';
 
 type PreviewLogLevel = 'debug' | 'info' | 'warn';
 
 function logPreview(logging: boolean, level: PreviewLogLevel, message: string, ...optionalParams: unknown[]) {
-	if (logging) logger[level](message, ...optionalParams);
+	if (logging) logger[level](`${LOG_PREFIX} ${message}`, ...optionalParams);
 }
 
 export type PreviewSectionProps<T extends MovieDetails | TvDetails> = (T extends MovieDetails
@@ -172,6 +177,8 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 	const playRequestedRef = useRef(false);
 	const errorModeRef = useRef(false);
 	const forceStoppedRef = useRef(false);
+	// Counts consecutive play() failures for the retry backoff in attemptPlay.
+	const playAttemptRef = useRef(0);
 	// Latest onFinished without making stopPreviewVideo depend on the whole
 	// props object — that identity changes on every parent render and cascades
 	// new identities into startPreviewVideo/startPreview.
@@ -229,35 +236,8 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 		// Abort a deferred WebView mount that hasn't run yet.
 		interactionHandleRef.current?.cancel();
 		interactionHandleRef.current = null;
+		playAttemptRef.current = 0;
 	}, []);
-	const startPlayAttempt = useCallback(
-		(seekToStart: boolean = true) => {
-			cancelPlayAttempt(); // Cancel any existing queued play attempts to avoid multiple calls stacking up
-
-			// Give React one frame to mount <YoutubeView /> after videoEnabled flips.
-			// Without this delay native devices can receive play/seek before the
-			// WebView iframe exists, which looks like "the iframe never plays".
-			playActionTimeoutRef.current = setTimeout(() => {
-				playActionTimeoutRef.current = null;
-
-				// Guard against play attempts when requested is false or forceStopped is true
-				if (!playRequestedRef.current || forceStoppedRef.current) {
-					return;
-				}
-
-				// Guard against undefined seek
-				if (seekToStart && typeof player?.seekTo === 'function') {
-					safePlayerCall(() => player.seekTo(0, true), 'Failed to seek YouTube preview video:');
-				}
-
-				// player.play() can throw synchronously if the iframe player isn't ready yet
-				// (e.g. right after the WebView remounts on scroll-back); safePlayerCall traps it.
-				safePlayerCall(() => player.play(), 'Failed to play YouTube preview video:');
-			}, 100);
-		},
-		[cancelPlayAttempt, player, safePlayerCall],
-	);
-
 	// Stop preview and optionally wait remaining preview time before calling onFinished.
 	const stopPreviewVideo = useCallback(
 		(callOnFinishCallback: boolean = false, checkTimer: boolean = true) => {
@@ -266,7 +246,7 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 			setEnableVideo(false);
 			setPlaying(false);
 			// Ensure video is paused
-			safePlayerCall(() => player.pause(), 'Failed to pause YouTube preview video:');
+			safePlayerCall(() => player.pause(), 'pause failed');
 			// Ensure in progress play is stopped and timer is cleared to avoid
 			if (timeoutRef.current) clearTimeout(timeoutRef.current);
 			timeoutRef.current = null;
@@ -313,6 +293,71 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 		],
 	);
 
+	// Calls player.play() and retries on failure. The YouTube iframe API can
+	// reject play() for a few seconds after the player object exists but isn't
+	// internally ready yet — mobile Safari is often slow enough to blow past a
+	// short retry count, so this retries on a timer for PLAY_RETRY_BUDGET
+	// instead of a fixed number of attempts, then gives up and finishes the preview.
+	const attemptPlay = useCallback(() => {
+		const startedAt = Date.now();
+
+		const tryPlay = () => {
+			if (!playRequestedRef.current || forceStoppedRef.current) return;
+
+			// Wrapping the call in a resolved promise chain turns a synchronous
+			// throw (iframe not ready) into a rejection, same as an async one.
+			Promise.resolve()
+				.then(() => player.play())
+				.then(() => {
+					playAttemptRef.current = 0;
+				})
+				.catch((e: unknown) => {
+					playAttemptRef.current += 1;
+
+					if (Date.now() - startedAt >= PLAY_RETRY_BUDGET) {
+						logPreview(logging, 'warn', 'playback blocked, skipping preview', e);
+						playAttemptRef.current = 0;
+						errorModeRef.current = true;
+						startTimeRef.current = Date.now();
+						stopPreviewVideo(true, true);
+						return;
+					}
+					logPreview(logging, 'warn', `play failed, retrying (${playAttemptRef.current})`, e);
+					playActionTimeoutRef.current = setTimeout(tryPlay, PLAY_RETRY_INTERVAL);
+				});
+		};
+		tryPlay();
+	}, [logging, player, stopPreviewVideo]);
+
+	const startPlayAttempt = useCallback(
+		(seekToStart: boolean = true) => {
+			// A retry is already in flight — the ready event and the isPlaying
+			// watchdog can call this again mid-backoff. Cancelling here would kill
+			// the pending retry before it ever fires, so just let it continue.
+			if (playAttemptRef.current > 0) return;
+
+			cancelPlayAttempt(); // Cancel any existing queued play attempts to avoid multiple calls stacking up
+
+			// Give the WebView/iframe a moment to mount before the first play call.
+			playActionTimeoutRef.current = setTimeout(() => {
+				playActionTimeoutRef.current = null;
+
+				// Guard against play attempts when requested is false or forceStopped is true
+				if (!playRequestedRef.current || forceStoppedRef.current) {
+					return;
+				}
+
+				// Guard against undefined seek
+				if (seekToStart && typeof player?.seekTo === 'function') {
+					safePlayerCall(() => player.seekTo(0, true), 'seek failed');
+				}
+
+				attemptPlay();
+			}, PLAY_MOUNT_DELAY);
+		},
+		[attemptPlay, cancelPlayAttempt, player, safePlayerCall],
+	);
+
 	// Start preview with delay to match teaser behavior.
 	const startPreviewVideo = useCallback(() => {
 		if (forceStoppedRef.current) return;
@@ -320,7 +365,7 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 
 		// If we cant play the video
 		if (!canPlayYoutube) {
-			logPreview(logging, 'warn', '[YTPreviewNative] Cannot play YouTube preview', {
+			logPreview(logging, 'warn', 'cannot play preview', {
 				title: props.preview.title,
 				ytKey: props.preview.ytKey,
 				ignoreVideo: props.ignoreVideo,
@@ -449,7 +494,7 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 		player,
 		'error',
 		() => {
-			logPreview(logging, 'warn', '[YTPreviewNative] player error', {
+			logPreview(logging, 'warn', 'player error', {
 				requested: playRequestedRef.current,
 				forceStopped: forceStoppedRef.current,
 				title: props.preview.title,
@@ -487,7 +532,7 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 			if (!reachedCap && !reachedEnd) return;
 
 			if (props.loop) {
-				safePlayerCall(() => player.pause(), 'Failed to pause YouTube preview video:');
+				safePlayerCall(() => player.pause(), 'pause failed');
 				scheduleLoopRestart();
 				return;
 			}
@@ -521,7 +566,7 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 			errorModeRef.current = false;
 			forceStoppedRef.current = true;
 			cancelPlayAttempt();
-			safePlayerCall(() => player.pause(), 'Failed to pause YouTube preview video:');
+			safePlayerCall(() => player.pause(), 'pause failed');
 			if (timeoutRef.current) clearTimeout(timeoutRef.current);
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -555,7 +600,7 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 				errorModeRef.current = false;
 				setPlaying(false);
 				setEnableVideo(false);
-				safePlayerCall(() => player.pause(), 'Failed to pause YouTube preview video:');
+				safePlayerCall(() => player.pause(), 'pause failed');
 			} else if (canPlayYoutube) {
 				playRequestedRef.current = true;
 				errorModeRef.current = false;
