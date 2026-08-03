@@ -318,6 +318,7 @@ const _YTPreviewSection = forwardRef(
 			isPlaying,
 			muted,
 			videoEnabled,
+			disableBackdrop,
 			canPlayYoutube,
 			previewStarted,
 			onMute,
@@ -513,7 +514,9 @@ const _YTPreviewSection = forwardRef(
 								/>
 							) : null}
 
-							{!isPlaying && !videoEnabled ? (
+							{/* Held until playback genuinely starts: unmounting it when the
+							    iframe merely mounts left a black gap while YouTube loaded. */}
+							{!disableBackdrop ? (
 								<Animated.View
 									entering={FadeIn}
 									exiting={FadeOut}

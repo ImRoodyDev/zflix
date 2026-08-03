@@ -1,7 +1,7 @@
 // External imports
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { InteractionManager, ViewStyle } from 'react-native';
-import { PlayerState, useYouTubeEvent, useYouTubePlayer } from 'react-native-youtube-bridge';
+import { PlayerState, useYouTubeEvent, useYouTubePlayer, type YoutubePlayerVars } from 'react-native-youtube-bridge';
 
 // Internal imports
 import { createBookmark, removeBookmark } from '../controllers/user';
@@ -17,13 +17,59 @@ const PLAY_MOUNT_DELAY = 150; // Wait for the WebView/iframe to mount before the
 const PLAY_RETRY_INTERVAL = 700; // Delay between play retries
 const PLAY_RETRY_BUDGET = 6_000; // Keep retrying play() for this long before giving up
 
-const LOG_PREFIX = '[YTPreview]';
-
-type PreviewLogLevel = 'debug' | 'info' | 'warn';
-
-function logPreview(logging: boolean, level: PreviewLogLevel, message: string, ...optionalParams: unknown[]) {
-	if (logging) logger[level](`${LOG_PREFIX} ${message}`, ...optionalParams);
+function logPreview(
+	logging: boolean,
+	level: 'debug' | 'info' | 'warn',
+	message: string,
+	context?: Record<string, unknown>,
+) {
+	if (logging) logger[level](`[YTPreviewCtrl] ${message}`, context ?? {});
 }
+
+// Errors from the YouTube API log as `TypeError {}` — their fields aren't own
+// enumerable properties. Flatten name/message into the line.
+function describeError(error: unknown): { label: string; stack?: string } {
+	if (error instanceof Error) {
+		return { label: `${error.name}: ${error.message}`, stack: error.stack };
+	}
+	if (error && typeof error === 'object') {
+		const { name, message } = error as { name?: unknown; message?: unknown };
+		if (message) return { label: `${name ?? 'Error'}: ${String(message)}` };
+		try {
+			return { label: JSON.stringify(error) };
+		} catch {
+			return { label: Object.prototype.toString.call(error) };
+		}
+	}
+	return { label: error === undefined ? 'undefined' : String(error) };
+}
+
+function logPreviewError(logging: boolean, message: string, error: unknown, context?: Record<string, unknown>) {
+	if (!logging) return;
+	const { label, stack } = describeError(error);
+	logger.warn(`${LOG_PREFIX} ${message} — ${label}`, {
+		...context,
+		...(stack ? { stack } : {}),
+	});
+}
+
+function describePlayerState(state: PlayerState | null) {
+	if (state === null) return 'none';
+	return PlayerState[state] ?? String(state);
+}
+
+function clearTimer(ref: { current: ReturnType<typeof setTimeout> | null }) {
+	if (ref.current) {
+		clearTimeout(ref.current);
+		ref.current = null;
+	}
+}
+
+// The slice of the YT.Player API used to suppress captions.
+type YTCaptionApi = {
+	unloadModule?: (module: string) => void;
+	setOption?: (module: string, option: string, value: unknown) => void;
+};
 
 export type PreviewSectionProps<T extends MovieDetails | TvDetails> = (T extends MovieDetails
 	? { onPress?: (item: MovieDetails) => void }
@@ -47,9 +93,8 @@ export type PreviewSectionProps<T extends MovieDetails | TvDetails> = (T extends
 	showLabels?: boolean;
 	carouselPadding?: boolean;
 	preferFocus?: boolean;
-	// When false, the action buttons are removed from the TV focus engine. Used by
-	// the transform-based pager to keep off-screen pages unreachable by the D-pad.
-	// Defaults to true so single/floating previews stay focusable.
+	// False removes the action buttons from the TV focus engine, keeping the
+	// pager's off-screen pages unreachable by the D-pad. Defaults to true.
 	focusable?: boolean;
 	// Event handlers
 	onFinished?: () => void;
@@ -98,8 +143,8 @@ export const usePreviewActions = (props: PreviewSectionProps<MovieDetails | TvDe
 		checkLastRuntime();
 	}, [checkLastRuntime]);
 
-	// Refs keep the action callbacks stable. Depending on the whole `props` object gave
-	// `onPlay` a new identity every parent render, breaking the memo on the button row.
+	// Refs keep the action callbacks stable; depending on `props` gave onPlay a new
+	// identity every parent render and broke the memo on the button row.
 	const propsRef = useRef(props);
 	propsRef.current = props;
 	const lastRuntimeRef = useRef(lastRuntime);
@@ -162,37 +207,55 @@ export const usePreviewActions = (props: PreviewSectionProps<MovieDetails | TvDe
 
 export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvDetails>, logging = false) => {
 	const videoActive = props.active ?? true;
-	// Inactive mounted neighbors keep their image/UI shell, but avoid preparing
-	// a YouTube player/WebView. This is especially important on Android mobile.
+	// Inactive neighbors keep their image/UI shell but prepare no player.
 	const videoId = videoActive && !props.ignoreVideo ? (props.preview.ytKey ?? undefined) : undefined;
 
-	// Play timeout
 	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const playActionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	// Handle for a deferred (post-interaction) WebView mount so it can be aborted
-	// if the preview is stopped/paused/unmounted before the mount runs.
+	// Owns the give-up decision, so no code path can silently drop the preview.
+	const playWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const playDeadlineRef = useRef(0);
+	// Deferred WebView mount, abortable if the preview stops before it runs.
 	const interactionHandleRef = useRef<{ cancel: () => void } | null>(null);
-	// Start video time tracking
 	const startTimeRef = useRef(0);
 	const playRequestedRef = useRef(false);
 	const errorModeRef = useRef(false);
 	const forceStoppedRef = useRef(false);
-	// Counts consecutive play() failures for the retry backoff in attemptPlay.
+	// A play session (mount delay + retry loop) is in flight. Every exit path
+	// clears it, so it can never get stuck and suppress later attempts.
+	const playSessionActiveRef = useRef(false);
+	// YouTube acknowledged the play command (BUFFERING/PLAYING); stop hammering.
+	const playbackAcceptedRef = useRef(false);
+	// Counts play() attempts within the current session. Logging only.
 	const playAttemptRef = useRef(0);
-	// Latest onFinished without making stopPreviewVideo depend on the whole
-	// props object — that identity changes on every parent render and cascades
-	// new identities into startPreviewVideo/startPreview.
+	const autoplayBlockedRef = useRef(0);
+	// Seeking a player that never played throws on iOS, so only loop restarts seek.
+	const hasPlayedRef = useRef(false);
+	const lastPlayerStateRef = useRef<PlayerState | null>(null);
+	// The YT API only attaches playVideo()/seekTo() once 'ready' has fired.
+	const playerReadyRef = useRef(false);
+	// Keeps stopPreviewVideo off the props object, whose identity changes every
+	// parent render and cascades into startPreviewVideo/startPreview.
 	const onFinishedRef = useRef(props.onFinished);
 	onFinishedRef.current = props.onFinished;
 
 	const [isInitialized, setInitialized] = useState(false);
-	const [isPlaying, setPlaying] = useState(false);
+	const [isPlaying, setPlayingState] = useState(false);
+	// Timers and promise callbacks need the current value, not the one captured
+	// when they were scheduled, so mirror playback state into a ref.
+	const isPlayingRef = useRef(false);
+	const setPlaying = useCallback((next: boolean) => {
+		isPlayingRef.current = next;
+		setPlayingState(next);
+	}, []);
 	const [previewStarted, setPreviewStarted] = useState(!!props.autoStart);
-	// Always start as false — the timeout in startPreviewVideo will enable it after the delay,
-	// so the poster image remains visible during the YT_DEFAULT_PLAY_TIMEOUT wait period.
+	// Starts false so the poster stays up during the start-timeout wait.
 	const [videoEnabled, setEnableVideo] = useState(false);
-	const [muted, setMuted] = useState(true); // Native YouTube is rendered through a WebView iframe; keeping it muted by  default gives the bridge the same autoplay-friendly path as web previews.
+	const [muted, setMuted] = useState(true); // muted is what makes autoplay permissible
 	const [playerError, setPlayerError] = useState(false);
+	// Latched on confirmed playback. Never driven by mount/ready/buffering —
+	// those all precede the first frame.
+	const [disableBackdrop, setDisableBackdrop] = useState(false);
 	const canPlayYoutube = videoActive && isNotEmpty(videoId) && !playerError && !props.ignoreVideo;
 
 	// Clamped video duration
@@ -201,65 +264,92 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 		[props.previewDuration],
 	);
 
-	// Initialize the youtube video iframe player
-	const player = useYouTubePlayer(videoId, {
-		autoplay: false,
+	// The iframe only mounts when playback is wanted, so it may as well start
+	// itself. WebKit needs all three of autoplay+muted+playsinline, or it refuses.
+	const playerVars: YoutubePlayerVars = {
+		autoplay: true,
 		controls: false,
 		loop: false,
 		muted,
 		playsinline: true,
 		rel: false,
-	});
+	};
 
-	// player.play()/pause()/seekTo() can throw *synchronously* on web when the underlying
-	// iframe player was torn down (e.g. the WebView remounted after scrolling back into view)
-	// and its YT API method (playVideo/pauseVideo/…) is momentarily missing. A trailing
-	// `.catch()` only traps async rejections, not a synchronous throw, so wrap the whole call.
-	// Playback still recovers via the 'ready' event, which re-invokes startPlayAttempt once the
-	// player is usable again.
+	// react-native-youtube-bridge 2.2.1: YoutubeView.web spreads these at the top
+	// level while createPlayer reads config.playerVars, so on web every var is
+	// dropped. Sending both shapes satisfies web and native alike.
+	const player = useYouTubePlayer(videoId, { ...playerVars, playerVars } as YoutubePlayerVars);
+
+	// Player methods can throw *synchronously* when the iframe was torn down and
+	// its YT method is momentarily missing; a trailing .catch() would miss that.
 	const safePlayerCall = useCallback(
 		(fn: () => unknown, message: string) => {
 			try {
-				Promise.resolve(fn()).catch((e: unknown) => logPreview(logging, 'warn', message, e));
+				Promise.resolve(fn()).catch((e: unknown) => logPreviewError(logging, message, e));
 			} catch (e) {
-				logPreview(logging, 'warn', message, e);
+				logPreviewError(logging, message, e);
 			}
 		},
 		[logging],
 	);
 
+	// Playback is wanted and the preview is still alive. Every timer and promise
+	// callback re-checks it before touching the player.
+	const playbackWanted = useCallback(() => playRequestedRef.current && !forceStoppedRef.current, []);
+
+	// The bridge exposes no caption controls and drops unknown playerVars, so
+	// reach the YT player it wraps. No-ops on native, which has no getPlayer().
+	const disableCaptions = useCallback(() => {
+		const bridged = player as unknown as { controller?: { getPlayer?: () => YTCaptionApi | null } };
+		const ytPlayer = bridged.controller?.getPlayer?.();
+		if (!ytPlayer) return;
+		// 'captions' is the HTML5 module, 'cc' the legacy one; the track reset
+		// covers players that reload a default track with the stream.
+		safePlayerCall(() => ytPlayer.unloadModule?.('captions'), 'unload captions failed');
+		safePlayerCall(() => ytPlayer.unloadModule?.('cc'), 'unload cc failed');
+		safePlayerCall(() => ytPlayer.setOption?.('captions', 'track', {}), 'clear caption track failed');
+	}, [player, safePlayerCall]);
+
+	// Hand the frame back to the poster. View state only — callers own the timers.
+	const hidePlayer = useCallback(() => {
+		setEnableVideo(false);
+		setPlaying(false);
+		setDisableBackdrop(false);
+	}, [setPlaying]);
+
 	const cancelPlayAttempt = useCallback(() => {
-		if (playActionTimeoutRef.current) {
-			clearTimeout(playActionTimeoutRef.current);
-			playActionTimeoutRef.current = null;
-		}
+		clearTimer(playActionTimeoutRef);
+		clearTimer(playWatchdogRef);
 		// Abort a deferred WebView mount that hasn't run yet.
 		interactionHandleRef.current?.cancel();
 		interactionHandleRef.current = null;
+		playSessionActiveRef.current = false;
+		playbackAcceptedRef.current = false;
 		playAttemptRef.current = 0;
+		autoplayBlockedRef.current = 0;
+		playDeadlineRef.current = 0;
 	}, []);
-	// Stop preview and optionally wait remaining preview time before calling onFinished.
+
+	// Stop preview and optionally wait out the remaining preview time first.
 	const stopPreviewVideo = useCallback(
 		(callOnFinishCallback: boolean = false, checkTimer: boolean = true) => {
 			playRequestedRef.current = false;
 			cancelPlayAttempt();
-			setEnableVideo(false);
-			setPlaying(false);
-			// Ensure video is paused
+			hidePlayer();
 			safePlayerCall(() => player.pause(), 'pause failed');
-			// Ensure in progress play is stopped and timer is cleared to avoid
-			if (timeoutRef.current) clearTimeout(timeoutRef.current);
-			timeoutRef.current = null;
+			clearTimer(timeoutRef);
 
-			// 2. If we're not checking the timer, call the callback immediately.
-			if (!checkTimer) {
+			const finish = () => {
 				errorModeRef.current = false;
 				if (!props.autoStart && !props.loop) setPreviewStarted(false);
 				onFinishedRef.current?.();
+			};
+
+			if (!checkTimer) {
+				finish();
 				return;
 			}
 
-			// 1. If the caller doesn't want the callback called, or if we're not checking the timer, exit early.
 			if (!callOnFinishCallback) {
 				errorModeRef.current = false;
 				return;
@@ -269,22 +359,17 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 				? Math.min(props.previewDuration ?? DEFAULT_PREVIEW_DURATION, DEFAULT_PREVIEW_DURATION)
 				: clampedDuration;
 
-			// Calculate elapsed time after preview started playing
-			const elapsed = Date.now() - startTimeRef.current;
-			const remainingTime = Math.max(targetDuration - elapsed, 0);
-
-			// 3. Trigger callback after remaining time, or immediately if elapsed time already exceeds target duration
+			// Fires immediately when the elapsed time already covers the target.
+			const remainingTime = Math.max(targetDuration - (Date.now() - startTimeRef.current), 0);
 			timeoutRef.current = setTimeout(() => {
 				timeoutRef.current = null;
-				errorModeRef.current = false;
-				if (!props.autoStart && !props.loop) setPreviewStarted(false);
-				onFinishedRef.current?.();
+				finish();
 			}, remainingTime);
 		},
 		[
 			cancelPlayAttempt,
 			clampedDuration,
-			logging,
+			hidePlayer,
 			player,
 			props.autoStart,
 			props.loop,
@@ -293,69 +378,123 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 		],
 	);
 
-	// Calls player.play() and retries on failure. The YouTube iframe API can
-	// reject play() for a few seconds after the player object exists but isn't
-	// internally ready yet — mobile Safari is often slow enough to blow past a
-	// short retry count, so this retries on a timer for PLAY_RETRY_BUDGET
-	// instead of a fixed number of attempts, then gives up and finishes the preview.
+	// Give up: dwell on the poster, then hand off to onFinished. `restartDwell`
+	// resets the clock for failures with no on-screen time of their own.
+	const finishWithError = useCallback(
+		(restartDwell: boolean) => {
+			errorModeRef.current = true;
+			if (restartDwell) startTimeRef.current = Date.now();
+			stopPreviewVideo(true, true);
+		},
+		[stopPreviewVideo],
+	);
+
+	// Single source of truth for giving up, armed as soon as playback is
+	// requested so any downstream stall still ends in onFinished.
+	const armPlaybackWatchdog = useCallback(() => {
+		if (playWatchdogRef.current) return; // already counting down for this request
+		playDeadlineRef.current = Date.now() + PLAY_RETRY_BUDGET;
+		playWatchdogRef.current = setTimeout(() => {
+			playWatchdogRef.current = null;
+			playSessionActiveRef.current = false;
+			if (isPlayingRef.current || !playbackWanted()) return;
+
+			logPreview(logging, 'warn', 'playback never started, skipping preview', {
+				title: props.preview.title,
+				ytKey: props.preview.ytKey,
+				attempts: playAttemptRef.current,
+				autoplayBlocked: autoplayBlockedRef.current,
+				lastPlayerState: describePlayerState(lastPlayerStateRef.current),
+				accepted: playbackAcceptedRef.current,
+				muted,
+				waitedMs: Date.now() - startTimeRef.current,
+			});
+			// The budget we just burned already counts as on-screen time, so the
+			// dwell clock is not restarted.
+			finishWithError(false);
+		}, PLAY_RETRY_BUDGET);
+	}, [finishWithError, logging, muted, playbackWanted, props.preview.title, props.preview.ytKey]);
+
+	// Retries until YouTube acknowledges the command or the deadline passes. Only
+	// BUFFERING/PLAYING counts: play() resolves whether or not it took effect.
 	const attemptPlay = useCallback(() => {
-		const startedAt = Date.now();
+		const scheduleRetry = (tryPlay: () => void) => {
+			if (Date.now() + PLAY_RETRY_INTERVAL >= playDeadlineRef.current) return; // watchdog owns it from here
+			playActionTimeoutRef.current = setTimeout(tryPlay, PLAY_RETRY_INTERVAL);
+		};
 
 		const tryPlay = () => {
-			if (!playRequestedRef.current || forceStoppedRef.current) return;
+			playActionTimeoutRef.current = null;
 
-			// Wrapping the call in a resolved promise chain turns a synchronous
-			// throw (iframe not ready) into a rejection, same as an async one.
+			if (!playbackWanted()) {
+				// Release the session so a later startPlayAttempt() is not suppressed.
+				cancelPlayAttempt();
+				return;
+			}
+			// Before 'ready' the YT API has not attached playVideo() yet, so a call
+			// would only throw; autoplay=1 may have started it by then anyway.
+			if (playbackAcceptedRef.current || !playerReadyRef.current) {
+				scheduleRetry(tryPlay);
+				return;
+			}
+
+			playAttemptRef.current += 1;
+			const attempt = playAttemptRef.current;
+
+			// A resolved promise chain turns a synchronous throw into a rejection.
+			// play() resolves to undefined either way, so read back the real state.
 			Promise.resolve()
 				.then(() => player.play())
-				.then(() => {
-					playAttemptRef.current = 0;
-				})
-				.catch((e: unknown) => {
-					playAttemptRef.current += 1;
-
-					if (Date.now() - startedAt >= PLAY_RETRY_BUDGET) {
-						logPreview(logging, 'warn', 'playback blocked, skipping preview', e);
-						playAttemptRef.current = 0;
-						errorModeRef.current = true;
-						startTimeRef.current = Date.now();
-						stopPreviewVideo(true, true);
-						return;
-					}
-					logPreview(logging, 'warn', `play failed, retrying (${playAttemptRef.current})`, e);
-					playActionTimeoutRef.current = setTimeout(tryPlay, PLAY_RETRY_INTERVAL);
+				.catch((e: unknown) =>
+					logPreviewError(logging, `play failed (${attempt})`, e, {
+						ytKey: props.preview.ytKey,
+						lastPlayerState: describePlayerState(lastPlayerStateRef.current),
+					}),
+				)
+				.then(() => (logging ? Promise.resolve(player.getPlayerState()).catch(() => null) : null))
+				.then((state) => {
+					if (!playbackWanted() || playbackAcceptedRef.current) return;
+					logPreview(logging, 'warn', `play had no effect (${attempt})`, {
+						ytKey: props.preview.ytKey,
+						// UNSTARTED here with no error means YouTube silently ignored the
+						// command — the signature of a blocked autoplay.
+						playerState: describePlayerState((state ?? null) as PlayerState | null),
+					});
+					scheduleRetry(tryPlay);
 				});
 		};
 		tryPlay();
-	}, [logging, player, stopPreviewVideo]);
+	}, [cancelPlayAttempt, logging, playbackWanted, player, props.preview.ytKey]);
 
 	const startPlayAttempt = useCallback(
 		(seekToStart: boolean = true) => {
-			// A retry is already in flight — the ready event and the isPlaying
-			// watchdog can call this again mid-backoff. Cancelling here would kill
-			// the pending retry before it ever fires, so just let it continue.
-			if (playAttemptRef.current > 0) return;
+			if (!playbackWanted()) return;
+			// A session already owns the retries and the give-up timer; the ready
+			// event and isPlaying effect call this again mid-flight.
+			if (playSessionActiveRef.current) return;
 
-			cancelPlayAttempt(); // Cancel any existing queued play attempts to avoid multiple calls stacking up
+			cancelPlayAttempt(); // drop anything left over from a previous session
+			playSessionActiveRef.current = true;
+			armPlaybackWatchdog();
 
 			// Give the WebView/iframe a moment to mount before the first play call.
 			playActionTimeoutRef.current = setTimeout(() => {
 				playActionTimeoutRef.current = null;
 
-				// Guard against play attempts when requested is false or forceStopped is true
-				if (!playRequestedRef.current || forceStoppedRef.current) {
+				if (!playbackWanted()) {
+					cancelPlayAttempt();
 					return;
 				}
 
-				// Guard against undefined seek
-				if (seekToStart && typeof player?.seekTo === 'function') {
+				// Only seek on a restart — the player already sits at 0 on first play.
+				if (seekToStart && hasPlayedRef.current && typeof player?.seekTo === 'function') {
 					safePlayerCall(() => player.seekTo(0, true), 'seek failed');
 				}
 
 				attemptPlay();
 			}, PLAY_MOUNT_DELAY);
 		},
-		[attemptPlay, cancelPlayAttempt, player, safePlayerCall],
+		[armPlaybackWatchdog, attemptPlay, cancelPlayAttempt, playbackWanted, player, safePlayerCall],
 	);
 
 	// Start preview with delay to match teaser behavior.
@@ -363,7 +502,6 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 		if (forceStoppedRef.current) return;
 		setPreviewStarted(true);
 
-		// If we cant play the video
 		if (!canPlayYoutube) {
 			logPreview(logging, 'warn', 'cannot play preview', {
 				title: props.preview.title,
@@ -372,78 +510,91 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 				playerError,
 			});
 			playRequestedRef.current = false;
-			errorModeRef.current = true;
-			startTimeRef.current = Date.now();
-			stopPreviewVideo(true, true);
+			finishWithError(true);
 			return;
 		}
 
 		playRequestedRef.current = false;
 		errorModeRef.current = false;
 
-		// Clear any existing timers to avoid multiple play attempts.
-		if (timeoutRef.current) clearTimeout(timeoutRef.current);
+		// cancelPlayAttempt also releases an in-flight session — otherwise the old
+		// retry loop fires, sees playRequested=false and abandons quietly.
+		clearTimer(timeoutRef);
+		cancelPlayAttempt();
 
-		// Start the preview after the specified timeout to avoid auto-playing immediately on hover/focus.
-		// NOTE: playRequestedRef is intentionally set inside the timeout so that the YouTube
-		// iframe 'ready' event (which can fire faster than the timeout) does not bypass the delay.
-		// For user-initiated hover, startPreview() sets playRequestedRef=true before calling here,
-		// so the ready handler will still play immediately for that path.
+		// Set inside the timeout so 'ready', which can fire sooner, cannot bypass the
+		// delay. startPreview() sets it beforehand for the play-now hover path.
 		timeoutRef.current = setTimeout(() => {
 			timeoutRef.current = null;
 			playRequestedRef.current = true;
+			startTimeRef.current = Date.now();
+			// Armed before the deferred mount so an iframe that never comes up still
+			// resolves into onFinished instead of stalling the pager.
+			armPlaybackWatchdog();
 
-			// Mounting <YoutubeView /> spins up a WebView — the single heavy step in
-			// this flow. Defer it until after any in-flight D-pad/focus interaction so
-			// paging stays smooth; the trailer is background work and can wait.
+			// Mounting <YoutubeView /> is the heavy step; defer it past any in-flight
+			// interaction so paging stays smooth.
 			interactionHandleRef.current?.cancel();
 			interactionHandleRef.current = InteractionManager.runAfterInteractions(() => {
 				interactionHandleRef.current = null;
-				if (!playRequestedRef.current || forceStoppedRef.current) return;
+				if (!playbackWanted()) return;
 
-				startTimeRef.current = Date.now();
-				setEnableVideo(true); // this is enabling the video to be rendered
-				// Keep playback state driven by player events to avoid stale-progress races.
-				setPlaying(false);
-				// Trigger play attempt for the iframe
-				startPlayAttempt();
+				setEnableVideo(true); // mounts the iframe, which autoplays itself
+				setPlaying(false); // playback state stays event-driven
+				startPlayAttempt(); // fallback for browsers that ignore autoplay=1
 			});
 		}, props.startTimeout ?? DEFAULT_PLAY_TIMEOUT);
 	}, [
+		armPlaybackWatchdog,
+		cancelPlayAttempt,
 		canPlayYoutube,
+		finishWithError,
 		playerError,
 		logging,
 		props.ignoreVideo,
 		props.preview.title,
 		props.preview.ytKey,
 		props.startTimeout,
+		playbackWanted,
+		setPlaying,
 		startPlayAttempt,
-		stopPreviewVideo,
 	]);
 
-	// Hide the video and re-run the start flow after the usual start timeout.
 	// Shared by the ENDED event and the max-duration clamp when looping.
 	const scheduleLoopRestart = useCallback(() => {
 		errorModeRef.current = false;
-		setEnableVideo(false);
-		setPlaying(false);
-		if (timeoutRef.current) clearTimeout(timeoutRef.current);
+		hidePlayer(); // poster covers the gap between loops
+		clearTimer(timeoutRef);
 		timeoutRef.current = setTimeout(() => {
 			timeoutRef.current = null;
 			startPreviewVideo();
 		}, props.startTimeout ?? DEFAULT_PLAY_TIMEOUT);
-	}, [props.startTimeout, startPreviewVideo]);
+	}, [hidePlayer, props.startTimeout, startPreviewVideo]);
 
 	// On Player playback status change
 	useYouTubeEvent(
 		player,
 		'stateChange',
 		(state) => {
+			lastPlayerStateRef.current = state;
+
 			if (state === PlayerState.PLAYING) {
+				// Playback confirmed: close the session and disarm the give-up timer.
+				hasPlayedRef.current = true;
+				playbackAcceptedRef.current = true;
+				playSessionActiveRef.current = false;
+				playAttemptRef.current = 0;
+				autoplayBlockedRef.current = 0;
+				clearTimer(playWatchdogRef);
+				// Again here: a default track can load with the stream, after ready.
+				disableCaptions();
 				setEnableVideo(true);
 				setInitialized(true);
 				setPlaying(true);
 				setPreviewStarted(true);
+				// Stays dropped for the rest of the cycle so a mid-play buffer can't
+				// flash the poster back.
+				setDisableBackdrop(true);
 				return;
 			}
 
@@ -453,14 +604,15 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 				state === PlayerState.UNSTARTED ||
 				state === PlayerState.CUED
 			) {
+				// BUFFERING means YouTube took the play command; UNSTARTED after a
+				// play attempt means it was refused, so let the retries resume.
+				playbackAcceptedRef.current = state === PlayerState.BUFFERING;
 				setPlaying(false);
 				return;
 			}
 
 			if (state === PlayerState.ENDED) {
-				if (!playRequestedRef.current || forceStoppedRef.current) {
-					return;
-				}
+				if (!playbackWanted()) return;
 
 				if (props.loop) {
 					scheduleLoopRestart();
@@ -470,7 +622,7 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 				stopPreviewVideo(true, false);
 			}
 		},
-		[props.loop, scheduleLoopRestart, stopPreviewVideo],
+		[disableCaptions, playbackWanted, props.loop, scheduleLoopRestart, setPlaying, stopPreviewVideo],
 	);
 
 	// Resume play once iframe reports ready.
@@ -478,46 +630,79 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 		player,
 		'ready',
 		() => {
+			playerReadyRef.current = true;
 			setInitialized(true);
 			setPreviewStarted(true);
-			if (muted) player.mute();
-			if (!forceStoppedRef.current && playRequestedRef.current) {
-				setEnableVideo(true);
-				setPlaying(false);
-				startPlayAttempt();
+			disableCaptions();
+			// Wrapped: a throw here would abort the bridge's listener loop.
+			if (muted) safePlayerCall(() => player.mute(), 'mute failed');
+			if (!playbackWanted()) return;
+
+			setEnableVideo(true);
+			setPlaying(false);
+			// A session waiting out the backoff can go now that the API is usable.
+			if (playSessionActiveRef.current && playActionTimeoutRef.current) {
+				clearTimer(playActionTimeoutRef);
+				attemptPlay();
+				return;
+			}
+			startPlayAttempt();
+		},
+		[attemptPlay, disableCaptions, muted, playbackWanted, player, safePlayerCall, setPlaying, startPlayAttempt],
+	);
+
+	// The browser refused playback. Muting is the one lever we control; the retry
+	// loop and watchdog carry on from here.
+	useYouTubeEvent(
+		player,
+		'autoplayBlocked',
+		() => {
+			if (!playbackWanted()) return;
+
+			autoplayBlockedRef.current += 1;
+			logPreview(logging, 'warn', `autoplay blocked (${autoplayBlockedRef.current})`, {
+				title: props.preview.title,
+				ytKey: props.preview.ytKey,
+				muted,
+				attempts: playAttemptRef.current,
+				lastPlayerState: describePlayerState(lastPlayerStateRef.current),
+			});
+
+			if (!muted) {
+				setMuted(true);
+				safePlayerCall(() => player.mute(), 'mute failed');
 			}
 		},
-		[muted, player, startPlayAttempt],
+		[logging, muted, playbackWanted, player, props.preview.title, props.preview.ytKey, safePlayerCall],
 	);
 
 	useYouTubeEvent(
 		player,
 		'error',
-		() => {
+		(error) => {
 			logPreview(logging, 'warn', 'player error', {
+				code: error?.code,
+				reason: error?.message,
 				requested: playRequestedRef.current,
 				forceStopped: forceStoppedRef.current,
 				title: props.preview.title,
 				ytKey: props.preview.ytKey,
 			});
 			setPlayerError(true);
+			if (playbackWanted()) {
+				finishWithError(true);
+				return;
+			}
 			errorModeRef.current = true;
 			startTimeRef.current = Date.now();
-			if (playRequestedRef.current && !forceStoppedRef.current) {
-				stopPreviewVideo(true, true);
-			} else {
-				cancelPlayAttempt();
-				setEnableVideo(false);
-				setPlaying(false);
-			}
+			cancelPlayAttempt();
+			hidePlayer();
 		},
-		[cancelPlayAttempt, logging, props.preview.title, props.preview.ytKey, stopPreviewVideo],
+		[cancelPlayAttempt, finishWithError, hidePlayer, logging, playbackWanted, props.preview.title, props.preview.ytKey],
 	);
 
-	// Finish on the max preview duration OR just before the video's real end.
-	// ENDED is unreliable for muted autoplay, so short trailers used to freeze
-	// on the end thumbnail instead of looping. Callback (not state) to avoid a
-	// re-render every progress tick.
+	// Finish on the duration cap or just before the real end, since ENDED is
+	// unreliable for muted autoplay. Callback, not state, to avoid tick renders.
 	useYouTubeEvent(
 		player,
 		'progress',
@@ -552,12 +737,23 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 		],
 	);
 
+	// useYouTubePlayer rebuilds the player when the video id changes; the new
+	// instance has never played, so per-player facts must not carry over.
+	useEffect(() => {
+		hasPlayedRef.current = false;
+		playbackAcceptedRef.current = false;
+		playerReadyRef.current = false;
+		autoplayBlockedRef.current = 0;
+		lastPlayerStateRef.current = null;
+	}, [player]);
+
+	// Recovery: player exists but isn't playing. Safe to call repeatedly.
 	useEffect(() => {
 		if (!isInitialized || !videoEnabled || isPlaying) return;
-		if (!playRequestedRef.current || forceStoppedRef.current) return;
+		if (!playbackWanted()) return;
 
 		startPlayAttempt(false);
-	}, [isInitialized, isPlaying, player, startPlayAttempt, videoEnabled]);
+	}, [isInitialized, isPlaying, playbackWanted, player, startPlayAttempt, videoEnabled]);
 
 	useEffect(() => {
 		if (props.autoStart) startPreviewVideo();
@@ -567,7 +763,7 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 			forceStoppedRef.current = true;
 			cancelPlayAttempt();
 			safePlayerCall(() => player.pause(), 'pause failed');
-			if (timeoutRef.current) clearTimeout(timeoutRef.current);
+			clearTimer(timeoutRef);
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
@@ -589,17 +785,13 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 
 	const pausePreview = useCallback(
 		(pause: boolean) => {
-			if (timeoutRef.current) {
-				clearTimeout(timeoutRef.current);
-				timeoutRef.current = null;
-			}
+			clearTimer(timeoutRef);
 			cancelPlayAttempt();
 
 			if (pause) {
 				playRequestedRef.current = false;
 				errorModeRef.current = false;
-				setPlaying(false);
-				setEnableVideo(false);
+				hidePlayer();
 				safePlayerCall(() => player.pause(), 'pause failed');
 			} else if (canPlayYoutube) {
 				playRequestedRef.current = true;
@@ -610,19 +802,23 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 				startPlayAttempt();
 			}
 		},
-		[canPlayYoutube, cancelPlayAttempt, logging, player, safePlayerCall, startPlayAttempt],
+		[canPlayYoutube, cancelPlayAttempt, hidePlayer, player, safePlayerCall, setPlaying, startPlayAttempt],
 	);
 
 	const onMute = useCallback(() => {
 		setMuted((prev) => {
 			const next = !prev;
-			if (next) player.mute();
-			else player.unMute();
+			safePlayerCall(() => (next ? player.mute() : player.unMute()), 'mute toggle failed');
 			return next;
 		});
-	}, [player]);
+	}, [player, safePlayerCall]);
 
-	const previewPlaying = useCallback(() => timeoutRef.current !== null || isPlaying, [isPlaying]);
+	// Includes the in-flight play cycle, or the parent sees an idle preview
+	// mid-retry and restarts it, cancelling the attempt that was running.
+	const previewPlaying = useCallback(
+		() => playRequestedRef.current || timeoutRef.current !== null || isPlaying,
+		[isPlaying],
+	);
 
 	return {
 		player,
@@ -631,6 +827,7 @@ export const usePreviewYTBridge = (props: PreviewSectionProps<MovieDetails | TvD
 		isInitialized,
 		previewStarted,
 		videoEnabled,
+		disableBackdrop,
 		canPlayYoutube,
 		setInitialized,
 		setEnableVideo,

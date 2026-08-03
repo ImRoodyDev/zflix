@@ -892,6 +892,7 @@ body {
 	width: calc(var(--side-padding) + var(--side-padding) + var(--logo-size-w));
 
 	position: absolute;
+	flex: unset !important;
 	left: 0;
 	top: 50%;
 	transform: translateY(-50%);
@@ -963,7 +964,6 @@ body {
 		width: 100%;
 
 		position: relative;
-		flex: unset !important;
 		top: unset;
 		bottom: 0;
 		transform: none;

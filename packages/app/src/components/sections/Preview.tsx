@@ -334,6 +334,7 @@ const _YTPreviewSection = forwardRef(
 			isPlaying,
 			muted,
 			videoEnabled,
+			disableBackdrop,
 			canPlayYoutube,
 			previewStarted,
 			onMute,
@@ -539,6 +540,7 @@ const _YTPreviewSection = forwardRef(
 										minWidth: '100%' as DimensionValue,
 										minHeight: '100%' as DimensionValue,
 										alignSelf: 'center',
+										zIndex: 0,
 									}}
 									webViewProps={
 										{
@@ -560,13 +562,15 @@ const _YTPreviewSection = forwardRef(
 							) : null}
 
 							{/* Kept mounted: the pager rebuilt this subtree, image decode included,
-							    on every auto-advance otherwise. */}
+							    on every auto-advance otherwise. Hidden only once playback is
+							    confirmed, so the player's load never shows through. */}
 							<View
 								className={clsx('app-preview-thumbnail', props.floating && 'app-preview-thumbnail-floating')}
-								style={[!isPlaying && !videoEnabled ? undefined : HIDDEN, { pointerEvents: 'none' }]}
+								style={[disableBackdrop ? HIDDEN : undefined, { pointerEvents: 'none' }]}
 							>
 								{memoizedImage}
 							</View>
+
 							<View className={'app-preview-video-overlay'} />
 						</View>
 					</View>
