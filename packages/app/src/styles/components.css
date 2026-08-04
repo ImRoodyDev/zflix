@@ -473,8 +473,8 @@ body {
 	width: 100%;
 	height: auto;
 
-	padding-top: var(--h1);
-	padding-bottom: var(--h1);
+	padding-top: var(--h1-size);
+	padding-bottom: var(--h1-size);
 	background-color: black;
 	overflow: hidden;
 }
@@ -489,8 +489,8 @@ body {
 
 .app-download-contents {
 	max-width: 34%;
-	padding-left: var(--span5);
-	padding-right: var(--span5);
+	padding-left: var(--span5-size);
+	padding-right: var(--span5-size);
 
 	flex: 1;
 	display: flex;
@@ -843,6 +843,47 @@ body {
 	text-decoration: underline;
 }
 
+@media only screen and (max-width: 899px) {
+	.app-footer-grid {
+		flex-direction: column;
+	}
+
+	.app-footer-block {
+		width: 100%;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.app-footer-links {
+		flex-wrap: wrap;
+		margin-left: 0;
+	}
+
+	.app-footer-socials {
+		width: 100%;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.app-footer-title,
+	.app-footer-txt {
+		text-align: center;
+	}
+
+	.app-footer-rights {
+		flex-direction: column-reverse;
+		align-items: center;
+		gap: var(--span4-size);
+	}
+
+	.app-footer-links {
+		width: 100%;
+		margin-left: 0;
+		justify-content: center;
+		align-items: center;
+	}
+}
+
 /* Mobile Portrait  */
 @media only screen and (max-width: 599px) {
 	.app-footer-grid {
@@ -1019,7 +1060,7 @@ body {
 
 	display: flex;
 	flex-direction: row;
-	justify-content: flex-end;
+	justify-content: space-between;
 	align-items: center;
 	gap: var(--side-padding);
 
