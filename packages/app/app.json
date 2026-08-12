@@ -106,8 +106,7 @@
 			]
 		],
 		"experiments": {
-			"typedRoutes": true,
-			"baseUrl": "/zflix"
+			"typedRoutes": true
 		}
 	}
 }
