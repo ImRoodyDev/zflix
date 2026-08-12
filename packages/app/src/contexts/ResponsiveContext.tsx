@@ -4,13 +4,7 @@ import { Dimensions, Platform, View } from 'react-native';
 import { vars } from 'nativewind';
 
 // Internal imports
-import {
-	sizes,
-	sizeToCssVars,
-	type SizeType,
-	type SizeValues,
-	type CssVars,
-} from '../constants/sizes.native';
+import { sizes, sizeToCssVars, type SizeType, type SizeValues, type CssVars } from '../constants/sizes';
 import logger from '../utils/logger';
 
 // Components

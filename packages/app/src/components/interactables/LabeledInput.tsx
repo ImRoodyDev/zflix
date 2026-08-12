@@ -1,8 +1,8 @@
 // External imports
 import clsx from 'clsx';
 import React, { forwardRef } from 'react';
-import { ColorValue, InputModeOptions, TextInput, TextInputProps, View } from 'react-native';
-import { LabeledInputField } from 'react-native-cross-elements';
+import { ColorValue, InputModeOptions, Platform, TextInput, TextInputProps, View } from 'react-native';
+import { LabeledInputField as NativeLabeledInputField, LabeledInputFieldWeb } from 'react-native-cross-elements';
 
 // Internal imports
 import { Icons, IconType } from '../../constants';
@@ -62,6 +62,13 @@ type LabeledInputProps = {
 	selectedBackgroundColor?: string;
 	pressedBackgroundColor?: string;
 };
+
+const LabeledInputField = Platform.select({
+	// Use the web version of the component for web platforms
+	web: LabeledInputFieldWeb,
+	// Use the native version of the component for other platforms
+	default: NativeLabeledInputField,
+});
 
 const LabeledInput = forwardRef<TextInput, LabeledInputProps>((props, ref) => {
 	// Default values for optional props

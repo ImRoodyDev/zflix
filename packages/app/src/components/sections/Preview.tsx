@@ -28,7 +28,7 @@ import BlurView from '../theme/BlurView';
 import Button from '../interactables/Button';
 import SeasonsDropdown from '../interactables/SeasonsDropdown';
 
-const LOGGING = false;
+const LOGGING = true;
 
 // Toggling `display` keeps the subtree mounted; conditional rendering made the
 // pager rebuild it on every auto-advance.
@@ -42,7 +42,7 @@ const DECORATION_MOUNT_DELAY_MS = 500;
 // Runs on the UI thread, so a busy JS thread can't stutter it.
 const FADE_DELAY_MS = 380;
 const FADE_DURATION_MS = 260;
-// expo-image's own crossfade — native, costs no JS or worklet.
+// image's own crossfade — native, costs no JS or worklet.
 const IMAGE_FADE_MS = 220;
 
 // Fades the metadata without putting an animated style on a className element:
@@ -113,7 +113,7 @@ const PreviewInfos = memo(
 							withAuthHeaders
 							contentFit={'contain'}
 							cachePolicy={'memory-disk'}
-							// expo-image has no intrinsic size: fill the aspect-ratio wrapper.
+							// image has no intrinsic size: fill the aspect-ratio wrapper.
 							style={{ width: '100%', height: '100%' }}
 							onError={() => setLogoFailed(true)}
 							alt={preview.title}
@@ -140,6 +140,10 @@ const PreviewInfos = memo(
 							{preview.title}
 						</Text>
 					)}
+
+					<Text className={'app-preview-txt'} numberOfLines={4} ellipsizeMode={'tail'}>
+						{preview.summary}
+					</Text>
 
 					{tvPreview && onSeasonChange && showLabels && tvPreview.seasons > 0 ? (
 						<SeasonsDropdown
@@ -191,14 +195,6 @@ const PreviewInfos = memo(
 							) : null}
 						</View>
 					)}
-
-					<Text
-						className={'app-preview-txt'}
-						numberOfLines={4}
-						ellipsizeMode={'tail'}
-					>
-						{preview.summary}
-					</Text>
 
 					{showLabels && preview.genres.length > 0 ? (
 						<View className={'app-preview-badges'}>
@@ -338,6 +334,7 @@ const _YTPreviewSection = forwardRef(
 			isPlaying,
 			muted,
 			videoEnabled,
+			disableBackdrop,
 			canPlayYoutube,
 			previewStarted,
 			onMute,
@@ -381,7 +378,7 @@ const _YTPreviewSection = forwardRef(
 				<Image
 					src={props.preview.backdrop ? getApiUrl(props.preview.backdrop) : undefined}
 					withAuthHeaders
-					// expo-image crossfades on decode: the thumbnail eases in instead of
+					// image crossfades on decode: the thumbnail eases in instead of
 					// popping, and it costs nothing on the JS or UI thread.
 					transition={IMAGE_FADE_MS}
 					alt={props.preview.title}
@@ -413,8 +410,10 @@ const _YTPreviewSection = forwardRef(
 			// Target aspect ratio for YouTube videos.
 			const youtubeAspectRatio = 16 / 9;
 			// Range of container aspect ratios where we apply overscan to hide letterboxing remnants.
-			const midRatioMin = 1.3;
-			const midRatioMax = 2.5;
+			const midRatioMin = props.floating
+				? sizes.previewVideoSize.midRatioMinFloating || 1.3
+				: sizes.previewVideoSize.midRatioMin || 1.3;
+			const midRatioMax = sizes.previewVideoSize.midRatioMax || 2.5;
 
 			// Pre-layout fallback: while container size is unknown, use existing
 			// preview sizing so the player can render without a visual jump.
@@ -463,7 +462,15 @@ const _YTPreviewSection = forwardRef(
 				height: baseHeight * overscanScale + safetyBleed * 2,
 				aspectRatio: youtubeAspectRatio,
 			};
-		}, [playerSize, props.floating, sizes.previewVideoSize.height, sizes.previewVideoSize.width]);
+		}, [
+			playerSize,
+			props.floating,
+			sizes.previewVideoSize.height,
+			sizes.previewVideoSize.width,
+			sizes.previewVideoSize.midRatioMin,
+			sizes.previewVideoSize.midRatioMax,
+			sizes.previewVideoSize.midRatioMinFloating,
+		]);
 
 		const previewShadowStyle = useMemo(() => {
 			return props.floating ? { ...ShadowStyles.shadowLight3, shadowColor: dominantColors[1] } : undefined;
@@ -543,6 +550,7 @@ const _YTPreviewSection = forwardRef(
 										minWidth: '100%' as DimensionValue,
 										minHeight: '100%' as DimensionValue,
 										alignSelf: 'center',
+										zIndex: 0,
 									}}
 									webViewProps={
 										{
@@ -564,13 +572,15 @@ const _YTPreviewSection = forwardRef(
 							) : null}
 
 							{/* Kept mounted: the pager rebuilt this subtree, image decode included,
-							    on every auto-advance otherwise. */}
+							    on every auto-advance otherwise. Hidden only once playback is
+							    confirmed, so the player's load never shows through. */}
 							<View
 								className={clsx('app-preview-thumbnail', props.floating && 'app-preview-thumbnail-floating')}
-								style={[!isPlaying && !videoEnabled ? undefined : HIDDEN, { pointerEvents: 'none' }]}
+								style={[disableBackdrop ? HIDDEN : undefined, { pointerEvents: 'none' }]}
 							>
 								{memoizedImage}
 							</View>
+
 							<View className={'app-preview-video-overlay'} />
 						</View>
 					</View>

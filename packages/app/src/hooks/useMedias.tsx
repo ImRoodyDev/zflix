@@ -1,4 +1,5 @@
 // External imports
+import { Platform } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,7 +14,11 @@ import { usePersistancePage } from './usePersistancePage';
 
 // Components
 import Carousel from '../components/elements/Carousel';
-import Previews from '../components/elements/OPTPreviews';
+import OPTPreviews from '../components/elements/OPTPreviews';
+import SPreviews from '../components/elements/Previews';
+
+// Use the appropriate Previews component based on the platform (TV or not)
+const Previews = Platform.isTV ? OPTPreviews : SPreviews;
 
 type Props = {
 	type: MediaType;

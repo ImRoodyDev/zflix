@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 export type SizeType = keyof typeof sizes;
 export type SizeValues = typeof sizes.default;
 export type SizesKeys = keyof SizeValues;
@@ -73,7 +75,7 @@ export const sizes = {
 		span4: 14,
 		span5: 12,
 		span6: 8,
-		outlineWidth: 1.4,
+		outlineWidth: Platform.OS === 'web' ? 2 : 1.4,
 
 		// Aspect ratio
 		smLogoRatio: 44 / 51,
@@ -99,6 +101,9 @@ export const sizes = {
 			width: '100%',
 			height: 'auto',
 			aspectRatio: '14/11',
+			midRatioMin: 1.3,
+			midRatioMax: 2.5,
+			midRatioMinFloating: 1.3,
 		},
 	},
 	tablet: {
@@ -148,6 +153,9 @@ export const sizes = {
 			width: '100%',
 			height: 'auto',
 			aspectRatio: '14/11',
+			midRatioMin: 1.3,
+			midRatioMax: 2.5,
+			midRatioMinFloating: 1.3,
 		},
 	},
 	mobile: {
@@ -197,6 +205,9 @@ export const sizes = {
 			width: 'auto',
 			height: '100%',
 			aspectRatio: '18/6',
+			midRatioMin: 1.09,
+			midRatioMax: 2.5,
+			midRatioMinFloating: 0.8,
 		},
 	},
 	mobile_landscape: {
@@ -246,6 +257,9 @@ export const sizes = {
 			width: '100%',
 			height: 'auto',
 			aspectRatio: '14/11',
+			midRatioMin: 1.3,
+			midRatioMax: 2.5,
+			midRatioMinFloating: 1.3,
 		},
 	},
 };

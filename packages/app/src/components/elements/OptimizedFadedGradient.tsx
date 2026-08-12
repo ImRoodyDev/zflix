@@ -2,10 +2,11 @@
 import React, { memo, useMemo } from 'react';
 import { ImageStyle, StyleProp, StyleSheet, ViewProps, ViewStyle } from 'react-native';
 import Animated, { AnimatedProps } from 'react-native-reanimated';
-import { Image, ImageContentFit } from 'expo-image';
+import type { ImageContentFit } from 'expo-image';
 
 // Internal imports
 import images from '../../constants/images';
+import AppImage from './AppImage';
 
 type OptimizedFadedGradientProps = {
 	/** Color applied to the white alpha-mask image. Example: 'black', '#000', 'rgba(0,0,0,1)'. */
@@ -62,17 +63,11 @@ function OptimizedFadedGradient({
 	);
 
 	return (
-		<Animated.View
-			style={containerStyle}
-			className={className}
-			entering={entering}
-			exiting={exiting}
-			layout={layout}
-		>
-			<Image
+		<Animated.View style={containerStyle} className={className} entering={entering} exiting={exiting} layout={layout}>
+			<AppImage
 				source={images.carouselFadeMask}
 				style={maskStyle}
-				// expo-image reads `tintColor` from the prop, not `style`, on web (it applies an SVG
+				// image reads `tintColor` from the prop, not `style`, on web (it applies an SVG
 				// color filter). Passing it in `style` only tinted on native — keep it as a prop so
 				// the mask is tinted on web too.
 				tintColor={tint}

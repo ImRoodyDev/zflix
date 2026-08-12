@@ -1,5 +1,6 @@
 // External imports
 import { Image, type ImageContentFit, type ImageProps } from 'expo-image';
+import { Platform , Image as RNImage} from 'react-native';
 import React from 'react';
 
 // Internal imports
@@ -27,6 +28,15 @@ const contentFitMap: Record<NonNullable<AppImageProps['resizeMode']>, ImageConte
 	center: 'none',
 };
 
+// Reverse map for the RN Image web fallback (expo contentFit -> RN resizeMode)
+const resizeModeMap: Record<ImageContentFit, NonNullable<AppImageProps['resizeMode']>> = {
+	cover: 'cover',
+	contain: 'contain',
+	fill: 'stretch',
+	none: 'center',
+	'scale-down': 'contain',
+};
+
 export default function AppImage(props: AppImageProps) {
 	const {
 		alt,
@@ -50,6 +60,21 @@ export default function AppImage(props: AppImageProps) {
 	// Keep static `source` assets untouched, only build headers for URL-based images.
 	const resolvedSource =
 		source ?? (src ? (withAuthHeaders ? getAuthenticatedImageSource(src) : { uri: src }) : undefined);
+
+	// expo-image is unreliable on web — fall back to the platform (RN web) Image there.
+	if (Platform.OS === 'web') {
+		const webResizeMode = resizeMode ?? (contentFit ? resizeModeMap[contentFit] : 'cover');
+		return (
+			<RNImage
+				{...(imageProps as any)}
+				source={resolvedSource as any}
+				style={[{ width, height }, style] as any}
+				resizeMode={webResizeMode}
+				accessibilityLabel={alt ?? accessibilityLabel}
+				{...(className ? ({ className } as any) : {})}
+			/>
+		);
+	}
 
 	return (
 		<Image

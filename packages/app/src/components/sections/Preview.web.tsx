@@ -29,7 +29,7 @@ import BlurView from '../theme/BlurView';
 import Button from '../interactables/Button';
 import SeasonsDropdown from '../interactables/SeasonsDropdown';
 
-const LOGGING = false;
+const LOGGING = true;
 let HIDE_OVERVIEW: boolean | undefined = undefined;
 
 const PreviewInfos = memo(
@@ -84,7 +84,7 @@ const PreviewInfos = memo(
 							withAuthHeaders
 							contentFit={'contain'}
 							cachePolicy={'memory-disk'}
-							// expo-image has no intrinsic size: fill the aspect-ratio wrapper.
+							// image has no intrinsic size: fill the aspect-ratio wrapper.
 							style={{ width: '100%', height: '100%' }}
 							onError={() => setLogoFailed(true)}
 							alt={preview.title}
@@ -114,6 +114,19 @@ const PreviewInfos = memo(
 						style={{ color: floating ? dominantColors[4] : 'white' }}
 					>
 						{preview.title}
+					</Animated.Text>
+				)}
+
+				{!hideOverview && (
+					<Animated.Text
+						entering={FadeInUp}
+						exiting={FadeOutDown}
+						className={'app-preview-txt'}
+						numberOfLines={4}
+						ellipsizeMode={'tail'}
+						onLayout={!HIDE_OVERVIEW ? undefined : overviewLayout}
+					>
+						{preview.summary}
 					</Animated.Text>
 				)}
 
@@ -166,19 +179,6 @@ const PreviewInfos = memo(
 							</View>
 						) : null}
 					</View>
-				)}
-
-				{!hideOverview && (
-					<Animated.Text
-						entering={FadeInUp}
-						exiting={FadeOutDown}
-						className={'app-preview-txt'}
-						numberOfLines={4}
-						ellipsizeMode={'tail'}
-						onLayout={!HIDE_OVERVIEW ? undefined : overviewLayout}
-					>
-						{preview.summary}
-					</Animated.Text>
 				)}
 
 				{showLabels && preview.genres.length > 0 ? (
@@ -318,6 +318,7 @@ const _YTPreviewSection = forwardRef(
 			isPlaying,
 			muted,
 			videoEnabled,
+			disableBackdrop,
 			canPlayYoutube,
 			previewStarted,
 			onMute,
@@ -375,8 +376,10 @@ const _YTPreviewSection = forwardRef(
 			// Target aspect ratio for YouTube videos.
 			const youtubeAspectRatio = 16 / 9;
 			// Range of container aspect ratios where we apply overscan to hide letterboxing remnants.
-			const midRatioMin = 1.3;
-			const midRatioMax = 2.5;
+			const midRatioMin = props.floating
+				? sizes.previewVideoSize.midRatioMinFloating || 1.3
+				: sizes.previewVideoSize.midRatioMin || 1.3;
+			const midRatioMax = sizes.previewVideoSize.midRatioMax || 2.5;
 
 			// Pre-layout fallback: while container size is unknown, use existing
 			// preview sizing so the player can render without a visual jump.
@@ -418,6 +421,16 @@ const _YTPreviewSection = forwardRef(
 			// Safety bleed handles sub-pixel rounding and iframe compositor seams.
 			const safetyBleed = shouldOverscan ? 8 : 2;
 
+			logger.debug('YTPreviewSection:', {
+				containerWidth,
+				containerHeight,
+				containerAspectRatio,
+				shouldOverscan,
+				normalizedRatio,
+				overscanScale,
+				safetyBleed,
+			});
+
 			// Final iframe dimensions: cover size, then overscan, then tiny bleed.
 			// The parent container clips overflow, so extra area gets cropped.
 			return {
@@ -425,7 +438,15 @@ const _YTPreviewSection = forwardRef(
 				height: baseHeight * overscanScale + safetyBleed * 2,
 				aspectRatio: youtubeAspectRatio,
 			};
-		}, [playerSize, props.floating, sizes.previewVideoSize.height, sizes.previewVideoSize.width]);
+		}, [
+			playerSize,
+			props.floating,
+			sizes.previewVideoSize.height,
+			sizes.previewVideoSize.width,
+			sizes.previewVideoSize.midRatioMin,
+			sizes.previewVideoSize.midRatioMax,
+			sizes.previewVideoSize.midRatioMinFloating,
+		]);
 
 		const previewShadowStyle = useMemo(() => {
 			return props.floating ? { ...ShadowStyles.shadowLight3, shadowColor: dominantColors[1] } : undefined;
@@ -513,7 +534,9 @@ const _YTPreviewSection = forwardRef(
 								/>
 							) : null}
 
-							{!isPlaying && !videoEnabled ? (
+							{/* Held until playback genuinely starts: unmounting it when the
+							    iframe merely mounts left a black gap while YouTube loaded. */}
+							{!disableBackdrop ? (
 								<Animated.View
 									entering={FadeIn}
 									exiting={FadeOut}

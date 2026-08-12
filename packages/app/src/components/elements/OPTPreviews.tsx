@@ -1,5 +1,4 @@
 // External imports
-import { Image } from 'expo-image';
 import { Href, useFocusEffect } from 'expo-router';
 import React, { memo, startTransition, useCallback, useMemo, useRef, useState } from 'react';
 import { InteractionManager, LayoutChangeEvent, View } from 'react-native';
@@ -13,6 +12,7 @@ import { getApiUrl, getAuthenticatedImageSource } from '../../utils/fetcher';
 import logger from '../../utils/logger';
 
 // Components
+import AppImage from './AppImage';
 import { PreviewSectionRef, YTPreviewSection } from '../sections/Preview';
 
 // Minimum time a page stays active before an onFinished may advance the pager.
@@ -116,7 +116,7 @@ const PreviewSlide = memo(function PreviewSlide({
 		// Far pages are just a static backdrop — no player tree.
 		content = (
 			<View className="app-preview">
-				<Image
+				<AppImage
 					source={preview.backdrop ? getAuthenticatedImageSource(getApiUrl(preview.backdrop)) : undefined}
 					style={{ width: '100%', height: '100%' }}
 					contentFit="cover"
