@@ -31,6 +31,13 @@
 	--wide-carousel-lg-height: calc((100vw / var(--wide-carousel-lg-item)) * 1.5);
 }
 
+/* Tablets Portrait Big screen*/
+@media only screen and (min-width: 768px) and (max-width: 1023px) and (min-height: 680px) {
+	.responsive-vars {
+		--preview-cut-margin: 0;
+	}
+}
+
 /* Tablets Portrait  */
 /* @media only screen and (max-width: 899px) */
 /* Mobile Portrait */
@@ -350,10 +357,7 @@ input[data-autocompleted] {
 }
 
 .slider-btn {
-	/*width: 10vw;*/
 	height: calc(calc(var(--span4-size) + var(--span2-size) * 2) * var(--pixel-ratio));
-	/*max-width: 240px;*/
-	/*min-width: 180px;*/
 
 	padding: var(--span2-size);
 	border-radius: 9999px;

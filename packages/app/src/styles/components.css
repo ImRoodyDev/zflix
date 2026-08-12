@@ -461,7 +461,7 @@ body {
 	}
 
 	.app-home-header-contents {
-		padding-bottom: 0;
+		padding-bottom: var(--top-padding);
 	}
 }
 
@@ -2319,6 +2319,14 @@ body {
 .search-empty-title {
 	margin-top: var(--span3-size);
 }
+
+/* Mobile Portrait */
+@media only screen and (max-width: 599px) {
+	.search-empty {
+		padding-left: var(--side-padding);
+		padding-right: var(--side-padding);
+	}
+}
 /*#endregion*/
 
 .app-carousel {
@@ -2823,10 +2831,9 @@ div:has(> .carousel-item) {
 
 .app-preview-title-img {
 	width: auto;
-	max-width: 40vw;
-	/* min-height: 12vh; */
+	max-width: 32vw;
 	height: 12vh;
-	max-height: 80% !important;
+	max-height: 40% !important;
 
 	display: flex;
 	justify-content: center;
@@ -2918,7 +2925,7 @@ div:has(> .carousel-item) {
 	gap: var(--span4-size);
 
 	margin-top: var(--span4-size);
-	margin-bottom: var(--span1-size);
+	margin-bottom: var(--span4-size);
 }
 
 .preview-badge {
@@ -2940,7 +2947,8 @@ div:has(> .carousel-item) {
 
 .preview-badge-txt {
 	color: white;
-	font-size: var(--span4-size);
+	font-size: var(--span5-size);
+	line-height: var(--span5-size);
 	font-family: 'Montserrat-SemiBold', serif;
 }
 
@@ -2954,7 +2962,7 @@ div:has(> .carousel-item) {
 
 .preview-genre-text {
 	color: theme('colors.zinc.500');
-	font-size: var(--span1b-size);
+	font-size: var(--span3-size);
 	font-family: 'Montserrat-SemiBold', serif;
 }
 
@@ -3010,10 +3018,15 @@ div:has(> .carousel-item) {
 
 	.app-preview-title-img {
 		height: 8vh;
+		max-height: 30%;
+		min-height: 8vh;
+		max-width: 40vw;
 	}
 
 	.app-preview-title-img-increased {
 		height: 10vh !important;
+		max-height: 28% !important;
+		min-height: 10vh !important;
 	}
 
 	.app-preview-title {
@@ -3044,7 +3057,7 @@ div:has(> .carousel-item) {
 	}
 
 	.app-preview-infos {
-		padding-left: var(--side-padding);
+		/* padding-left: var(--side-padding); */
 		padding-bottom: var(--top-padding);
 	}
 
@@ -3071,10 +3084,15 @@ div:has(> .carousel-item) {
 
 	.app-preview-title-img {
 		height: 8vh;
+		max-height: 30%;
+		min-height: 8vh;
+		max-width: 40vw;
 	}
 
 	.app-preview-title-img-increased {
 		height: 10vh !important;
+		max-height: 28% !important;
+		min-height: 10vh !important;
 	}
 
 	.app-preview-title {
@@ -3144,10 +3162,14 @@ div:has(> .carousel-item) {
 
 	.app-preview-title-img {
 		height: 8vh;
+		max-height: 26%;
+		min-height: 8vh;
 	}
 
 	.app-preview-title-img-increased {
 		height: 10vh !important;
+		max-height: 28% !important;
+		min-height: 10vh !important;
 	}
 
 	.app-preview-title {

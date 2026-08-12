@@ -1,0 +1,11 @@
+{
+	"version": "0.0.1",
+	"configurations": [
+		{
+			"name": "zflix-web",
+			"runtimeExecutable": "npm",
+			"runtimeArgs": ["run", "start:web", "--prefix", "packages/app"],
+			"port": 8081
+		}
+	]
+}

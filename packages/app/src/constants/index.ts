@@ -6,7 +6,7 @@ import { defaultDrawerOption } from './drawer';
 import { useFonts } from './fonts';
 import Icons, { IconType } from './icons';
 import Images from './images';
-import { sizes as Sizes } from './sizes.native';
+import { sizes as Sizes } from './sizes';
 import ToastConfig from './toast';
 
 export {
