@@ -9,15 +9,6 @@ This repo is a monorepo with:
 
 1. Rotate any secrets that were ever committed, pasted into chat, or shared. The server `.env` contains private keys and service credentials.
 2. Commit the lockfile. CI should use the same dependency graph as your machine, so keep `package-lock.json` tracked.
-3. Fix the app package dependencies that point outside this repo:
-
-```json
-"react-native-cross-elements": "file:../../../../Packages/native-cross-elements/workspaces/package/react-native-cross-elements-1.0.0.tgz",
-"react-native-cross-player": "file:../../../../Packages/cross-native-player/react-native-cross-player-1.0.0.tgz",
-"rn-intersection-observer": "file:../../../../Packages/native-intersection-observer/rn-intersection-observer-0.0.1.tgz"
-```
-
-GitHub Actions and Render will not have those local files. Move the `.tgz` files into the repo, publish them to a registry, or replace them with public package versions.
 
 ## Recommended Free Services
 
