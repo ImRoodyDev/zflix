@@ -62,19 +62,22 @@ Navigate to **Developers → API Keys**:
 
 Navigate to **Developers → Webhooks → Add endpoint**:
 
-| Field          | Value                                                    |
-| -------------- | -------------------------------------------------------- |
-| Endpoint URL   | `https://your-domain/webhooks/stripe/checkout-completed` |
-| Events to send | See [Webhook Events](#webhook-events) below              |
+| Field          | Value                                        |
+| -------------- | -------------------------------------------- |
+| Endpoint URL   | `https://your-domain/webhooks/stripe`        |
+| Events to send | All five in [Webhook Events](#webhook-events) |
 
-> **Note:** Stripe sends all events to a single endpoint URL. However, this project
-> routes each event type to a dedicated handler. You have two options:
+> **Option A (recommended, implemented):** One endpoint at `POST /webhooks/stripe`.
+> The dispatcher in
+> [`src/application/routes/subscription/stripe/dispatcher.ts`](../src/application/routes/subscription/stripe/dispatcher.ts)
+> verifies the signature once and forwards each event to its handler in process.
+> Unhandled event types are acknowledged with 200 so Stripe never retries them.
 >
-> **Option A (recommended):** Create a single Stripe webhook endpoint that posts to
-> a dispatcher route, then route events internally.
+> This is the recommended setup because Stripe issues a **separate signing secret per
+> endpoint**, while the server holds a single `STRIPE_WEBHOOK_SECRET`.
 >
-> **Option B (current setup):** Create separate webhook endpoints in Stripe for each
-> event type:
+> **Option B:** Keep the per-event URLs below — still mounted, still working. Each takes
+> exactly one event, and only the endpoint whose secret matches your env var will verify.
 >
 > | Event                           | Endpoint URL                                                 |
 > | ------------------------------- | ------------------------------------------------------------ |

@@ -141,30 +141,52 @@ UPDATE Plans SET stripePriceId = 'price_1Qx...' WHERE id = 'your-plan-id';
 
 Run the migration first if you haven't: `npx sequelize-cli db:migrate`.
 
-### Step 5 — Create the webhook endpoints
+### Step 5 — Create the webhook endpoint
+
+**Register one endpoint and tick all five events.** The server ships a dispatcher at
+`POST /webhooks/stripe` ([`dispatcher.ts`](../src/application/routes/subscription/stripe/dispatcher.ts))
+that verifies the signature once and fans each event out to its handler in process.
+One endpoint means one signing secret, which is all this server can hold — see
+[the constraint section](#important-the-single-secret-constraint).
 
 1. Click **Developers** → **Webhooks**.
    *(Newer dashboards: **Workbench** → **Webhooks**.)*
 2. Click **+ Add endpoint**.
-3. **Endpoint URL** — paste the first URL from the table below.
+3. **Endpoint URL**: `https://your-domain/webhooks/stripe`
 4. Click **+ Select events**. A searchable checkbox tree opens, grouped by resource.
-   Type the event name into the filter box, tick **exactly one** box, and click **Add events**.
-5. Click **Add endpoint**.
-6. **Repeat for each row.** Five endpoints total.
+   Filter for each name below and tick its box:
 
-| # | Endpoint URL                                                 | Tick this one checkbox          | Find it under |
-| - | ------------------------------------------------------------ | ------------------------------- | ------------- |
-| 1 | `https://your-domain/webhooks/stripe/checkout-completed`     | `checkout.session.completed`    | **Checkout**  |
-| 2 | `https://your-domain/webhooks/stripe/invoice-paid`           | `invoice.paid`                  | **Invoice**   |
-| 3 | `https://your-domain/webhooks/stripe/invoice-payment-failed` | `invoice.payment_failed`        | **Invoice**   |
-| 4 | `https://your-domain/webhooks/stripe/subscription-updated`   | `customer.subscription.updated` | **Customer**  |
-| 5 | `https://your-domain/webhooks/stripe/subscription-deleted`   | `customer.subscription.deleted` | **Customer**  |
+   | Tick this checkbox              | Find it under | Routed to                     |
+   | ------------------------------- | ------------- | ----------------------------- |
+   | `checkout.session.completed`    | **Checkout**  | `hooks/checkout-completed`     |
+   | `invoice.paid`                  | **Invoice**   | `hooks/invoice-paid`           |
+   | `invoice.payment_failed`        | **Invoice**   | `hooks/invoice-payment-failed` |
+   | `customer.subscription.updated` | **Customer**  | `hooks/subscription-updated`   |
+   | `customer.subscription.deleted` | **Customer**  | `hooks/subscription-deleted`   |
 
-> **Do not** tick "Select all events" or add several events to one endpoint. Each handler
-> casts the payload to the one type it expects.
->
+5. Click **Add events**, then **Add endpoint**.
+
 > Beware near-miss neighbours in the list: `invoice.payment_succeeded` is **not**
 > `invoice.paid`, and `customer.subscription.paused` is **not** `…updated`.
+>
+> Ticking extra events beyond these five is harmless — the dispatcher logs and
+> acknowledges anything it has no handler for, so Stripe won't retry them. Avoid
+> "Select all events" anyway, purely to keep the delivery log readable.
+
+#### Alternative: one endpoint per event
+
+The dedicated URLs below are still mounted and work unchanged, if you'd rather Stripe
+route by URL. Each takes **exactly one** event — the handlers cast the payload to the
+single type they expect. This needs a different signing secret per endpoint, so it only
+works as-is for one of them (or for all of them under `stripe listen`).
+
+| Endpoint URL                                                 | Its one event                   |
+| ------------------------------------------------------------ | ------------------------------- |
+| `https://your-domain/webhooks/stripe/checkout-completed`     | `checkout.session.completed`    |
+| `https://your-domain/webhooks/stripe/invoice-paid`           | `invoice.paid`                  |
+| `https://your-domain/webhooks/stripe/invoice-payment-failed` | `invoice.payment_failed`        |
+| `https://your-domain/webhooks/stripe/subscription-updated`   | `customer.subscription.updated` |
+| `https://your-domain/webhooks/stripe/subscription-deleted`   | `customer.subscription.deleted` |
 
 ### Step 6 — Copy the signing secret
 
@@ -322,30 +344,43 @@ But this server holds exactly **one** of each:
 - `PayPalService.WEBHOOK_ID` — a single `PAYPAL_WEBHOOK_ID`
   ([`paypal.ts:306`](../src/core/infrastructure/services/payments/paypal.ts))
 
-So if you register 5 Stripe endpoints and 7 PayPal webhooks as described above, **only
-the one matching your env value will verify**. The rest fail with
-`INVALID_SIGNATURE` (HTTP 400) and the provider will retry, then disable the endpoint.
+So registering one URL per event means **only the one matching your env value will
+verify**. The rest fail with `INVALID_SIGNATURE` (HTTP 400), and the provider retries
+with backoff before eventually disabling the endpoint.
 
-### Your options
+### Stripe — solved by the dispatcher
 
-**A. Local development** — use `stripe listen`. The CLI issues one secret for everything
-it forwards, so all five Stripe routes verify. Nothing to change.
+`POST /webhooks/stripe` ([`dispatcher.ts`](../src/application/routes/subscription/stripe/dispatcher.ts))
+takes every event on one URL, verifies it against the single `STRIPE_WEBHOOK_SECRET`,
+and forwards it to the matching handler in process. Register one endpoint as in
+[Step 5](#step-5--create-the-webhook-endpoint) and the constraint disappears.
 
-**B. Register only what you need.** `checkout.session.completed` (Stripe) and
-`BILLING.SUBSCRIPTION.ACTIVATED` (PayPal) cover activation, which is the critical path.
-Renewals and cancellations are also picked up by `revalidateSubscription()` on the next
-API call, so you lose promptness rather than correctness.
+Unrecognised event types are logged and acknowledged with 200, so subscribing to extra
+events never triggers Stripe's retry-and-disable behaviour. The per-event URLs stay
+mounted, so nothing already configured breaks.
 
-**C. Make the secret per-endpoint** — the proper fix. Give each handler its own env var
-(`STRIPE_WEBHOOK_SECRET_CHECKOUT`, `…_INVOICE_PAID`, …) and pass it into
-`verifyWebhookEvent`, or key a lookup off the request path.
+### PayPal — still one webhook ID
 
-**D. Collapse to one endpoint per provider** — one URL, all events ticked, and a
-dispatcher that switches on `event.type` (Stripe) or `event_type` (PayPal). One secret,
-one endpoint, and it is what most integrations do. The largest code change of the four.
+PayPal has no dispatcher yet, so the seven URLs each carry their own `WH-` ID while the
+server holds one. Your options:
 
-Whichever you pick, verify in the provider dashboard that deliveries return **200**.
-Stripe shows this per endpoint under **Events**; PayPal under **Webhooks → Event logs**.
+**A. Register only `BILLING.SUBSCRIPTION.ACTIVATED`** pointed at
+`/webhooks/paypal/activated`, and put that webhook's ID in `PAYPAL_WEBHOOK_ID`.
+Activation is the critical path; renewals, cancellations and suspensions are also
+reconciled by `revalidateSubscription()` on the user's next API call, so you lose
+promptness rather than correctness.
+
+**B. Mirror the Stripe dispatcher** — one webhook URL with all seven event types ticked,
+switching on `event_type` to pick the handler. Roughly the same shape as
+`dispatcher.ts`; the PayPal handlers already re-verify independently.
+
+**C. Per-webhook IDs** — one env var per webhook, selected by request path inside
+`verifySignature`.
+
+### Verifying either provider
+
+Confirm deliveries return **200** in the dashboard: Stripe under the endpoint's
+**Events** tab, PayPal under **Webhooks → Event logs**.
 
 ---
 

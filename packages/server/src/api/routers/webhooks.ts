@@ -13,6 +13,7 @@ import stripeInvoicePaid from '@app/routes/subscription/stripe/hooks/invoice-pai
 import stripeInvoicePaymentFailed from '@app/routes/subscription/stripe/hooks/invoice-payment-failed';
 import stripeSubscriptionUpdated from '@app/routes/subscription/stripe/hooks/subscription-updated';
 import stripeSubscriptionDeleted from '@app/routes/subscription/stripe/hooks/subscription-deleted';
+import stripeDispatcher from '@app/routes/subscription/stripe/dispatcher';
 
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 import { rateLimiterMiddleware } from '@api/middlewares/rate-limiters';
@@ -45,5 +46,10 @@ router.use('/stripe/invoice-paid', stripeInvoicePaid);
 router.use('/stripe/invoice-payment-failed', stripeInvoicePaymentFailed);
 router.use('/stripe/subscription-updated', stripeSubscriptionUpdated);
 router.use('/stripe/subscription-deleted', stripeSubscriptionDeleted);
+
+// Single-endpoint Stripe dispatcher: POST /webhooks/stripe accepts every event
+// type and fans it out to the handlers above. Registered last so the dedicated
+// per-event paths keep matching first — both styles work simultaneously.
+router.use('/stripe', stripeDispatcher);
 
 export default router;
