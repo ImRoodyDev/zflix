@@ -197,9 +197,6 @@ const AppProfileForm = (props: AppProfileFormProps) => {
 									onSelectIcon={'magicpen'}
 									onSelect={handleToggleAvatars}
 									btnClassName="profile-form-avatar"
-									// Reclaim TV focus when the form remounts (e.g. after the avatars modal closes),
-									// otherwise nothing is focused and the D-pad has nowhere to navigate from.
-									hasTVPreferredFocus
 								/>
 							</View>
 
