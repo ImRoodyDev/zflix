@@ -123,12 +123,12 @@ export function useMedias(props: Props) {
 		// If data is resored from cache, use turn it into class of MovieDetails or TvDetails so it can be used directly in the Previews component
 		const _previews = restored
 			? ((pageData?.previews || []).map((item) => {
-				if (type === 'movies') {
-					return new MovieDetails(item as MovieDetails);
-				} else {
-					return new TvDetails(item as TvDetails);
-				}
-			}) as MovieDetails[] | TvDetails[])
+					if (type === 'movies') {
+						return new MovieDetails(item as MovieDetails);
+					} else {
+						return new TvDetails(item as TvDetails);
+					}
+				}) as MovieDetails[] | TvDetails[])
 			: (pageData?.previews ?? []);
 
 		// TV previews should use the YouTube trailer key by default. Passing

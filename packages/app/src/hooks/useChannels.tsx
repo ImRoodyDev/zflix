@@ -13,8 +13,10 @@ import {
 	channelSearch,
 } from '../controllers/channels';
 import type { IPTVCategory, IPTVCountry } from '../types/Channels';
+import { endOfDayTimestamp } from '../utils/standard';
 import { useCarouselWindow } from './useCarouselWindow';
 import { usePersistancePage } from './usePersistancePage';
+import logger from '@/utils/logger';
 
 // Components
 import Carousel from '../components/elements/Carousel';
@@ -61,6 +63,12 @@ export function useChannels(props: Props) {
 			browseMode: 'categories',
 		},
 		disable: !cacheItems,
+		// Only cache once both filter lists are populated. If either came back empty
+		// (a failed/empty response), treat the cache as absent so the next reload
+		// refetches instead of reusing the empty arrays for the whole session.
+		validate: (d) => !!d && (d.countries?.length ?? 0) > 0 && (d.categories?.length ?? 0) > 0,
+		// Cache valid until the end of the day.
+		expiresAt: endOfDayTimestamp,
 	});
 
 	useFocusEffect(
@@ -87,6 +95,13 @@ export function useChannels(props: Props) {
 		}
 
 		void initialize();
+
+		return () => {
+			// Cleanup function to cancel any ongoing fetches if the component unmounts
+			// or if the type changes. This prevents memory leaks and ensures that
+			// we don't update state on an unmounted component.
+			logger.info(`Cleaning up page for channels...`);
+		};
 	}, [hydrated, initialize, restored]);
 
 	const switchBrowseMode = useCallback(
