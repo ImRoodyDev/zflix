@@ -42,6 +42,16 @@ export const secondsLeftInDay = (): number => {
 	return 24 * 60 * 60 - secondsElapsed;
 };
 
+/**
+ * Epoch ms at the very end of the current local day (23:59:59.999 today).
+ * Handy as an `expiresAt` for anything that should stay valid until the day rolls over.
+ */
+export const endOfDayTimestamp = (): number => {
+	const end = new Date();
+	end.setHours(23, 59, 59, 999);
+	return end.getTime();
+};
+
 // Format the given minutes into a string with the hours and minutes
 export const formatMinutes = (minutes: number): string => {
 	const hours = Math.floor(minutes / 60);
@@ -145,4 +155,8 @@ export function lightenHexColor(hex: string, amount = 0.18): string {
 	const lighten = (channel: number) => Math.round(channel + (255 - channel) * clampedAmount);
 
 	return `#${[lighten(r), lighten(g), lighten(b)].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+}
+
+export function profileLanguage(): string {
+	return window.application.currentProfile?.languageCode || 'en';
 }

@@ -20,8 +20,9 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
 		// Retrieve all media genres
 		const genres = type == 'movies' ? getConstantMovieGenres(lang) : getConstantTvGenres(lang); // await TMDBService[type == 'movies' ? 'moviesGenres' : 'tvGenres'](lang);
 
-		// Check if genres exist
-		if (!genres) {
+		// Check if genres exist — reject an empty list too so an empty response is
+		// never cached for the full 30 days.
+		if (!genres?.length) {
 			return new HttpError({
 				code: req.t('REQUESTED_RESOURCE_NOT_FOUND_CODE'),
 				message: req.t('REQUESTED_RESOURCE_NOT_FOUND_MESSAGE'),

@@ -9,6 +9,7 @@ import Animated from 'react-native-reanimated';
 import { mediaCategories, mediaGenres, mediaItemListByCode, mediaPreviews } from '../controllers/media';
 import { MediaCategory, MediaGenre, MediaListCode, MediaType, MovieDetails, TvDetails } from '../types/Medias';
 import logger from '../utils/logger';
+import { endOfDayTimestamp } from '../utils/standard';
 import { useCarouselWindow } from './useCarouselWindow';
 import { usePersistancePage } from './usePersistancePage';
 
@@ -56,6 +57,13 @@ export function useMedias(props: Props) {
 		persistScroll,
 		data: { genres: [], categories: [], previews: [] },
 		disable: !cacheItems,
+		// Only cache a page once every fetched list is populated. If any of them came
+		// back empty (a failed/empty response), treat the cache as absent so the next
+		// reload refetches instead of reusing the empty arrays for the whole session.
+		validate: (d) =>
+			!!d && (d.categories?.length ?? 0) > 0 && (d.genres?.length ?? 0) > 0 && (d.previews?.length ?? 0) > 0,
+		// Cache valid until the end of the day.
+		expiresAt: endOfDayTimestamp,
 	});
 
 	// Window the carousels so a long categories + genres list mounts in small
@@ -102,6 +110,13 @@ export function useMedias(props: Props) {
 		}
 
 		void initialize();
+
+		return () => {
+			// Cleanup function to cancel any ongoing fetches if the component unmounts
+			// or if the type changes. This prevents memory leaks and ensures that
+			// we don't update state on an unmounted component.
+			logger.info(`Cleaning up page for ${type}...`);
+		};
 	}, [type, hydrated, initialize, restored]);
 
 	const previewsComponent = useMemo(() => {

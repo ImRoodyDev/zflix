@@ -11,6 +11,7 @@ import {
 	View,
 } from 'react-native';
 import { InView } from '@imroodydev/rn-intersection-observer';
+import clsx from 'clsx';
 
 // Internal imports
 import { MovieDetails, TvDetails } from '../../types/Medias';
@@ -25,7 +26,7 @@ import { PreviewSectionRef, YTPreviewSection } from '../sections/Preview';
 
 // Minimum time a page stays active before an onFinished may advance the pager.
 const MIN_PAGE_DWELL_MS = 1500;
-const LOGGING = true;
+const LOGGING = false;
 
 type PreviewsProps = {
 	previews: MovieDetails[] | TvDetails[];
@@ -306,7 +307,10 @@ function Previews(props: PreviewsProps) {
 			const circularDistance = Math.min(distance, count - distance);
 			if (circularDistance > 1) {
 				return (
-					<View key={`preview:${preview.id}`} className="app-preview">
+					<View
+						key={`preview:${preview.id}`}
+						className={clsx('app-preview', Platform.OS == 'web' && 'app-preview-web')}
+					>
 						<AppImage
 							source={preview.backdrop ? getAuthenticatedImageSource(getApiUrl(preview.backdrop)) : undefined}
 							style={{ width: '100%', height: '100%' }}
@@ -364,7 +368,7 @@ function Previews(props: PreviewsProps) {
 						pagingEnabled={true}
 						snapToStart={true}
 						// TV: keep user scroll disabled so D-pad keys bubble to focus search.
-						scrollEnabled={true}
+						scrollEnabled={!Platform.isTV}
 					>
 						{previewsElements}
 					</ScrollView>

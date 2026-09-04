@@ -1,9 +1,10 @@
 // External imports
 import { Href, useFocusEffect } from 'expo-router';
 import React, { memo, startTransition, useCallback, useMemo, useRef, useState } from 'react';
-import { InteractionManager, LayoutChangeEvent, View } from 'react-native';
+import { InteractionManager, LayoutChangeEvent, Platform, View } from 'react-native';
 import Animated, { Easing, SharedValue, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { InView } from '@imroodydev/rn-intersection-observer';
+import clsx from 'clsx';
 
 // Internal imports
 import { MovieDetails, TvDetails } from '../../types/Medias';
@@ -115,7 +116,7 @@ const PreviewSlide = memo(function PreviewSlide({
 	if (!shouldMountPlayer) {
 		// Far pages are just a static backdrop — no player tree.
 		content = (
-			<View className="app-preview">
+			<View className={clsx('app-preview', Platform.OS == 'web' && 'app-preview-web')}>
 				<AppImage
 					source={preview.backdrop ? getAuthenticatedImageSource(getApiUrl(preview.backdrop)) : undefined}
 					style={{ width: '100%', height: '100%' }}

@@ -50,7 +50,7 @@ const SidebarDrawer = ({ logout, drawerToggled, toggleDrawerHandler }: Props) =>
 	);
 
 	return (
-		<ResponsiveRootThemedView className={'app-sidebar h-full w-full'} style={safeStyle}>
+		<ResponsiveRootThemedView className={'app-sidebar'} style={safeStyle} isFlex={false}>
 			{
 				// Keep the drawer subtree mounted; closed controls are non-focusable.
 				<View
@@ -60,103 +60,101 @@ const SidebarDrawer = ({ logout, drawerToggled, toggleDrawerHandler }: Props) =>
 					style={{ pointerEvents: drawerToggled ? 'auto' : 'none' }}
 				>
 					{/* Trap focus only while the drawer is open. */}
-					<View style={{ width: '100%' }}>
-						<View className={'app-sidebar-header'}>
-							<SwitchTheme className={'sidebar-switch-theme-bt'} focusable={drawerToggled} />
-							<DrawerMenuButton
-								drawerToggled={drawerToggled}
-								focusable={drawerToggled}
-								toggleDrawerHandler={toggleDrawerHandler}
-								style={{ flex: 1, outlineColor: 'transparent' }}
-							/>
-						</View>
+					<View className={'app-sidebar-header'}>
+						<SwitchTheme className={'sidebar-switch-theme-bt'} focusable={drawerToggled} />
+						<DrawerMenuButton
+							drawerToggled={drawerToggled}
+							focusable={drawerToggled}
+							toggleDrawerHandler={toggleDrawerHandler}
+							style={{ flex: 1, outlineColor: 'transparent' }}
+						/>
+					</View>
 
-						{
-							// Check to see if the user has a subscription
-							window.application.auth.user?.setupComplete && (
-								<>
-									<Button
-										// Props
-										onPress={() => {
-											window.application.navigate.replace('/(profile)/profiles');
-										}}
-										icon="profiles"
-										text={t('switchProfile')}
-										className="app-sidebar-btn"
-										textClassName="!font-mt_regular span2"
-										// Styling
-										{...buttonStyle}
-										{...getSidebarFocusProps(0)}
-									/>
-
-									<Button
-										// Props
-										onPress={() => {
-											toggleDrawerHandler();
-											window.application.navigate.push('/(plan)/manage-plan');
-										}}
-										icon="wallet_check"
-										text={t('managePlan')}
-										className="app-sidebar-btn"
-										textClassName="!font-mt_regular span2"
-										// Styling
-										{...buttonStyle}
-										{...getSidebarFocusProps(1)}
-									/>
-
-									<Button
-										// Props
-										onPress={() => {
-											toggleDrawerHandler();
-											window.application.navigate.push('/(user)/account-info');
-										}}
-										icon="user_square"
-										text={t('accountInfo')}
-										className="app-sidebar-btn"
-										textClassName="!font-mt_regular span2"
-										// Styling
-										{...buttonStyle}
-										{...getSidebarFocusProps(2)}
-									/>
-								</>
-							)
-						}
-
-						{
-							// If user doesn't have a subscription
-							!window.application.auth.user?.setupComplete && (
+					{
+						// Check to see if the user has a subscription
+						window.application.auth.user?.setupComplete && (
+							<>
 								<Button
 									// Props
 									onPress={() => {
-										window.application.navigate.replace('/(plan)/plan-picker');
-										toggleDrawerHandler();
+										window.application.navigate.replace('/(profile)/profiles');
 									}}
-									icon="wallet_add"
-									text={t('subscribeNow')}
+									icon="profiles"
+									text={t('switchProfile')}
 									className="app-sidebar-btn"
 									textClassName="!font-mt_regular span2"
 									// Styling
 									{...buttonStyle}
 									{...getSidebarFocusProps(0)}
 								/>
-							)
-						}
 
-						<Button
-							// Props
-							onPress={() => {
-								toggleDrawerHandler();
-								logout();
-							}}
-							icon="logout"
-							text={t('logout')}
-							className="app-sidebar-btn"
-							textClassName="!font-mt_regular span2"
-							// Styling
-							{...buttonStyle}
-							{...getSidebarFocusProps(window.application.auth.user?.setupComplete ? 3 : 1)}
-						/>
-					</View>
+								<Button
+									// Props
+									onPress={() => {
+										toggleDrawerHandler();
+										window.application.navigate.push('/(plan)/manage-plan');
+									}}
+									icon="wallet_check"
+									text={t('managePlan')}
+									className="app-sidebar-btn"
+									textClassName="!font-mt_regular span2"
+									// Styling
+									{...buttonStyle}
+									{...getSidebarFocusProps(1)}
+								/>
+
+								<Button
+									// Props
+									onPress={() => {
+										toggleDrawerHandler();
+										window.application.navigate.push('/(user)/account-info');
+									}}
+									icon="user_square"
+									text={t('accountInfo')}
+									className="app-sidebar-btn"
+									textClassName="!font-mt_regular span2"
+									// Styling
+									{...buttonStyle}
+									{...getSidebarFocusProps(2)}
+								/>
+							</>
+						)
+					}
+
+					{
+						// If user doesn't have a subscription
+						!window.application.auth.user?.setupComplete && (
+							<Button
+								// Props
+								onPress={() => {
+									window.application.navigate.replace('/(plan)/plan-picker');
+									toggleDrawerHandler();
+								}}
+								icon="wallet_add"
+								text={t('subscribeNow')}
+								className="app-sidebar-btn"
+								textClassName="!font-mt_regular span2"
+								// Styling
+								{...buttonStyle}
+								{...getSidebarFocusProps(0)}
+							/>
+						)
+					}
+
+					<Button
+						// Props
+						onPress={() => {
+							toggleDrawerHandler();
+							logout();
+						}}
+						icon="logout"
+						text={t('logout')}
+						className="app-sidebar-btn"
+						textClassName="!font-mt_regular span2"
+						// Styling
+						{...buttonStyle}
+						{...getSidebarFocusProps(window.application.auth.user?.setupComplete ? 3 : 1)}
+					/>
 				</View>
 			}
 		</ResponsiveRootThemedView>

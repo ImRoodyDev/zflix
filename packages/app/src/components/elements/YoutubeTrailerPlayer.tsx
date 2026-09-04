@@ -42,6 +42,7 @@ const YoutubeTrailerPlayerNative = ({ videoId, style }: Props) => {
 					// TV focus engine and away from touch/accessibility so the
 					// D-pad can never land (or get stuck) on the iframe.
 					focusable: false,
+					isTVSelectable: false,
 					pointerEvents: 'none',
 					importantForAccessibility: 'no-hide-descendants',
 					accessible: false,

@@ -29,7 +29,7 @@ import BlurView from '../theme/BlurView';
 import Button from '../interactables/Button';
 import SeasonsDropdown from '../interactables/SeasonsDropdown';
 
-const LOGGING = true;
+const LOGGING = false;
 let HIDE_OVERVIEW: boolean | undefined = undefined;
 
 const PreviewInfos = memo(
@@ -146,16 +146,20 @@ const PreviewInfos = memo(
 							</View>
 						) : null}
 
-						<View className={'preview-badge'}>
-							<Text className={'preview-badge-txt'}>
-								{preview.releaseDate ? preview.releaseDate.split('-')[0] : 'N/A'}
-							</Text>
-						</View>
+						{preview.releaseDate ? (
+							<View className={'preview-badge'}>
+								<Text className={'preview-badge-txt'}>
+									{preview.releaseDate ? preview.releaseDate.split('-')[0] : 'N/A'}
+								</Text>
+							</View>
+						) : null}
 
-						<View className={'preview-badge'}>
-							<Icons.star size={sizes.span3} color={'white'} variant={'Bold'} />
-							<Text className={'preview-badge-txt'}>{preview.vote ? preview.vote.toFixed(1) : '0.0'}</Text>
-						</View>
+						{preview.vote !== undefined ? (
+							<View className={'preview-badge'}>
+								<Icons.star size={sizes.span5} color={'white'} variant={'Bold'} />
+								<Text className={'preview-badge-txt'}>{preview.vote ? preview.vote.toFixed(1) : '0.0'}</Text>
+							</View>
+						) : null}
 
 						{isNotEmpty(preview.quality) ? (
 							<View className={'preview-badge'}>
@@ -182,7 +186,7 @@ const PreviewInfos = memo(
 				)}
 
 				{showLabels && preview.genres.length > 0 ? (
-					<View className={'app-preview-badges'}>
+					<View className={'app-preview-badges mt-0'}>
 						{preview.genres.map((genre, index) => (
 							<View key={index} className={'preview-badge-genre'}>
 								<Icons.circle size={sizes.span6} color={dominantColors[4]} />
@@ -231,7 +235,7 @@ const PreviewActions = memo(
 		const ActionsContainer = View;
 		return (
 			<ActionsContainer className={'app-preview-actions'}>
-				<View className={'app-preview-play'}>
+				<View className={clsx('app-preview-play', floating && 'app-preview-play-floating')}>
 					<Button
 						onFocus={onActionFocus}
 						onBlur={onActionBlur}
@@ -249,7 +253,10 @@ const PreviewActions = memo(
 						pressedBackgroundColor={Colors.primary[950]}
 					/>
 
-					<Text className={'app-preview-play-status-text'} style={floating && { fontSize: sizes.span1b }}>
+					<Text
+						className={clsx('app-preview-play-status-text', floating && 'app-preview-play-status-text-floating')}
+						style={floating && { fontSize: sizes.span1b }}
+					>
 						{playText}
 					</Text>
 				</View>
@@ -421,16 +428,6 @@ const _YTPreviewSection = forwardRef(
 			// Safety bleed handles sub-pixel rounding and iframe compositor seams.
 			const safetyBleed = shouldOverscan ? 8 : 2;
 
-			logger.debug('YTPreviewSection:', {
-				containerWidth,
-				containerHeight,
-				containerAspectRatio,
-				shouldOverscan,
-				normalizedRatio,
-				overscanScale,
-				safetyBleed,
-			});
-
 			// Final iframe dimensions: cover size, then overscan, then tiny bleed.
 			// The parent container clips overflow, so extra area gets cropped.
 			return {
@@ -487,8 +484,13 @@ const _YTPreviewSection = forwardRef(
 
 		return (
 			<View
-				className={clsx('app-preview', props.floating && 'app-preview-floating', props.className)}
-				style={props.style}
+				className={clsx(
+					'app-preview',
+					Platform.OS === 'web' && 'app-preview-web',
+					props.floating && 'app-preview-floating',
+					props.className,
+				)}
+				style={[props.style]}
 				renderToHardwareTextureAndroid={!isPlaying}
 				shouldRasterizeIOS={!isPlaying}
 			>
@@ -551,13 +553,13 @@ const _YTPreviewSection = forwardRef(
 					</View>
 
 					<View className={clsx('app-preview-infos', props.floating && 'app-preview-infos-floating')}>
-						{props.floating && Platform.OS !== 'android' ? (
+						{props.floating && (
 							<BlurView
 								className={'app-preview-info-blur'}
 								intensity={Platform.OS === 'web' ? 36 : 80}
 								tint={'default'}
 							/>
-						) : null}
+						)}
 
 						{/* Keep metadata mounted while video waits/loads so Android mobile does not pop or reflow the UI. */}
 						{previewStarted && (

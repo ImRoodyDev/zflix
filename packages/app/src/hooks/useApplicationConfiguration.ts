@@ -61,6 +61,8 @@ export const useApplicationConfiguration = () => {
 	// State to manage previous path
 	const [previousPathName, setPrevPath] = useState<string | null>(pathname);
 	const currentPathRef = useRef<string | null>(pathname);
+	const pathChangeCountRef = useRef<number>(0);
+	const redirectOnLoginRef = useRef<boolean>(true);
 
 	// Initialize Application & Global application functions
 	useEffect(() => {
@@ -101,6 +103,8 @@ export const useApplicationConfiguration = () => {
 		if (currentPathRef.current !== pathname) setPrevPath(currentPathRef.current);
 		currentPathRef.current = pathname;
 		window.application.pathname = pathname;
+		pathChangeCountRef.current += 1;
+		redirectOnLoginRef.current = true;
 	}, [pathname]);
 
 	// Auth guard: redirect unauthenticated users away from protected routes,
@@ -117,10 +121,17 @@ export const useApplicationConfiguration = () => {
 
 		if (!loggedIn && isProtected) {
 			navigate.replace('/login');
+		} else if (loggedIn && group === '(auth)' && redirectOnLoginRef.current) {
+			logger.info('Auth Guard: Redirecting logged-in user to profiles');
+			navigate.replace('/profiles');
 		}
-		// else if (loggedIn && group === '(auth)') {
-		// 	navigate.replace('/');
-		// }
+
+		logger.info('Auth Guard:', {
+			loggedIn,
+			group,
+			subRoute,
+			authRedirect: redirectOnLoginRef.current,
+		});
 	}, [initialized, loggedIn, segments, navigate]);
 
 	const switchLanguage = useCallback(
@@ -161,8 +172,8 @@ export const useApplicationConfiguration = () => {
 
 	const logout = useCallback(async () => {
 		if (!window.application.auth.user || !loggedIn) return;
-		const result = await sendLogout();
-		if (!result) return;
+		sendLogout();
+		// if (!result) return;
 		setLoggedIn(false);
 		logger.debug('LOGOUT_USER: ', window.application.auth.user.email);
 		window.application.auth.loggedIn = false;
@@ -181,6 +192,12 @@ export const useApplicationConfiguration = () => {
 		// Redirect is handled reactively by the auth guard effect.
 	}, [loggedIn]);
 
+	const setLoggedInRelay = useCallback((value: boolean, autoRedirect: boolean = false) => {
+		logger.info('Loggin in:', { value, autoRedirect });
+		redirectOnLoginRef.current = autoRedirect;
+		setLoggedIn(value);
+	}, []);
+
 	// Memoized so consumers (RootContext) can safely use this object as a dependency
 	// without re-rendering the whole tree on every render of this hook.
 	const value = useMemo(
@@ -194,7 +211,7 @@ export const useApplicationConfiguration = () => {
 			previousPathName,
 			pathname,
 			routeName: segments.slice(1).join('/') || '/',
-			setLoggedIn,
+			setLoggedIn: setLoggedInRelay,
 			logout,
 			switchLanguage,
 			switchProfile,
@@ -214,6 +231,7 @@ export const useApplicationConfiguration = () => {
 			switchLanguage,
 			switchProfile,
 			refreshProfile,
+			setLoggedInRelay,
 		],
 	);
 

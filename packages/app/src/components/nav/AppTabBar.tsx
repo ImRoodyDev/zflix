@@ -5,7 +5,7 @@ import React, { ComponentProps, memo, useCallback } from 'react';
 import { View } from 'react-native';
 
 // Internal imports
-import { ResponsiveRootView, useResponsiveSize } from '../../contexts/ResponsiveContext';
+import { useResponsiveSize, ResponsiveRootView } from '../../contexts/ResponsiveContext';
 
 // Components
 import TabBarButton from '../../components/interactables/TabBarButton';
@@ -57,7 +57,7 @@ function AppTabBar(props: BottomTabBarProps) {
 	);
 
 	return (
-		<ResponsiveRootView className={'app-tab-bar'} style={[safeStyle, { pointerEvents: 'box-none' }]}>
+		<ResponsiveRootView isFlex={false} className={'app-tab-bar'} style={[safeStyle, { pointerEvents: 'box-none' }]}>
 			<View className={'app-tab-bar-ctn'}>
 				{
 					// Map through the routes and create a tab for each

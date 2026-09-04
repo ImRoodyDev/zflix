@@ -17,6 +17,7 @@ export const en = {
 	tryAgain: 'Try again',
 	loading: 'Loading',
 	appInitializing: 'Initializing application',
+	appConfiguring: 'Configuring application',
 	initializingServer: 'Initializing services',
 	authenticatingUser: 'Authenticating user',
 	backHome: 'Back to home',
@@ -36,11 +37,12 @@ export const en = {
 	unavailable: 'Unavailable',
 	categories: 'Categories',
 	countries: 'Countries',
+	verificationNeeded: 'Verification needed',
+	verificationDescription: 'Press verification box, then complete the check to continue.',
 
 	// Server & Connection
 	serverInitializationTimeout: 'Connection timeout',
-	serverInitializationTimeoutDesc:
-		'Unable to reach the services. Please check your internet connection and try again.',
+	serverInitializationTimeoutDesc: 'Unable to reach the services. Please check your internet connection and try again.',
 
 	// Player labels
 	link: 'Link',
@@ -229,6 +231,7 @@ export const en = {
 	season: 'Season',
 	yourFavorites: 'Your Favorites',
 	emptyFavorites: 'You have no favorites yet',
+	pressToRetry: 'Press to try loading the links again',
 
 	// ============ User Interface ============
 	contact: 'Contact us',

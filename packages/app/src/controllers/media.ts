@@ -7,27 +7,16 @@ import {
 	MediaGenre,
 	MediaInfo,
 	MediaListCode,
-	MediaSource,
-	MediaSubtitleSource,
-	MediaType,
+ 	MediaType,
 	MovieDetails,
 	MovieSearchResult,
-	SourcesResult,
-	TvDetails,
+ 	TvDetails,
 	TvEpisode,
 	TvSearchResult,
 } from '../types/Medias';
 import { fetchResponse } from '../utils/fetcher';
 import logger from '../utils/logger';
-
-/**
- * Fetches the proxy URL for the media
- */
-export async function getProxyUrl(): Promise<string | null> {
-	const response = await fetchResponse<HttpSuccess<{ url: string }>>('/v1/api/proxy');
-	return response.data?.url || null;
-}
-
+ 
 /**
  * Fetches a list of media items based on the provided type and code
  * @param {MediaType} type - The type of media (movies or series)
@@ -238,108 +227,4 @@ export async function mediaSearch<T extends MediaType>(
 		type === 'movies' ? new MovieSearchResult(item as MovieSearchResult) : new TvSearchResult(item as TvSearchResult),
 	) as T extends 'movies' ? MovieSearchResult[] : TvSearchResult[];
 }
-
-/**
- * Fetches the media source and available languages for a movie or series episode
- * @param {'movies'} type - The type of media (movies)
- * @param {string} id - The media ID
- * @param {string} language - The language
- * @returns {Promise<SourcesResult>}
- */
-export async function mediaStream(type: 'movies', id: string, language: string): Promise<SourcesResult<MediaSource>>;
-/**
- * Fetches the media source and available languages for a movie or series episode
- * @param {'series'} type - The type of media (series)
- * @param {string} id - The media ID
- * @param {string} language - The language
- * @param {number} season - The season number
- * @param {number} episode - The episode number
- * @returns {Promise<SourcesResult>}
- */
-export async function mediaStream(
-	type: 'series',
-	id: string,
-	language: string,
-	season: string,
-	episode: string,
-): Promise<SourcesResult<MediaSource>>;
-/**
- * Fetches the media source and available languages for a movie or series episode
- * @param {'movies' | 'series'} type - The type of media
- * @param {string} id - The media ID
- * @param {string} language - The language
- * @param {number} [season] - The season number (for series)
- * @param {number} [episode] - The episode number (for series)
- * @returns {Promise<SourcesResult>}
- */
-export async function mediaStream(
-	type: 'movies' | 'series',
-	id: string,
-	language: string,
-	season?: string,
-	episode?: string,
-): Promise<SourcesResult<MediaSource>> {
-	if (!window.application.currentProfile) return { sources: null, providers: [] };
-
-	let endpoint = '';
-	if (type === 'movies') {
-		endpoint = `/v1/api/movies/play/${id}`;
-	} else if (type === 'series' && season !== undefined && episode !== undefined) {
-		endpoint = `/v1/api/series/play/${id}/${season}/${episode}`;
-	} else {
-		return { sources: null, providers: [] };
-	}
-
-	const response = await fetchResponse<HttpSuccess<SourcesResult<MediaSource>>>(endpoint);
-	return response.data || { sources: null, providers: [] };
-}
-
-/**
- * Fetches the subtitles for a movie
- * @param {'movies'} type - The type of media (movies)
- * @param {string} id - The media ID
- * @returns {Promise<SourcesResult<MediaSubtitleSource>>} Subtitles data or null
- */
-export async function mediaSubtitles(type: 'movies', id: string): Promise<SourcesResult<MediaSubtitleSource>>;
-/**
- * Fetches the subtitles for a series episode
- * @param {'series'} type - The type of media (series)
- * @param {string} id - The media ID
- * @param {number} season - The season number
- * @param {number} episode - The episode number
- * @returns {Promise<SourcesResult<MediaSubtitleSource>>} Subtitles data or null
- */
-export async function mediaSubtitles(
-	type: 'series',
-	id: string,
-	season: string,
-	episode: string,
-): Promise<SourcesResult<MediaSubtitleSource>>;
-/**
- * Fetches the subtitles for a movie or series episode
- * @param {'movies' | 'series'} type - The type of media
- * @param {string} id - The media ID
- * @param {number} [season] - The season number (for series)
- * @param {number} [episode] - The episode number (for series)
- * @returns {Promise<SourcesResult<MediaSubtitleSource>>} Subtitles data or null
- */
-export async function mediaSubtitles(
-	type: 'movies' | 'series',
-	id: string,
-	season?: string,
-	episode?: string,
-): Promise<SourcesResult<MediaSubtitleSource>> {
-	if (!window.application.currentProfile) return { sources: null, providers: [] };
-
-	let endpoint = '';
-	if (type === 'movies') {
-		endpoint = `/v1/api/movies/subtitles/${id}`;
-	} else if (type === 'series' && season !== undefined && episode !== undefined) {
-		endpoint = `/v1/api/series/subtitles/${id}/${season}/${episode}`;
-	} else {
-		return { sources: null, providers: [] };
-	}
-
-	const response = await fetchResponse<HttpSuccess<SourcesResult<MediaSubtitleSource>>>(endpoint);
-	return response.data || { sources: null, providers: [] };
-}
+ 

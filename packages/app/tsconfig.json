@@ -10,13 +10,5 @@
 			"@/*": ["./src/*"]
 		}
 	},
-	"include": [
-		"**/*.ts",
-		"**/*.tsx",
-		"declarations.d.ts",
-		".expo/types/**/*.ts",
-		"expo-env.d.ts",
-		"nativewind-env.d.ts",
-		"src/components/sections/HomeSection.tsx"
-	]
+	"include": ["**/*.ts", "**/*.tsx", "declarations.d.ts", ".expo/types/**/*.ts", "expo-env.d.ts", "nativewind-env.d.ts"]
 }

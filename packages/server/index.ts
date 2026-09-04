@@ -11,9 +11,21 @@ import { isDevelopment } from '@utils/standard';
 // Start Servers
 (async () => {
 	console.log('\nDevelopment Mode:', isDevelopment());
-	// Initialize Services
-	DatabaseService.initialize();
-	RedisService.connect();
+
+	// Initialize Services — the database gates startup, Redis is a cache and does not.
+	// DatabaseService.initialize() bootstraps the Sequelize models, so serving traffic
+	// before it resolves means queries hit uninitialized models and fail with a 500.
+	try {
+		await DatabaseService.initialize();
+	} catch (error) {
+		// Exit non-zero so the process supervisor restarts us. Staying alive would leave a
+		// listening server that can never serve an authenticated request.
+		console.error('Unable to initialize the database, shutting down.', error);
+		process.exit(1);
+	}
+
+	await RedisService.connect();
+
 	console.log('Starting servers...');
 	require('./src/api/webhooks').default();
 	require('./src/api/server').default();

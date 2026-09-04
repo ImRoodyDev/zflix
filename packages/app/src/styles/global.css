@@ -74,8 +74,7 @@
  * Native fallback for expo-blur's <BlurView tint=... />. expo-blur is disabled on
  * this TV platform, so instead of a real backdrop blur we paint a translucent
  * background-color that approximates each material/tint. Apply on the same
- * absolutely-positioned overlay you'd give <BlurView> (e.g. alongside
- * .base-btn-blur or .app-plan-blur). Mirrors BlurTintColors in constants/blur.ts
+ * absolutely-positioned overlay you'd give <BlurView> Mirrors BlurTintColors in constants/blur.ts
  * — keep both in sync.
  */
 @layer components {

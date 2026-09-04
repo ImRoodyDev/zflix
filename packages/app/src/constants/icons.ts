@@ -57,7 +57,6 @@ import FontAwesomeIcons from '@expo/vector-icons/FontAwesome';
 import FontAwesomeIcons6 from '@expo/vector-icons/FontAwesome6';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-
 type IconProps = {
 	className?: string;
 	style?: object;
@@ -389,7 +388,31 @@ const icons = {
 				}),
 			),
 		),
+	check_square: (props: IconProps) =>
+		React.createElement(
+			View,
+			{
+				className: props.className,
+			},
+			React.createElement(
+				Svg,
+				{
+					width: props.size || 16,
+					height: props.size || 16,
+					viewBox: '0 0 16 16',
+					fill: props.color || 'currentColor',
+					className: props.className,
+					style: props.style,
+				},
+				React.createElement(Path, {
+					d: 'M3 14.5A1.5 1.5 0 0 1 1.5 13V3A1.5 1.5 0 0 1 3 1.5h8a.5.5 0 0 1 0 1H3a.5.5 0 0 0-.5.5v10a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V8a.5.5 0 0 1 1 0v5a1.5 1.5 0 0 1-1.5 1.5z',
+				}),
+				React.createElement(Path, {
+					d: 'm8.354 10.354 7-7a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0',
+				}),
+			),
+		),
 };
 
 export default icons;
-export { IconProps,IconType };
+export { IconProps, IconType };

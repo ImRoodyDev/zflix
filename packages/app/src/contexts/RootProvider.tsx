@@ -101,7 +101,7 @@ const RootContext: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 			{...defaultDrawerOption}
 			overlayStyle={drawerOverlayStyle}
 			open={ApplicationConfiguration.initialized ? drawerToggled : false}
-			swipeEnabled={enableDrawer && ApplicationConfiguration.initialized}
+			swipeEnabled={!Platform.isTV && enableDrawer && ApplicationConfiguration.initialized}
 			swipeEdgeWidth={180}
 			swipeMinDistance={20}
 			onOpen={() => toggleDrawer(true)}

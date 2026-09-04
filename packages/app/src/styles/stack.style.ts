@@ -24,7 +24,7 @@ const platformModal = Platform.select<
 const defaultStack: NativeStackNavigationOptions = {
 	headerShown: false,
 	presentation: 'card',
-	animation: 'slide_from_right',
+	animation: Platform.isTV ? 'fade' : 'slide_from_right',
 };
 const defaultModalStack: NativeStackNavigationOptions = {
 	headerShown: false,

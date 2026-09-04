@@ -1,7 +1,7 @@
 // External imports
 import clsx from 'clsx';
 import React, { memo, Ref, useMemo } from 'react';
-import { ColorValue, Platform, Text, TextStyle, View } from 'react-native';
+import { ColorValue, Platform, Text, TextStyle, View, StyleSheet } from 'react-native';
 import {
 	ButtonAllowedStyle,
 	CustomButton,
@@ -114,9 +114,10 @@ const Button = React.forwardRef((props: HighlightButtonProps, ref?: Ref<View>) =
 				<>
 					{useBlur && (
 						<BlurView
-							className={clsx('base-btn-blur', joinClsx(className?.split(' ').toReversed()[0], 'blur'))}
+							className={clsx('base-btn-blur2', joinClsx(className?.split(' ').toReversed()[0], 'blur'))}
 							intensity={blurStyle.intensity}
 							tint={blurStyle.tint}
+							style={[StyleSheet.absoluteFill]}
 						/>
 					)}
 					{icon && (

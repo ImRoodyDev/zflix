@@ -14,6 +14,7 @@ import clsx from 'clsx';
 type ResponsiveContextResult = {
 	vars: CssVars[] | Record<string, string>;
 	sizes: SizeValues;
+	screenType: SizeType;
 };
 
 /** Sizes breakpoints for screens */
@@ -93,17 +94,18 @@ const ResponsiveSizeProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
 	useEffect(() => {
 		// For debugging: log when type changes
-		logger.info(`Viewport changed: ${type} (${dimensionsRef.current.width}x${dimensionsRef.current.height})`);
+		logger.info(`Viewport changed: ${type} (${dimensionsRef.current.width} x ${dimensionsRef.current.height})`);
 	}, [type]);
 
 	const value = useMemo(() => {
 		return {
+			screenType: type,
 			sizes: responsiveValues,
 			// There may be an issue if native screen is changing dimension but thats not reality
 			// Thats is why i havent added width and height to the memo
 			vars: vars(sizeToCssVars(responsiveValues, 1)),
 		} as ResponsiveContextResult;
-	}, [responsiveValues]);
+	}, [type, responsiveValues]);
 
 	return <ResponsiveContext.Provider value={value}>{children}</ResponsiveContext.Provider>;
 };
@@ -132,20 +134,28 @@ const useResponsiveVars = () => {
 	return context.vars;
 };
 
+const useResponsiveScreenType = () => {
+	const context = React.useContext(ResponsiveContext);
+	if (!context) {
+		throw new Error('useResponsiveScreenType must be used within a ResponsiveSizeProvider');
+	}
+
+	return context.screenType;
+};
+
 /**
  * Root View to load all vars sizes in the css file
  */
-const ResponsiveRootView: React.FC<{ children: React.ReactNode } & React.ComponentProps<typeof View>> = ({
-	children,
-	...props
-}) => {
+const ResponsiveRootView: React.FC<
+	{ children: React.ReactNode; isFlex?: boolean } & React.ComponentProps<typeof View>
+> = ({ children, isFlex = true, ...props }) => {
 	// Raw tokens: sizeToCssVars applies the TV scale itself, so scaling here would double it.
 	const style = useResponsiveVars();
 	return (
 		<View
 			//...
 			{...props}
-			className={clsx('flex-1 responsive-vars', props?.className)}
+			className={clsx(isFlex && 'flex-1', 'responsive-vars', props?.className)}
 			style={[props?.style, style]}
 		>
 			{children}
@@ -153,8 +163,9 @@ const ResponsiveRootView: React.FC<{ children: React.ReactNode } & React.Compone
 	);
 };
 
-const ResponsiveRootThemedView: React.FC<{ children: React.ReactNode } & ThemedViewProps> = ({
+const ResponsiveRootThemedView: React.FC<{ children: React.ReactNode; isFlex?: boolean } & ThemedViewProps> = ({
 	children,
+	isFlex = true,
 	...props
 }) => {
 	// Raw tokens: sizeToCssVars applies the TV scale itself, so scaling here would double it.
@@ -163,7 +174,7 @@ const ResponsiveRootThemedView: React.FC<{ children: React.ReactNode } & ThemedV
 		<ThemedView
 			//...
 			{...props}
-			className={clsx('flex-1 responsive-vars', props?.className)}
+			className={clsx(isFlex && 'flex-1', 'responsive-vars', props?.className)}
 			style={[props?.style, style]}
 		>
 			{children}
@@ -171,4 +182,11 @@ const ResponsiveRootThemedView: React.FC<{ children: React.ReactNode } & ThemedV
 	);
 };
 
-export { ResponsiveSizeProvider, ResponsiveRootView, ResponsiveRootThemedView, useResponsiveSize, useResponsiveVars };
+export {
+	ResponsiveSizeProvider,
+	ResponsiveRootView,
+	ResponsiveRootThemedView,
+	useResponsiveSize,
+	useResponsiveVars,
+	useResponsiveScreenType,
+};

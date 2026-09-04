@@ -13,6 +13,7 @@ import { channelBookmarks } from '../../controllers/channels';
 import { mediaItemListByCode } from '../../controllers/media';
 import { usePersistancePage } from '../../hooks/usePersistancePage';
 import { MediaListCode } from '../../types/Medias';
+import { endOfDayTimestamp } from '../../utils/standard';
 
 // Components
 import WideCarousel from '../../components/elements/WideCarousel';
@@ -38,6 +39,11 @@ function Watchlist() {
 		key: 'watchlist',
 		persistScroll: false,
 		data: { type: 'moviesandseries' },
+		// Only restore a persisted type that is still a valid option; a stale/invalid
+		// value is dropped so it falls back to the default.
+		validate: (d) => !!d?.type && OPTIONS.includes(d.type),
+		// Cache valid until the end of the day.
+		expiresAt: endOfDayTimestamp,
 	});
 	const selectedType =
 		persistedWatchlistData?.type && OPTIONS.includes(persistedWatchlistData.type)

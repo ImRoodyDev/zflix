@@ -1,7 +1,6 @@
 // Internal imports
 import type { TranslationSchema } from './en';
 
-
 export const es: TranslationSchema = {
 	welcome: 'Bienvenido',
 	toAppName: 'a {{appName}}',
@@ -20,6 +19,7 @@ export const es: TranslationSchema = {
 	tryAgain: 'Intentar de nuevo',
 	loading: 'Cargando',
 	appInitializing: 'Inicializando la aplicacion',
+	appConfiguring: 'Configurando la aplicacion',
 	initializingServer: 'Inicializando los servicios',
 	authenticatingUser: 'Autenticando usuario',
 	backHome: 'Volver al inicio',
@@ -47,6 +47,9 @@ export const es: TranslationSchema = {
 	reloadSources: 'Recargar fuentes',
 	fetchingSources: 'Obteniendo fuentes de video...',
 	fetchSourcesFailed: 'No se pudieron obtener las fuentes de video',
+	verificationNeeded: 'Verificacion necesaria',
+	verificationDescription: 'Presiona la casilla de verificacion, luego completa el check para continuar.',
+
 	serverInitializationTimeout: 'Tiempo de conexion agotado',
 	serverInitializationTimeoutDesc:
 		'No se pudieron alcanzar los servicios. Por favor verifica tu conexion a internet e intenta de nuevo.',
@@ -210,6 +213,7 @@ export const es: TranslationSchema = {
 	season: 'Temporada',
 	yourFavorites: 'Tus favoritos',
 	emptyFavorites: 'Todavia no tienes favoritos',
+	pressToRetry: 'Presiona para reintentar',
 	contact: 'Contactanos',
 	privacy: 'Politica de privacidad',
 	terms: 'Terminos de uso',

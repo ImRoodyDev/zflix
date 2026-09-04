@@ -55,7 +55,7 @@ function Movie() {
 	const preview = useMemo(() => {
 		return (
 			<View className={'app-media-preview'}>
-				<View className={'h-full w-full'} style={{ aspectRatio: 21 / 9 }}>
+				<View className={'h-full w-full !max-w-full'} style={{ aspectRatio: 21 / 9 }}>
 					<View className={'app-media-preview-ctn'}>{previewElement}</View>
 				</View>
 			</View>
@@ -86,6 +86,7 @@ function Movie() {
 				<View style={{ height: 1, width: '100%', zIndex: 10 }}>
 					<View className={'app-preview-header'}>
 						<Button
+							hasTVPreferredFocus={Platform.isTV}
 							//Navigate
 							onPress={navigateBack}
 							// Props

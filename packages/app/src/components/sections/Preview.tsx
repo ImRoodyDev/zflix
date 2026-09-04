@@ -28,7 +28,7 @@ import BlurView from '../theme/BlurView';
 import Button from '../interactables/Button';
 import SeasonsDropdown from '../interactables/SeasonsDropdown';
 
-const LOGGING = true;
+const LOGGING = false;
 
 // Toggling `display` keeps the subtree mounted; conditional rendering made the
 // pager rebuild it on every auto-advance.
@@ -141,7 +141,12 @@ const PreviewInfos = memo(
 						</Text>
 					)}
 
-					<Text className={'app-preview-txt'} numberOfLines={4} ellipsizeMode={'tail'}>
+					<Text
+						className={'app-preview-txt'}
+						numberOfLines={4}
+						ellipsizeMode={'tail'}
+						style={[Platform.isTV && { fontSize: sizes.span1 }]}
+					>
 						{preview.summary}
 					</Text>
 
@@ -161,16 +166,20 @@ const PreviewInfos = memo(
 								</View>
 							) : null}
 
-							<View className={'preview-badge'}>
-								<Text className={'preview-badge-txt'}>
-									{preview.releaseDate ? preview.releaseDate.split('-')[0] : 'N/A'}
-								</Text>
-							</View>
+							{preview.releaseDate ? (
+								<View className={'preview-badge'}>
+									<Text className={'preview-badge-txt'}>
+										{preview.releaseDate ? preview.releaseDate.split('-')[0] : 'N/A'}
+									</Text>
+								</View>
+							) : null}
 
-							<View className={'preview-badge'}>
-								<Icons.star size={sizes.span3} color={'white'} variant={'Bold'} />
-								<Text className={'preview-badge-txt'}>{preview.vote ? preview.vote.toFixed(1) : '0.0'}</Text>
-							</View>
+							{preview.vote !== undefined ? (
+								<View className={'preview-badge'}>
+									<Icons.star size={sizes.span5} color={'white'} variant={'Bold'} />
+									<Text className={'preview-badge-txt'}>{preview.vote ? preview.vote.toFixed(1) : '0.0'}</Text>
+								</View>
+							) : null}
 
 							{isNotEmpty(preview.quality) ? (
 								<View className={'preview-badge'}>
@@ -197,7 +206,7 @@ const PreviewInfos = memo(
 					)}
 
 					{showLabels && preview.genres.length > 0 ? (
-						<View className={'app-preview-badges'}>
+						<View className={'app-preview-badges mt-0'}>
 							{preview.genres.map((genre, index) => (
 								<View key={index} className={'preview-badge-genre'}>
 									<Icons.circle size={sizes.span6} color={dominantColors[4]} />
@@ -247,7 +256,7 @@ const PreviewActions = memo(
 		const ActionsContainer = View;
 		return (
 			<ActionsContainer className={'app-preview-actions'}>
-				<View className={'app-preview-play'}>
+				<View className={clsx('app-preview-play', floating && 'app-preview-play-floating')}>
 					<Button
 						onFocus={onActionFocus}
 						onBlur={onActionBlur}
@@ -265,7 +274,10 @@ const PreviewActions = memo(
 						pressedBackgroundColor={Colors.primary[950]}
 					/>
 
-					<Text className={'app-preview-play-status-text'} style={floating && { fontSize: sizes.span1b }}>
+					<Text
+						className={clsx('app-preview-play-status-text', floating && 'app-preview-play-status-text-floating')}
+						style={floating && { fontSize: sizes.span1b }}
+					>
 						{playText}
 					</Text>
 				</View>
@@ -523,7 +535,12 @@ const _YTPreviewSection = forwardRef(
 
 		return (
 			<View
-				className={clsx('app-preview', props.floating && 'app-preview-floating', props.className)}
+				className={clsx(
+					'app-preview',
+					Platform.OS === 'web' && 'app-preview-web',
+					props.floating && 'app-preview-floating',
+					props.className,
+				)}
 				style={props.style}
 				renderToHardwareTextureAndroid={!isPlaying}
 				shouldRasterizeIOS={!isPlaying}
@@ -558,6 +575,7 @@ const _YTPreviewSection = forwardRef(
 											// TV focus engine and away from touch/accessibility so the
 											// D-pad can never land (or get stuck) on the iframe.
 											focusable: false,
+											isTVSelectable: false,
 											pointerEvents: 'none',
 											importantForAccessibility: 'no-hide-descendants',
 											accessible: false,
@@ -586,13 +604,13 @@ const _YTPreviewSection = forwardRef(
 					</View>
 
 					<View className={clsx('app-preview-infos', props.floating && 'app-preview-infos-floating')}>
-						{props.floating && Platform.OS !== 'android' ? (
+						{props.floating && (
 							<BlurView
 								className={'app-preview-info-blur'}
 								intensity={Platform.OS === 'web' ? 36 : 80}
 								tint={'default'}
 							/>
-						) : null}
+						)}
 
 						{/* Gated on the one-way latch, not player state, so the pager never rebuilds
 						    these mid-slide. `visible` toggles display so metadata survives video load. */}

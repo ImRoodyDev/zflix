@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // Internal imports
 import { Icons } from '../../constants';
 import PageShell from '../../components/main/PageShell';
-import { useResponsiveSize } from '../../contexts/ResponsiveContext';
+import { useResponsiveScreenType, useResponsiveSize } from '../../contexts/ResponsiveContext';
 import { channelSearch } from '../../controllers/channels';
 import { mediaSearch } from '../../controllers/media';
 import { useComponentStateReducer } from '../../hooks/useComponentState';
@@ -16,6 +16,7 @@ import { usePersistancePage } from '../../hooks/usePersistancePage';
 import { getMediaLogo, getMediaVideoKey } from '../../services/tmdb';
 import { MediaTypeWithChannels, MovieDetails, TvDetails } from '../../types/Medias';
 import Logger from '../../utils/logger';
+import { endOfDayTimestamp } from '../../utils/standard';
 
 // Components
 import WideCarousel, { WideCarouselRef } from '../../components/elements/WideCarousel';
@@ -38,6 +39,7 @@ type SearchQuery = {
 function Search() {
 	const sizes = useResponsiveSize();
 	const insets = useSafeAreaInsets();
+	const screenType = useResponsiveScreenType();
 	const { height, width } = useWindowDimensions();
 	const [state, dispatch] = useComponentStateReducer();
 	const [searchQuery, setSearchQuery] = useState<SearchQuery>({
@@ -64,6 +66,11 @@ function Search() {
 		key: 'search',
 		persistScroll: false,
 		data: { type: availableSearchTypes[0] || 'movies' },
+		// Only restore a persisted type that is still an available search type;
+		// a stale/invalid value is dropped so it falls back to the default.
+		validate: (d) => !!d?.type && availableSearchTypes.includes(d.type),
+		// Cache valid until the end of the day.
+		expiresAt: endOfDayTimestamp,
 	});
 
 	const selectedSearchType = useMemo(
@@ -89,10 +96,11 @@ function Search() {
 	}, [searchQuery.query.length, searchQuery.type, selectedSearchType]);
 
 	// Calculate the height of the preview
-	const previewHeight = useMemo(
-		() => height - sizes.topPadding - (width / sizes.wideCarouselItems) * 1.5 - insets.top - insets.bottom,
-		[height, sizes.topPadding, sizes.wideCarouselItems, width, insets.top, insets.bottom],
-	);
+	const previewHeight = useMemo(() => {
+		if (screenType === 'mobile_landscape')
+			return height - sizes.topPadding - (width / sizes.wideCarouselItems) * 0.2 - insets.top - insets.bottom;
+		else return height - sizes.topPadding - (width / sizes.wideCarouselItems) * 1.5 - insets.top - insets.bottom;
+	}, [height, screenType, sizes.topPadding, sizes.wideCarouselItems, width, insets.top, insets.bottom]);
 
 	// Fetch TMDB video key and logo for the top result
 	useEffect(() => {
@@ -238,15 +246,16 @@ function Search() {
 							preview={topResult}
 							autoStart
 							ignoreVideo
-							showLabels
+							showLabels={screenType !== 'mobile_landscape'}
 							floating
 							carouselPadding={false}
+							style={{ aspectRatio: 0 }}
 						/>
 					)}
 				</View>
 			</View>
 		);
-	}, [topResult, previewHeight]);
+	}, [topResult, previewHeight, screenType]);
 	const messageWindow = useMemo(() => {
 		return (
 			<Animated.View
