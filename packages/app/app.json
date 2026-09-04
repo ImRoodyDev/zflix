@@ -30,8 +30,7 @@
 		},
 		"plugins": [
 			"expo-router",
-			"expo-video",
-			"react-native-video",
+ 			"react-native-video",
 			"expo-secure-store",
 			"expo-web-browser",
 			[
