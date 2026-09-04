@@ -124,7 +124,7 @@
 		},
 		"extra": {
 			"router": {},
-			"eas": {}
+			"eas": {},
 			"typedRoutes": true,
 			"baseUrl": "/zflix"
 		}
