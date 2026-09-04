@@ -67,7 +67,7 @@ jobs:
           done
 
       - name: Build Expo web
-        run: npm --workspace app run build:web
+        run: npm --workspace app run export:web
 
       - name: Disable Jekyll
         run: touch packages/app/dist/.nojekyll
