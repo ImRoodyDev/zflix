@@ -21,7 +21,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 // Internal imports
-import { ResponsiveRootView, useResponsiveSize } from '../../contexts/ResponsiveContext';
+import { ResponsiveRootView, useResponsiveScreenType, useResponsiveSize } from '../../contexts/ResponsiveContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import logger from '@/utils/logger';
 
@@ -44,6 +44,7 @@ function AppAvatars(props: AppAvatarsProps) {
 	const { themeColors, themeScheme } = useTheme();
 	const { width } = useWindowDimensions();
 	const sizes = useResponsiveSize();
+	const screenType = useResponsiveScreenType();
 	const insets = useSafeAreaInsets();
 
 	// Opening is slow because the avatar grid mounts synchronously while the modal slides
@@ -57,14 +58,18 @@ function AppAvatars(props: AppAvatarsProps) {
 
 	const safeStyle = useMemo(
 		() => ({
-			paddingTop: Math.max(insets.top - sizes.topPadding, 0) + sizes.topPadding,
+			paddingTop: sizes.topPadding + insets.top,
 			paddingBottom: Math.max(insets.bottom - sizes.topPadding, 0) + sizes.topPadding,
 			paddingLeft: Math.max(insets.left - sizes.sidePadding, 0) + sizes.sidePadding,
 			paddingRight: Math.max(insets.right - sizes.sidePadding, 0) + sizes.sidePadding,
 		}),
 		[insets.top, insets.bottom, insets.left, insets.right, sizes.topPadding, sizes.sidePadding],
 	);
-	const avatarButtonSize = useMemo(() => width * 0.1, [width]);
+	const avatarButtonSize = useMemo(() => {
+		if (screenType === 'mobile_landscape') return width * 0.1;
+		if (screenType === 'mobile') return width * 0.18;
+		return width * 0.1;
+	}, [width, screenType]);
 	const contentWidth = width - safeStyle.paddingLeft - safeStyle.paddingRight;
 	const columns = useMemo(
 		() => Math.max(1, Math.floor((contentWidth + sizes.span2) / (avatarButtonSize + sizes.span2))),
@@ -98,7 +103,7 @@ function AppAvatars(props: AppAvatarsProps) {
 		opacity: stickyAnim.value,
 	}));
 	const headerTextAnimatedStyles = useAnimatedStyle(() => ({
-		color: interpolateColor(stickyAnim.value, [0, 1], ['white', themeColors.black]),
+		color: interpolateColor(stickyAnim.value, [0, 1], [themeScheme == 'dark' ? 'white' : 'black', themeColors.black]),
 	}));
 
 	useEffect(() => {
@@ -205,16 +210,16 @@ function AppAvatars(props: AppAvatarsProps) {
 			statusBarTranslucent={true}
 			onShow={() => setReady(true)}
 		>
-			<ResponsiveRootView>
+			<ResponsiveRootView style={{ paddingBottom: insets.bottom }}>
 				<FlatList
 					key={columns}
 					numColumns={columns}
 					initialNumToRender={columns * 2}
-					windowSize={1} // render ~visible screen only; pagination (data cap) does the rest
+					windowSize={Platform.isTV ? 1 : 10} // render ~visible screen only; pagination (data cap) does the rest
 					maxToRenderPerBatch={columns}
 					className={'app-avatars'}
 					contentContainerClassName={'app-avatars-list'}
-					data={ready ? window.application.avatars : initialAvatars}
+					data={ready || !Platform.isTV ? window.application.avatars : initialAvatars}
 					keyExtractor={(item) => item}
 					renderItem={renderItem}
 					ListHeaderComponent={renderListHeader}

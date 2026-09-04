@@ -1,7 +1,6 @@
 // Internal imports
 import type { TranslationSchema } from './en';
 
-
 export const nl: TranslationSchema = {
 	welcome: 'Welkom',
 	toAppName: 'bij {{appName}}',
@@ -20,6 +19,7 @@ export const nl: TranslationSchema = {
 	tryAgain: 'Probeer opnieuw',
 	loading: 'Laden',
 	appInitializing: 'Applicatie wordt geinitialiseerd',
+	appConfiguring: 'Applicatie wordt geconfigureerd',
 	initializingServer: 'Services worden geinitialiseerd',
 	authenticatingUser: 'Gebruiker wordt geverifieerd',
 	backHome: 'Terug naar home',
@@ -47,6 +47,8 @@ export const nl: TranslationSchema = {
 	reloadSources: 'Bronnen opnieuw laden',
 	fetchingSources: 'Videobronnen ophalen...',
 	fetchSourcesFailed: 'Ophalen van videobronnen mislukt',
+	verificationNeeded: 'Verificatie vereist',
+	verificationDescription: 'Druk op het verificatievakje en voltooi de controle om door te gaan.',
 	serverInitializationTimeout: 'Verbindingstijdslimiet verlopen',
 	serverInitializationTimeoutDesc:
 		'Kan de services niet bereiken. Controleer uw internetverbinding en probeer het opnieuw.',
@@ -209,6 +211,7 @@ export const nl: TranslationSchema = {
 	season: 'Seizoen',
 	yourFavorites: 'Jouw favorieten',
 	emptyFavorites: 'Je hebt nog geen favorieten',
+	pressToRetry: 'Druk om opnieuw te proberen',
 	contact: 'Neem contact op',
 	privacy: 'Privacybeleid',
 	terms: 'Gebruiksvoorwaarden',

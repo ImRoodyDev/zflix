@@ -1,6 +1,7 @@
 // External imports
 import { Tabs, useSegments } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { Platform } from 'react-native';
 
 // Internal imports
 import { Colors } from '../../constants';
@@ -30,7 +31,7 @@ const TabsLayout = () => {
 				// incoming screens mounted and animates them together on every tab switch, which
 				// is the main source of tab-switch jank on Android TV. Snappy/instant is the
 				// preferred TV UX anyway; keep 'shift' on web/mobile.
-				animation: 'shift',
+				animation: Platform.isTV ? 'fade' : 'shift',
 				tabBarHideOnKeyboard: true,
 				freezeOnBlur: true,
 

@@ -34,7 +34,7 @@ function AccountInfo() {
 	const insets = useSafeAreaInsets();
 	const safeStyle = {
 		paddingTop: insets.top,
-		paddingBottom: Math.max(insets.bottom, sizes.topPadding),
+		paddingBottom: insets.bottom + sizes.topPadding,
 		paddingLeft: insets.left,
 		paddingRight: insets.right,
 	};

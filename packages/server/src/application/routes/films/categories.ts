@@ -18,8 +18,9 @@ router.get('/', async (req, res) => {
 		// Retrieve media categories
 		const categories = TMDBService.mediaCategories(lang);
 
-		// Check if categories are available
-		if (!categories) {
+		// Check if categories are available — reject an empty list too so an empty
+		// response is never cached for the full 30 days.
+		if (!categories?.length) {
 			return new HttpError({
 				code: req.t('REQUESTED_RESOURCE_NOT_FOUND_CODE'),
 				message: req.t('REQUESTED_RESOURCE_NOT_FOUND_MESSAGE'),

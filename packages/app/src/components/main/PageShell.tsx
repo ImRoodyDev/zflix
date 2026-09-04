@@ -1,6 +1,6 @@
 // External imports
 import { useIsFocused } from '@react-navigation/native';
-import { StatusBarStyle } from 'expo-status-bar';
+import { StatusBar, StatusBarStyle } from 'expo-status-bar';
 import React, { ComponentType, memo } from 'react';
 import { ColorValue, StyleSheet, View } from 'react-native';
 import clsx from 'clsx';
@@ -28,6 +28,7 @@ function PageShell<T extends ComponentType<any>>({
 	backgroundColor,
 	optimized,
 	useResponsiveVars: _useResponsiveVars = true,
+	statusBarStyle,
 	...props
 }: PageContextProps<T>) {
 	const Component = as || React.Fragment; // default fallback
@@ -43,6 +44,7 @@ function PageShell<T extends ComponentType<any>>({
 			className={clsx('w-full h-full', _useResponsiveVars && 'responsive-vars')}
 			style={[styles.fill, _useResponsiveVars && responsiveVars]}
 		>
+			<StatusBar style={statusBarStyle} />
 			<Component {...(props as React.ComponentProps<T>)}>{children}</Component>
 		</View>
 	);

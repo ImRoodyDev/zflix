@@ -20,6 +20,7 @@ import ThemedText from '../theme/ThemedText';
 const PHASE_TEXT_KEY: Record<InitPhase, string> = {
 	server: 'initializingServer',
 	auth: 'authenticatingUser',
+	application: 'appConfiguring',
 	finalizing: 'appInitializing',
 };
 

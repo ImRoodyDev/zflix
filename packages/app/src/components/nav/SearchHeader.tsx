@@ -2,7 +2,7 @@
 import clsx from 'clsx';
 import React, { memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Text, TextInput, View, StyleSheet } from 'react-native';
+import { Text, TextInput, View, StyleSheet, Platform } from 'react-native';
 import { CustomButton } from 'react-native-cross-elements';
 import Animated, { FadeInUp, FadeOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -157,7 +157,7 @@ function SearchHeader(props: Props) {
 										paddingRight: sizes.span4,
 										paddingTop: 0,
 										paddingBottom: 0,
-										fontSize: Math.max(sizes.span2, 16),
+										fontSize: Platform.OS === 'web' ? Math.max(sizes.span2, 16) : sizes.span4,
 									},
 									StyleSheet.absoluteFill,
 								]}

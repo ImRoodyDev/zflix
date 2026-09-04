@@ -129,7 +129,7 @@ function CarouselMediaItem(props: CarouselItemProps) {
 	const holdBookmark = useHoldAction(onBookmark);
 
 	const buttons = useMemo(() => {
-		if (['android', 'ios'].includes(Platform.OS)) return;
+		if (['android', 'ios'].includes(Platform.OS) && !Platform.isTV) return;
 
 		return (
 			<>

@@ -48,7 +48,7 @@ function AppProfiles(props: AppProfilesProps) {
 	const insets = useSafeAreaInsets();
 	const safeStyle = {
 		paddingTop: insets.top,
-		paddingBottom: Math.max(insets.bottom, topPadding),
+		paddingBottom: topPadding + insets.bottom,
 		paddingLeft: insets.left,
 		paddingRight: insets.right,
 	};

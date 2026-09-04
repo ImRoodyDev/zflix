@@ -21,9 +21,10 @@ import { User } from '../types/User';
 import { fetchResponse, fetchResponseWithTimeout, getPublicImageUrl } from '../utils/fetcher';
 import logger from '../utils/logger';
 import { delay } from '@/utils/standard';
+import { Platform } from 'react-native';
 
 /** Initialization phases reported to the splash screen while the app boots. */
-export type InitPhase = 'server' | 'auth' | 'finalizing';
+export type InitPhase = 'server' | 'auth' | 'application' | 'finalizing';
 
 type InitializeAppProps = {
 	navigate: Router;
@@ -69,6 +70,10 @@ export default async function initializeApp({ navigate, pathname, onPhase }: Ini
 	onPhase?.('auth');
 	await Promise.all([initializeAuthentication(), initializeAvatars()]);
 	await delay(1000); // Small delay to ensure the server is ready before proceeding
+
+	if (window.application.auth.user?.subscribed && Platform.OS !== 'web') {
+		onPhase?.('application');
+ 	}
 
 	onPhase?.('finalizing');
 	await delay(1000); // Small delay to ensure the server is ready before proceeding

@@ -46,7 +46,7 @@ const AppProfileForm = (props: AppProfileFormProps) => {
 	const safeStyle = useMemo(
 		() => ({
 			paddingTop: insets.top,
-			paddingBottom: Math.max(insets.bottom, sizes.topPadding),
+			paddingBottom: sizes.topPadding + insets.bottom,
 			paddingLeft: insets.left,
 			paddingRight: insets.right,
 		}),
@@ -196,6 +196,10 @@ const AppProfileForm = (props: AppProfileFormProps) => {
 									avatarId={avatarId}
 									onSelectIcon={'magicpen'}
 									onSelect={handleToggleAvatars}
+									btnClassName="profile-form-avatar"
+									// Reclaim TV focus when the form remounts (e.g. after the avatars modal closes),
+									// otherwise nothing is focused and the D-pad has nowhere to navigate from.
+									hasTVPreferredFocus
 								/>
 							</View>
 

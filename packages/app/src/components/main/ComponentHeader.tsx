@@ -1,6 +1,6 @@
 // External imports
 import React, { memo } from 'react';
-import { Image, View } from 'react-native';
+import { Image, Platform, View } from 'react-native';
 
 // Internal imports
 import { IconType, Images } from '../../constants';
@@ -59,11 +59,15 @@ function ComponentHeader({
 
 			<View className="component-header-cnt">
 				{renderTop && renderTop()}
-				<ThemedText className="font-mt_regular component-header-step">{step || ' '}</ThemedText>
+				{!(Platform.isTV && step == undefined) && (
+					<ThemedText className="font-mt_regular component-header-step">{step || ' '}</ThemedText>
+				)}
 				<ThemedText className="font-mt_semibold component-header-title">{title}</ThemedText>
-				<ThemedText className="font-mt_medium component-header-description" color={themeColors.grayText}>
-					{titleDescription || ' '}
-				</ThemedText>
+				{!(Platform.isTV && titleDescription == undefined) && (
+					<ThemedText className="font-mt_medium component-header-description" color={themeColors.grayText}>
+						{titleDescription || ' '}
+					</ThemedText>
+				)}
 			</View>
 
 			{children}

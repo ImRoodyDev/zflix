@@ -11,6 +11,7 @@ import config from '../../config/application';
 import { Colors, Images } from '../../constants';
 import { useRootContext } from '../../contexts/AppRootContext';
 import ShadowStyles from '../../styles/shadow.style';
+import { useResponsiveSize } from '../../contexts/ResponsiveContext';
 
 // Components
 import AppImage from '../elements/AppImage';
@@ -23,10 +24,16 @@ const AppHome = () => {
 
 	// Fix fot android height with css 100vh wrong
 	const inset = useSafeAreaInsets();
+	const { topPadding } = useResponsiveSize();
+
 	const safeAreaStyle = {
 		marginLeft: inset.left,
 		marginRight: inset.right,
-		...Platform.select({ native: { paddingBottom: inset.bottom + height * 0.1 } }),
+		...Platform.select({
+			native: {
+				paddingBottom: Platform.isTV ? inset.bottom + height * 0.1 : topPadding,
+			},
+		}),
 	};
 
 	const onGetStartedPress = () => {
@@ -44,6 +51,13 @@ const AppHome = () => {
 			className={clsx('app-home', Platform.OS === 'web' && 'app-home-web')}
 			renderToHardwareTextureAndroid={true}
 			shouldRasterizeIOS={true}
+			{...Platform.select({
+				native: {
+					style: {
+						// height: height + inset.top,
+					},
+				},
+			})}
 		>
 			<AppImage
 				source={Images.homeBackground}

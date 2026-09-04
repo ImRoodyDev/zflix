@@ -179,7 +179,7 @@ export const sizes = {
 		span4: 12,
 		span5: 10,
 		span6: 6,
-		outlineWidth: 2,
+		outlineWidth: 1,
 
 		/* Aspect ratio */
 		smLogoRatio: 44 / 51,
@@ -194,7 +194,7 @@ export const sizes = {
 		carouselScrollLeftPadding: 22,
 
 		/* Large Channel Carousel Size */
-		carouselLgItems: 2,
+		carouselLgItems: 3,
 		carouselLargeRatio: 16 / 9,
 
 		/* Wide Expanded Carousel Size*/
@@ -231,7 +231,7 @@ export const sizes = {
 		span4: 12,
 		span5: 10,
 		span6: 6,
-		outlineWidth: 2,
+		outlineWidth: 1,
 
 		/* Aspect ratio */
 		smLogoRatio: 44 / 51,
@@ -241,17 +241,17 @@ export const sizes = {
 		carouselHeaderPadding: 12,
 
 		/* Normal Media Carousel Size */
-		carouselItems: 6,
+		carouselItems: 9,
 		carouselRatio: 1 / 1.5,
 		carouselScrollLeftPadding: 22 * 2 + 32,
 
 		/* Large Channel Carousel Size */
-		carouselLgItems: 4,
+		carouselLgItems: 7,
 		carouselLargeRatio: 16 / 9,
 
 		/* Wide Expanded Carousel Size*/
-		wideCarouselLgItems: 3,
-		wideCarouselItems: 5,
+		wideCarouselLgItems: 5,
+		wideCarouselItems: 8,
 
 		previewVideoSize: {
 			width: '100%',

@@ -1,7 +1,6 @@
 // Internal imports
 import type { TranslationSchema } from './en';
 
-
 export const fr: TranslationSchema = {
 	welcome: 'Bienvenue',
 	toAppName: 'sur {{appName}}',
@@ -20,6 +19,7 @@ export const fr: TranslationSchema = {
 	tryAgain: 'Reessayer',
 	loading: 'Chargement',
 	appInitializing: "Initialisation de l'application",
+	appConfiguring: "Configuration de l'application",
 	initializingServer: 'Initialisation des services',
 	authenticatingUser: "Authentification de l'utilisateur",
 	backHome: "Retour a l'accueil",
@@ -47,6 +47,9 @@ export const fr: TranslationSchema = {
 	reloadSources: 'Recharger les sources',
 	fetchingSources: 'Recuperation des sources video...',
 	fetchSourcesFailed: 'Echec de la recuperation des sources video',
+	verificationNeeded: 'Verification necessaire',
+	verificationDescription: 'Appuyez sur la case de verification, puis completez le check pour continuer.',
+
 	serverInitializationTimeout: 'Délai de connexion dépassé',
 	serverInitializationTimeoutDesc:
 		'Impossible de joindre les services. Veuillez verifier votre connexion Internet et reessayer.',
@@ -132,7 +135,7 @@ export const fr: TranslationSchema = {
 	activationCode: "Saisissez votre code d'activation",
 	codeDescription:
 		"Vous pouvez acheter un code d'activation aupres de nos revendeurs agrees.\n Saisissez le code pour activer votre compte.",
-	activateCode: "Activer le code",
+	activateCode: 'Activer le code',
 	activatingCode: 'Activation de votre code',
 	activatingDescription:
 		'Nous activons actuellement votre code. Si le processus echoue, actualisez la page et reessayez.',
@@ -163,7 +166,7 @@ export const fr: TranslationSchema = {
 	processingWait: 'Traitement du paiement, veuillez patienter...',
 	waitRedirected: 'Veuillez patienter pendant la redirection...',
 	redirectingPage: 'Redirection',
-	redirectingPageDescription: 'Vous allez etre redirige vers la bonne page. Cela ne prendra qu\'un instant.',
+	redirectingPageDescription: "Vous allez etre redirige vers la bonne page. Cela ne prendra qu'un instant.",
 	redirectingWait: 'Redirection en cours, veuillez patienter...',
 	redirectFailed: 'La redirection a echoue, la destination est invalide.',
 	openingApp: "Ouverture de l'application...",
@@ -210,6 +213,7 @@ export const fr: TranslationSchema = {
 	season: 'Saison',
 	yourFavorites: 'Vos favoris',
 	emptyFavorites: "Vous n'avez pas encore de favoris",
+	pressToRetry: 'Appuyez pour reessayer',
 	contact: 'Contactez-nous',
 	privacy: 'Politique de confidentialite',
 	terms: "Conditions d'utilisation",

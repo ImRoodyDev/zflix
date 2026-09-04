@@ -4,6 +4,15 @@
 
 expo-env.d.ts
 # @end expo-cli
+android
+ios
+.expo/
+.cxx
+.vscode/
+node_modules/
+.node_modules/
+built/*
+.expo
 
 # wrangler files
 .wrangler
@@ -11,4 +20,3 @@ expo-env.d.ts
 !.dev.vars.example
 .env*
 !.env.example
-.expo

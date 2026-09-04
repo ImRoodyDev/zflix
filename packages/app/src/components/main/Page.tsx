@@ -3,7 +3,7 @@ import { useIsFocused } from '@react-navigation/native';
 import clsx from 'clsx';
 import { StatusBar, StatusBarStyle } from 'expo-status-bar';
 import React, { memo, ReactNode, useMemo } from 'react';
-import { ColorValue, ScrollViewProps, StyleSheet, View } from 'react-native';
+import { ColorValue, Platform, ScrollViewProps, StyleSheet, View } from 'react-native';
 import Animated, { BaseAnimationBuilder, EntryExitAnimationFunction } from 'react-native-reanimated';
 
 // Internal imports
@@ -69,6 +69,13 @@ const Page = ({
 				overScrollMode="never" // To disable the stretch/overscroll effect on React Native Android,
 				showsVerticalScrollIndicator={true}
 				style={[containerStyle, _useResponsiveVars && responsiveVars]}
+				{...Platform.select({
+					web: {
+						entering: webEntering,
+						exiting: webExiting,
+					},
+					default: {},
+				})}
 				{...restScrollProps}
 			>
 				{enableHeader && <AppHeader />}

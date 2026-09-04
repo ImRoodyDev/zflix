@@ -81,7 +81,7 @@ function PlanButton({
 			{blur && (
 				<BlurView
 					className={clsx('app-plan-blur', joinClsx(className, 'blur'))}
-					style={[StyleSheet.absoluteFill]}
+					style={[StyleSheet.absoluteFill, { borderRadius: sizes.span1, overflow: 'hidden' }]}
 					tint={'default'}
 					intensity={20}
 				/>

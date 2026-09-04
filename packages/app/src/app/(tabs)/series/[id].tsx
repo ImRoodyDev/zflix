@@ -71,7 +71,7 @@ function Serie() {
 			<View className={'app-media-preview-2'} style={{ height: previewCustomHeight }}>
 				<View className={'app-media-preview-ctn'}>
 					<InView
-						className={'h-full w-full'}
+						className={'h-full w-full !max-w-full'}
 						onChange={(inView) => {
 							previewRef.current?.pausePreview(!inView);
 						}}
@@ -157,6 +157,7 @@ function Serie() {
 				>
 					<View className={'app-preview-header'}>
 						<Button
+							hasTVPreferredFocus={Platform.isTV}
 							//Navigate
 							onPress={navigateBack}
 							// Props

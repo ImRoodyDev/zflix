@@ -14,10 +14,10 @@ import adminConfig from '@core/infrastructure/config/admin';
 import logger from '@utils/logger';
 
 // Environment
-const CONFIG = tokensConfig[config.ENV as keyof typeof tokensConfig];
 export const REFRESH_TOKEN = 'R_AUTH_ID';
 export const SESSION_TOKEN = 'SESSION_ID';
 export const ACCESS_TOKEN = 'AUTH_ACCESS_TOKEN';
+const CONFIG = tokensConfig[config.ENV as keyof typeof tokensConfig];
 const CACHE_TTL = 300; // Cache TTL in seconds
 const BCRYPT_CACHE_TTL = 600; // bcrypt compare results are deterministic — safe to cache longer
 const USER_CACHE_TTL = 120; // User DB lookups — shorter TTL so subscription/reset changes propagate
@@ -41,13 +41,6 @@ const ACCESS_COOKIE_MAX_AGE = ms(CONFIG.access_code.expiry as StringValue);
 // Sliding session: re-issue the refresh token once it is older than this interval, so an active
 // session keeps extending and never forces a re-login. Throttled to avoid rewriting cookies every request.
 const REFRESH_SLIDE_INTERVAL_MS = ms(CONFIG.refresh_token.slide_interval as StringValue);
-
-logger.info('TOKENS:', {
-	ACCESS_CODE_EXPIRY: CONFIG.access_code.expiry,
-	REFRESH_TOKEN_EXPIRY: CONFIG.refresh_token.expiry,
-	REFRESH_SLIDE_INTERVAL: CONFIG.refresh_token.slide_interval,
-	COOKIE_OPTIONS,
-});
 
 interface GenerateRefreshTokenParams {
 	uuid: string;
@@ -273,14 +266,13 @@ const toVerificationError = (error: unknown, action: string): ProcessError => {
 		return new ProcessError({
 			code: 'UNAUTHORIZED',
 			message: `Invalid or expired token while ${action}`,
-			details: `Invalid or expired token while ${action}`,
 			status: 401,
 		});
 	}
 
 	// Anything else is a genuine server fault (database down, models not bootstrapped,
 	// crypto failure). Log the underlying error — it is the only record of the cause.
-	logger.error('error', `Unexpected failure while ${action}.`);
+	logger.force('error', `Unexpected failure while ${action}.`, error);
 
 	return new ProcessError({
 		status: 500,
@@ -503,7 +495,6 @@ export const verifyTokens = async function ({
 		} catch (error: any) {
 			// Only an expired access token is refreshed (from the already-trusted refresh jti);
 			// every other failure — malformed, bad signature, not-yet-valid — fails auth.
-			logger.error(`Access token verification failed: ${error?.message}`, error);
 			if (error?.name === 'TokenExpiredError') {
 				// Generate new access token from the already-trusted refresh token
 				updatedAccessToken = generateAccessToken(decoded.jti);

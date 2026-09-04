@@ -12,7 +12,7 @@ import React, {
 	useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, ScrollViewProps, useWindowDimensions, View } from 'react-native';
+import { Platform, ScrollView, ScrollViewProps, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LegendList, LegendListRenderItemProps } from '@imroodydev/legendapp-list/react-native';
 
@@ -258,7 +258,7 @@ const WideCarousel = forwardRef(<T extends MediaInfo | IPTVChannel>(props: Props
 					extraData={carouselItemWidth}
 					style={scrollStyle}
 					columnWrapperStyle={columnWrapperStyle}
-					recycleItems={true}
+					recycleItems={!Platform.isTV}
 					estimatedItemSize={carouselItemHeight}
 					numColumns={numColumns}
 					maintainVisibleContentPosition
