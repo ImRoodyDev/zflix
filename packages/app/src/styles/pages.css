@@ -955,66 +955,22 @@
 
 /* Tablets Portrait Large*/
 @media only screen and (min-width: 768px) and (max-width: 1024px) and (min-height: 680px) {
-	.source-picker-ctn {
-		min-width: 40% !important;
-	}
-	.native-source-picker-ctn {
-		width: 40%;
-		left: unset !important;
-	}
+ 
 }
 
 /* Tablets Portrait Small screen */
 @media only screen and (max-width: 899px) and (orientation: portrait) {
-	.source-picker-ctn {
-		min-width: 50% !important;
-	}
-	.native-source-picker-ctn {
-		width: 50%;
-		left: unset !important;
-	}
+	 
 }
 
 /* Mobile Portrait */
 @media only screen and (max-width: 599px) and (orientation: portrait) {
-	.source-picker-ctn {
-		width: 100% !important;
-		left: unset !important;
-	}
-
-	.sources-scroll-vw {
-		max-height: 50% !important;
-	}
-
-	.source-picker-close-btn,
-	.source-picker-btn {
-		height: var(--h2-size);
-		padding-top: 0;
-		padding-bottom: 0;
-	}
+	 
 }
 
 /* Mobile Landscape */
 @media only screen and (max-width: 1023px) and (max-height: 479px) and (orientation: landscape) {
-	.source-picker-ctn {
-		min-width: 50% !important;
-	}
-
-	.native-source-picker-ctn {
-		width: 50%;
-		left: unset !important;
-	}
-
-	.sources-scroll-vw {
-		max-height: 80% !important;
-	}
-
-	.source-picker-close-btn,
-	.source-picker-btn {
-		height: var(--h2-size);
-		padding-top: 0;
-		padding-bottom: 0;
-	}
+ 
 }
 
 /*#endregion */
