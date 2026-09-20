@@ -22,7 +22,7 @@ import logger from '../../utils/logger';
 
 // Components
 import AppImage from './AppImage';
-import { PreviewSectionRef, YTPreviewSection } from '../sections/Preview';
+import { PreviewSectionRef, PreviewSection } from '../sections/Preview';
 
 // Minimum time a page stays active before an onFinished may advance the pager.
 const MIN_PAGE_DWELL_MS = 1500;
@@ -334,7 +334,7 @@ function Previews(props: PreviewsProps) {
 				i === activeIndex && (initialFocusPendingRef.current ? i === 0 : focusedActionsPageRef.current !== null);
 			const isActivePreview = i === activeIndex;
 			return (
-				<YTPreviewSection
+				<PreviewSection
 					ref={callbacks.setRef}
 					key={`preview:${preview.id}`}
 					preview={preview}

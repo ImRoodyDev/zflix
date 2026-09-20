@@ -38,6 +38,7 @@ const PreviewInfos = memo(
 		floating,
 		dominantColors,
 		showLabels,
+		hideSections,
 		sizes,
 		currentSeason,
 		onSeasonChange,
@@ -46,6 +47,7 @@ const PreviewInfos = memo(
 		floating?: boolean;
 		dominantColors: string[];
 		showLabels?: boolean;
+		hideSections?: ('summary' | 'genres' | 'badges' | 'seasonDropdown')[];
 		sizes: any;
 		currentSeason?: number;
 		onSeasonChange?: (season: number) => void;
@@ -98,7 +100,7 @@ const PreviewInfos = memo(
 
 		return (
 			<Animated.View
-				className={clsx(!floating && 'app-preview-infos-ctn')}
+				className={clsx(!floating && 'app-preview-infos-ctn', 'app-preview-fl-infos-ctn')}
 				renderToHardwareTextureAndroid={true}
 				shouldRasterizeIOS={true}
 			>
@@ -117,7 +119,7 @@ const PreviewInfos = memo(
 					</Animated.Text>
 				)}
 
-				{!hideOverview && (
+				{!hideSections?.includes('summary') && !hideOverview ? (
 					<Animated.Text
 						entering={FadeInUp}
 						exiting={FadeOutDown}
@@ -128,9 +130,13 @@ const PreviewInfos = memo(
 					>
 						{preview.summary}
 					</Animated.Text>
-				)}
+				) : null}
 
-				{tvPreview && onSeasonChange && showLabels && tvPreview.seasons > 0 ? (
+				{tvPreview &&
+				onSeasonChange &&
+				showLabels &&
+				!hideSections?.includes('seasonDropdown') &&
+				tvPreview.seasons > 0 ? (
 					<SeasonsDropdown
 						seasons={tvPreview.seasons}
 						currentSeason={currentSeason ?? 1}
@@ -138,7 +144,7 @@ const PreviewInfos = memo(
 					/>
 				) : null}
 
-				{showLabels && (
+				{showLabels && !hideSections?.includes('badges') ? (
 					<View className={'app-preview-badges'}>
 						{preview.minutes > 0 ? (
 							<View className={'preview-badge'}>
@@ -183,9 +189,9 @@ const PreviewInfos = memo(
 							</View>
 						) : null}
 					</View>
-				)}
+				) : null}
 
-				{showLabels && preview.genres.length > 0 ? (
+				{!hideSections?.includes('genres') && showLabels && preview.genres.length > 0 ? (
 					<View className={'app-preview-badges mt-0'}>
 						{preview.genres.map((genre, index) => (
 							<View key={index} className={'preview-badge-genre'}>
@@ -310,7 +316,7 @@ const PreviewActions = memo(
 );
 
 /**
- * YTPreviewSection — Native YouTube preview using react-native-youtube-bridge.
+ * PreviewSection — Native YouTube preview using react-native-youtube-bridge.
  * Embeds the item's YouTube trailer (ytKey) inside a bridge-managed iframe
  * rendered in a WebView. Includes start-timeout, looping, duration clamping,
  * mute toggle, and overscan sizing to hide letterboxing. Used for all native
@@ -568,6 +574,7 @@ const _YTPreviewSection = forwardRef(
 								floating={props.floating}
 								dominantColors={dominantColors}
 								showLabels={props.showLabels}
+								hideSections={props.hideSections}
 								sizes={sizes}
 								currentSeason={isTvPreviewProps(props) ? props.currentSeason : undefined}
 								onSeasonChange={isTvPreviewProps(props) ? props.onSeasonChange : undefined}
@@ -596,7 +603,7 @@ const _YTPreviewSection = forwardRef(
 	},
 );
 
-const YTPreviewSection = memo(_YTPreviewSection);
+const PreviewSection = memo(_YTPreviewSection);
 
-export { YTPreviewSection };
+export { PreviewSection };
 export type { PreviewSectionRef };

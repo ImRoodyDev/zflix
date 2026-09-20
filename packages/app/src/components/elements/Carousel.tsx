@@ -6,12 +6,12 @@ import {
 	NativeScrollEvent,
 	NativeSyntheticEvent,
 	InteractionManager,
-	Platform,
 	ScrollView,
 	ScrollViewProps,
 	Text,
 	useWindowDimensions,
 	View,
+	Platform,
 } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,8 +28,6 @@ import { isChannelItem } from '../../utils/media';
 import CarouselChannelItem, { CarouselChannelSkeleton } from '../interactables/CarouselChannelItem';
 import CarouselMediaItem, { CarouselMediaSkeleton } from '../interactables/CarouselMediaItem';
 import OptimizedFadedGradient from './OptimizedFadedGradient';
-
-// Components
 
 // Type definitions
 type CarouselProps<T extends MediaInfo | IPTVChannel> = {
@@ -135,7 +133,12 @@ function Carousel<T extends MediaInfo | IPTVChannel>(props: CarouselProps<T>) {
 					if (prev.length === 0) perPageItems.current = fetchedItems.length;
 					return [...prev, ...uniqueNew];
 				});
-				if (!initialized) setInitialized(true);
+				// Idempotent: React bails out once `initialized` is already true, so calling
+				// it unconditionally avoids reading the (closure-stale) `initialized` state and
+				// keeps this callback's identity stable. Do NOT gate on `initializedRef.current`
+				// here — it's already true by now (set in handleLoadMore before this queued task
+				// runs), so the state setter would never fire and the list would never render.
+				setInitialized(true);
 				// Collapse the carousel ONLY when the first page came back truly empty.
 				// Set in the same transition so it commits atomically with items.
 				if (isFirstPage && fetchedItems.length === 0) setConfirmedEmpty(true);
@@ -148,11 +151,17 @@ function Carousel<T extends MediaInfo | IPTVChannel>(props: CarouselProps<T>) {
 	}, []);
 
 	useEffect(() => {
+		// pendingCommitsRef holds a Set created once and only mutated (never reassigned), so the
+		// value captured here is the same live Set at unmount — this is exactly the copy the lint
+		// rule asks for. visibilityTimerRef/abortControllerRef are intentionally read live inside
+		// the cleanup: they ARE reassigned over the component's life, so we want their latest
+		// value at unmount, not the null they hold right now.
+		const pendingCommits = pendingCommitsRef.current;
 		return () => {
 			if (visibilityTimerRef.current) clearTimeout(visibilityTimerRef.current);
 			abortControllerRef.current?.abort();
-			pendingCommitsRef.current.forEach((task) => task.cancel());
-			pendingCommitsRef.current.clear();
+			pendingCommits.forEach((task) => task.cancel());
+			pendingCommits.clear();
 		};
 	}, []);
 
@@ -213,7 +222,7 @@ function Carousel<T extends MediaInfo | IPTVChannel>(props: CarouselProps<T>) {
 			// remeasures it to 0×0 (the "List width is 0" warning) and churns layout
 			// on every D-pad scroll. So native carousels stay visible once shown.
 			if (visible && !isVisible) setIsVisible(true);
-			else if (!visible /* && Platform.OS === 'web'*/) setIsVisible(false);
+			else if (!visible) setIsVisible(false);
 
 			if (visible && !initialized) {
 				// Stability gate: only fetch after staying visible for the full delay
@@ -276,6 +285,7 @@ function Carousel<T extends MediaInfo | IPTVChannel>(props: CarouselProps<T>) {
 						type === 'channel' && 'app-carousel-lg-scroll-ctn',
 					)}
 					{...scrollProps}
+					fadingEdgeLength={150}
 					style={safeStyle}
 					scrollEventThrottle={16}
 				/>
@@ -299,9 +309,15 @@ function Carousel<T extends MediaInfo | IPTVChannel>(props: CarouselProps<T>) {
 				keyExtractor={keyExtractor}
 				// Recycling stays OFF: this app is on legend-list 3.0.6, where recycling
 				// loses D-pad focus (jumps to the first item). Re-enable once on 3.0.7+.
-				recycleItems={false}
+				recycleItems={!Platform.isTV}
 				estimatedItemSize={carouselItemWidth}
 				showsHorizontalScrollIndicator={false}
+				// Trailing space must go through LegendList (not the ScrollView frame in
+				// renderScrollComponent): items are absolutely positioned and the content is
+				// sized to the items only, so frame paddingRight can't reserve end space and
+				// the last item ends flush with the edge (clipped). contentContainerStyle is
+				// read by LegendList's content-size math, so the last item can scroll fully in.
+				contentContainerStyle={{ paddingRight: safeStyle.paddingRight }}
 				renderScrollComponent={legendScrollRender}
 				onScroll={handleScroll}
 				onEndReached={handleLoadMore}
@@ -324,6 +340,7 @@ function Carousel<T extends MediaInfo | IPTVChannel>(props: CarouselProps<T>) {
 		handleScroll,
 		handleLoadMore,
 		onLegendLoad,
+		safeStyle.paddingRight,
 	]);
 
 	// Collapse only when a first-page fetch confirmed zero items (see confirmedEmpty).

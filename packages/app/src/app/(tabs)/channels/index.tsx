@@ -11,9 +11,6 @@ import { Colors } from '../../../constants';
 import PageShell from '../../../components/main/PageShell';
 import { OPTIONS, useChannels } from '../../../hooks/useChannels';
 import { useResponsiveSize } from '@/contexts/ResponsiveContext';
-
-// Components
-
 function Channels() {
 	const { t } = useTranslation();
 	const { outlineWidth } = useResponsiveSize();

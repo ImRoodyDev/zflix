@@ -14,7 +14,7 @@ import logger from '../../utils/logger';
 
 // Components
 import AppImage from './AppImage';
-import { PreviewSectionRef, YTPreviewSection } from '../sections/Preview';
+import { PreviewSectionRef, PreviewSection } from '../sections/Preview';
 
 // Minimum time a page stays active before an onFinished may advance the pager.
 const MIN_PAGE_DWELL_MS = 1500;
@@ -129,7 +129,7 @@ const PreviewSlide = memo(function PreviewSlide({
 		);
 	} else {
 		content = (
-			<YTPreviewSection
+			<PreviewSection
 				ref={callbacks.setRef}
 				preview={preview}
 				active={isActive}

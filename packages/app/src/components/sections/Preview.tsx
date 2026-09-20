@@ -29,15 +29,12 @@ import Button from '../interactables/Button';
 import SeasonsDropdown from '../interactables/SeasonsDropdown';
 
 const LOGGING = false;
-
 // Toggling `display` keeps the subtree mounted; conditional rendering made the
 // pager rebuild it on every auto-advance.
 const HIDDEN: ViewStyle = { display: 'none' };
-
 // Must outlast the pager's slide (SLIDE_DURATION_MS, 350ms) and stay under its page
 // dwell (MIN_PAGE_DWELL_MS, 1500ms) so the tree is ready before the page can show.
 const DECORATION_MOUNT_DELAY_MS = 500;
-
 // Metadata fades in after the slide (SLIDE_DURATION_MS, 350ms) instead of popping.
 // Runs on the UI thread, so a busy JS thread can't stutter it.
 const FADE_DELAY_MS = 380;
@@ -45,24 +42,13 @@ const FADE_DURATION_MS = 260;
 // image's own crossfade — native, costs no JS or worklet.
 const IMAGE_FADE_MS = 220;
 
-// Fades the metadata without putting an animated style on a className element:
-// NativeWind's interop and Reanimated fight over that (see PreviewPage in OPTPreviews).
-// flexBasis stays 'auto' so this wrapper is layout-neutral in both flex:3 and
-// auto-height (floating) parents.
-const INFOS_INNER: ViewStyle = {
-	flexGrow: 1,
-	flexShrink: 1,
-	flexBasis: 'auto',
-	flexDirection: 'column',
-	minHeight: 0,
-};
-
 const PreviewInfos = memo(
 	({
 		preview,
 		floating,
 		dominantColors,
 		showLabels,
+		hideSections,
 		sizes,
 		currentSeason,
 		onSeasonChange,
@@ -72,6 +58,7 @@ const PreviewInfos = memo(
 		floating?: boolean;
 		dominantColors: string[];
 		showLabels?: boolean;
+		hideSections?: ('summary' | 'genres' | 'badges' | 'seasonDropdown')[];
 		sizes: any;
 		currentSeason?: number;
 		onSeasonChange?: (season: number) => void;
@@ -126,39 +113,26 @@ const PreviewInfos = memo(
 		}, [needsIncrease, preview.logo, preview.title]);
 
 		return (
-			<View className={clsx(!floating && 'app-preview-infos-ctn')} style={visible ? undefined : HIDDEN}>
-				<Animated.View style={[INFOS_INNER, fadeStyle]}>
-					{!logoFailed && logoImg ? (
-						logoImg
-					) : (
-						<Text
-							className={'app-preview-title'}
-							numberOfLines={1}
-							ellipsizeMode={'tail'}
-							style={{ color: floating ? dominantColors[4] : 'white' }}
-						>
-							{preview.title}
-						</Text>
-					)}
-
-					<Text
-						className={'app-preview-txt'}
-						numberOfLines={4}
-						ellipsizeMode={'tail'}
-						style={[Platform.isTV && { fontSize: sizes.span1 }]}
-					>
-						{preview.summary}
-					</Text>
-
-					{tvPreview && onSeasonChange && showLabels && tvPreview.seasons > 0 ? (
-						<SeasonsDropdown
-							seasons={tvPreview.seasons}
-							currentSeason={currentSeason ?? 1}
-							onSeasonChange={onSeasonChange}
-						/>
+			<View
+				className={clsx(!floating && 'app-preview-infos-ctn', 'app-preview-fl-infos-ctn')}
+				style={visible ? undefined : HIDDEN}
+			>
+				{/** Had to use column-reverse because in the search page its causing an wierd issue where image view is out of bounds */}
+				<Animated.View className={'app-preview-infos-inner'} style={[fadeStyle]}>
+					{!hideSections?.includes('genres') && showLabels && preview.genres.length > 0 ? (
+						<View className={'app-preview-badges mt-0'}>
+							{preview.genres.map((genre, index) => (
+								<View key={index} className={'preview-badge-genre'}>
+									<Icons.circle size={sizes.span6} color={dominantColors[4]} />
+									<Text className={'preview-genre-text'} style={{ color: dominantColors[4] }}>
+										{genre}
+									</Text>
+								</View>
+							))}
+						</View>
 					) : null}
 
-					{showLabels && (
+					{showLabels && !hideSections?.includes('badges') ? (
 						<View className={'app-preview-badges'}>
 							{preview.minutes > 0 ? (
 								<View className={'preview-badge'}>
@@ -203,25 +177,49 @@ const PreviewInfos = memo(
 								</View>
 							) : null}
 						</View>
+					) : null}
+
+					{tvPreview &&
+					onSeasonChange &&
+					showLabels &&
+					!hideSections?.includes('seasonDropdown') &&
+					tvPreview.seasons > 0 ? (
+						<SeasonsDropdown
+							seasons={tvPreview.seasons}
+							currentSeason={currentSeason ?? 1}
+							onSeasonChange={onSeasonChange}
+						/>
+					) : null}
+
+					{!hideSections?.includes('summary') && (
+						<Text
+							className={'app-preview-txt'}
+							numberOfLines={4}
+							ellipsizeMode={'tail'}
+							style={[Platform.isTV && { fontSize: sizes.span1 }]}
+						>
+							{preview.summary}
+						</Text>
 					)}
 
-					{showLabels && preview.genres.length > 0 ? (
-						<View className={'app-preview-badges mt-0'}>
-							{preview.genres.map((genre, index) => (
-								<View key={index} className={'preview-badge-genre'}>
-									<Icons.circle size={sizes.span6} color={dominantColors[4]} />
-									<Text className={'preview-genre-text'} style={{ color: dominantColors[4] }}>
-										{genre}
-									</Text>
-								</View>
-							))}
-						</View>
-					) : null}
+					{!logoFailed && logoImg ? (
+						logoImg
+					) : (
+						<Text
+							className={'app-preview-title'}
+							numberOfLines={1}
+							ellipsizeMode={'tail'}
+							style={{ color: floating ? dominantColors[4] : 'white' }}
+						>
+							{preview.title}
+						</Text>
+					)}
 				</Animated.View>
 			</View>
 		);
 	},
 );
+PreviewInfos.displayName = 'PreviewInfos';
 
 const PreviewActions = memo(
 	({
@@ -329,15 +327,16 @@ const PreviewActions = memo(
 		);
 	},
 );
+PreviewActions.displayName = 'PreviewActions';
 
 /**
- * YTPreviewSection — Native YouTube preview using react-native-youtube-bridge.
+ * PreviewSection — Native YouTube preview using react-native-youtube-bridge.
  * Embeds the item's YouTube trailer (ytKey) inside a bridge-managed iframe
  * rendered in a WebView. Includes start-timeout, looping, duration clamping,
  * mute toggle, and overscan sizing to hide letterboxing. Used for all native
  * YT previews; web uses YTPreviewSectionWeb instead.
  */
-const _YTPreviewSection = forwardRef(
+const _PreviewSection = forwardRef(
 	(props: PreviewSectionProps<MovieDetails | TvDetails>, ref?: React.Ref<PreviewSectionRef | null>) => {
 		const { t } = useTranslation();
 		const sizes = useResponsiveSize();
@@ -620,6 +619,7 @@ const _YTPreviewSection = forwardRef(
 								floating={props.floating}
 								dominantColors={dominantColors}
 								showLabels={props.showLabels}
+								hideSections={props.hideSections}
 								sizes={sizes}
 								currentSeason={isTvPreviewProps(props) ? props.currentSeason : undefined}
 								onSeasonChange={isTvPreviewProps(props) ? props.onSeasonChange : undefined}
@@ -651,7 +651,8 @@ const _YTPreviewSection = forwardRef(
 	},
 );
 
-const YTPreviewSection = memo(_YTPreviewSection);
+const PreviewSection = memo(_PreviewSection);
+PreviewSection.displayName = 'PreviewSection';
 
-export { YTPreviewSection };
+export { PreviewSection };
 export type { PreviewSectionRef };

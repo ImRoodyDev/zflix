@@ -28,9 +28,6 @@ import logger from '../../../utils/logger';
 import BlurView from '../../../components/theme/BlurView';
 import Button from '../../../components/interactables/Button';
 import AppEpisodes from '../../../components/sections/Episodes';
-
-// Components
-
 function Serie() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const sizes = useResponsiveSize();

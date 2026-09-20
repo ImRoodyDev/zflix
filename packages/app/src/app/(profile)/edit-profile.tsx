@@ -9,9 +9,6 @@ import { certificationIndexByCode } from '../../utils/standard';
 
 // Components
 import AppProfileForm from '../../components/sections/ProfileForm';
-
-// Components
-
 function EditProfile() {
 	const { switchProfile, switchLanguage, refreshProfile } = useRootContext();
 	const { t } = useTranslation();

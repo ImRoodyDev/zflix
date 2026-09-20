@@ -81,7 +81,19 @@ function Spinner(props: SpinnerProps) {
 	});
 
 	return (
-		<Svg width={size + 2} height={size + 2} style={style} className={className}>
+		<Svg
+			width={size}
+			height={size}
+			// viewBox decouples the drawing from the rendered box: if a parent's flex/CSS
+			// resizes the SVG to e.g. 46x44, the circle stays round and centered (letterboxed
+			// via the default preserveAspectRatio) instead of stretching into an ellipse.
+			// The symmetric 1px inset (-1 .. size+1, centered on size/2) gives the round
+			// line-caps slack so the root SVG's overflow clip can't shave them.
+			viewBox={`-1 -1 ${size + 2} ${size + 2}`}
+			// aspectRatio locks the box itself square so layout can't hand it 46x44 in the first place.
+			style={[{ aspectRatio: 1 }, style]}
+			className={className}
+		>
 			<Circle cx={size / 2} cy={size / 2} r={radius} stroke={backgroundColor} strokeWidth={strokeWidth} fill="none" />
 			<AnimatedCircle
 				cx={size / 2}

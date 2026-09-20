@@ -19,9 +19,6 @@ import { MediaListCode } from '../../../types/Medias';
 // Components
 import Carousel from '../../../components/elements/Carousel';
 import Button from '../../../components/interactables/Button';
-
-// Components
-
 function Movie() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const { routeName } = useRootContext();

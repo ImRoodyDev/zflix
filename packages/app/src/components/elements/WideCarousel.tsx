@@ -12,7 +12,15 @@ import React, {
 	useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform, ScrollView, ScrollViewProps, useWindowDimensions, View } from 'react-native';
+import {
+	NativeScrollEvent,
+	NativeSyntheticEvent,
+	Platform,
+	ScrollView,
+	ScrollViewProps,
+	useWindowDimensions,
+	View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LegendList, LegendListRenderItemProps } from '@imroodydev/legendapp-list/react-native';
 
@@ -22,9 +30,10 @@ import { useComponentStateReducer } from '../../hooks/useComponentState';
 import { IPTVChannel } from '../../types/Channels';
 import { MediaInfo } from '../../types/Medias';
 import { isChannelItem } from '../../utils/media';
+import logger from '@/utils/logger';
 
 // Components
-import BouncingCarouselItem from '../interactables/BouncingCarouselItem';
+import CarouselLoading from '../indicators/CarouselLoading';
 import CarouselChannelItem, { CarouselChannelSkeleton } from '../interactables/CarouselChannelItem';
 import CarouselMediaItem, { CarouselMediaSkeleton } from '../interactables/CarouselMediaItem';
 import { ErrorThreshold } from './Carousel';
@@ -52,6 +61,8 @@ const renderWideCarouselScrollComponent = (props: ScrollViewProps): React.ReactE
 		<ScrollView
 			className={'app-wide-carousel-scroll'}
 			contentContainerClassName={'app-wide-carousel-scroll-ctn'}
+			fadingEdgeLength={250}
+			scrollEventThrottle={16}
 			{...props}
 		/>
 	);
@@ -74,6 +85,19 @@ const WideCarousel = forwardRef(<T extends MediaInfo | IPTVChannel>(props: Props
 	const sizes = useResponsiveSize();
 	const { width } = useWindowDimensions();
 	const insets = useSafeAreaInsets();
+
+	// Refs to hold state across renders
+	const currentPage = useRef(defaultPage);
+	const perPageItems = useRef<number>(defaultItems.length);
+	const hasMore = useRef<boolean>(true);
+	const errorCount = useRef<number>(0);
+	const isLoading = useRef<boolean>(false);
+	const requestId = useRef<number>(0);
+
+	// State variables
+	const [items, setItems] = useState<T[]>(defaultItems);
+	const [initialized, setInitialized] = useState<boolean>(defaultItems.length > 0);
+	const [state, dispatch] = useComponentStateReducer({ type: 'idle', message: t('loading') });
 
 	const safeStyle = useMemo(() => {
 		return {
@@ -105,7 +129,7 @@ const WideCarousel = forwardRef(<T extends MediaInfo | IPTVChannel>(props: Props
 		() => (type === 'channel' ? carouselItemWidth * (9 / 16) : carouselItemWidth * 1.5),
 		[type, carouselItemWidth],
 	);
-	const scrollStyle = useMemo(
+	const containerStyle = useMemo(
 		() => [
 			safeStyle,
 			customPadding && {
@@ -116,19 +140,6 @@ const WideCarousel = forwardRef(<T extends MediaInfo | IPTVChannel>(props: Props
 		[safeStyle, customPadding, insets.top, insets.bottom],
 	);
 	const columnWrapperStyle = useMemo(() => ({ columnGap: sizes.span5, rowGap: sizes.span5 }), [sizes.span5]);
-
-	// Refs to hold state across renders
-	const currentPage = useRef(defaultPage);
-	const perPageItems = useRef<number>(defaultItems.length);
-	const hasMore = useRef<boolean>(true);
-	const errorCount = useRef<number>(0);
-	const isLoading = useRef<boolean>(false);
-	const requestId = useRef<number>(0);
-
-	// State variables
-	const [items, setItems] = useState<T[]>(defaultItems);
-	const [initialized, setInitialized] = useState<boolean>(defaultItems.length > 0);
-	const [state, dispatch] = useComponentStateReducer({ type: 'idle', message: t('loading') });
 
 	// Expose methods to the parent component
 	useImperativeHandle(ref, () => {
@@ -153,10 +164,18 @@ const WideCarousel = forwardRef(<T extends MediaInfo | IPTVChannel>(props: Props
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [initialized]);
 
+	const keyExtractor = useCallback((item: T) => `wide-carousel:${item.id}`, []);
+
 	// Handle load more items when reaching the end of the carousel
 	const handleLoadMore = useCallback(async () => {
 		const currentRequestId = requestId.current;
 		try {
+			logger.debug(
+				`WideCarousel: handleLoadMore called for requestId ${currentRequestId}, currentPage ${currentPage.current}`,
+			);
+			logger.debug(
+				`WideCarousel: isLoading=${isLoading.current}, hasMore=${hasMore.current}, errorCount=${errorCount.current}`,
+			);
 			if (isLoading.current || !onLoadMore || !hasMore.current || errorCount.current > ErrorThreshold) return;
 
 			// Set loading state
@@ -206,9 +225,18 @@ const WideCarousel = forwardRef(<T extends MediaInfo | IPTVChannel>(props: Props
 		}
 	}, [onLoadMore, initialized, dispatch, t]);
 
-	const listFooterComponent = useMemo(
-		() => (state.type === 'loading' ? <BouncingCarouselItem width={carouselItemWidth} type={type} /> : null),
-		[state.type, carouselItemWidth, type],
+	// LegendList's onEndReached is armed-once: it re-arms only after scrolling far back out of the
+	// threshold, so on a list that barely exceeds the viewport it stops firing and pagination
+	// stalls. Re-checking distance-to-end on each scroll event (guarded by the refs) drives it
+	// reliably. handleLoadMore itself dedupes via isLoading, so onEndReached can stay as a backup.
+	const handleScroll = useCallback(
+		(event: NativeSyntheticEvent<NativeScrollEvent>) => {
+			if (isLoading.current || !hasMore.current) return;
+			const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+			const distanceToEnd = contentSize.height - (contentOffset.y + layoutMeasurement.height);
+			if (distanceToEnd <= layoutMeasurement.height * 0.5) void handleLoadMore();
+		},
+		[handleLoadMore],
 	);
 
 	// Render function for each item in the carousel
@@ -243,7 +271,7 @@ const WideCarousel = forwardRef(<T extends MediaInfo | IPTVChannel>(props: Props
 		[carouselItemWidth],
 	);
 
-	const keyExtractor = useCallback((item: T) => `wide-carousel:${item.id}`, []);
+	const listFooterComponent = useMemo(() => (state.type === 'loading' ? <CarouselLoading /> : null), [state.type]);
 
 	return (
 		<View className={'app-wide-carousel'}>
@@ -256,17 +284,35 @@ const WideCarousel = forwardRef(<T extends MediaInfo | IPTVChannel>(props: Props
 					renderItem={legendItem}
 					keyExtractor={keyExtractor}
 					extraData={carouselItemWidth}
-					style={scrollStyle}
-					columnWrapperStyle={columnWrapperStyle}
+					onEndReached={handleLoadMore}
+					onScroll={handleScroll}
 					recycleItems={!Platform.isTV}
 					estimatedItemSize={carouselItemHeight}
+					// Pre-render ~one row-height ahead so a fast fling hits already-mounted rows and
+					// the container pool is warmed for the projected buffer. Without this the pool
+					// occasionally has to create a container on demand mid-fling (dev-only warning).
+					drawDistance={carouselItemHeight}
 					numColumns={numColumns}
-					maintainVisibleContentPosition
-					onEndReachedThreshold={0.2}
+					// Size-only: this list only appends at the bottom, so we don't want data-change
+					// anchoring (the bare boolean = { data: true }), which re-anchors scroll on every
+					// paginated append and, combined with the large hero ListHeaderComponent, shoves
+					// the header out of view. `size` still corrects for item-measurement changes.
+					maintainVisibleContentPosition={{ size: true }}
+					onEndReachedThreshold={0.5}
 					renderScrollComponent={renderWideCarouselScrollComponent}
-					onEndReached={handleLoadMore}
+					refreshing={state.type === 'loading'}
 					ListHeaderComponent={ListHeaderComponent}
 					ListFooterComponent={listFooterComponent}
+					contentContainerStyle={containerStyle}
+					columnWrapperStyle={columnWrapperStyle}
+					ListFooterComponentStyle={{
+						width: '100%',
+						height: 'auto',
+						flex: 0,
+						display: 'flex',
+						justifyContent: 'center',
+						alignItems: 'center',
+					}}
 				/>
 			)}
 		</View>

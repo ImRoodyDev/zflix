@@ -536,8 +536,11 @@
 /*#region Search Page */
 .search-hot {
 	width: auto;
-	flex: 1;
-	/* height: calc(100vh - var(--wide-carousel-lg-height)); */
+	/* A LegendList ListHeaderComponent must self-size: the list measures its height and
+	   absolutely positions every row below it. `flex: 1` gave it no bounded parent to grow
+	   against, so it collapsed to ~0 on some layout passes and rows rendered over it.
+	   Keep it from shrinking and let the inline `height` (previewHeight) define its size. */
+	flex-shrink: 0;
 
 	padding-top: 0;
 	padding-bottom: var(--top-padding);

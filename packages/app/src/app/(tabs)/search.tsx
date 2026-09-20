@@ -2,8 +2,9 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, Text, useWindowDimensions, View } from 'react-native';
-import Animated, { FadeIn, FadeInLeft, FadeOut, FadeOutRight } from 'react-native-reanimated';
+import Animated, { FadeInLeft, FadeOutRight } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Href } from 'expo-router';
 
 // Internal imports
 import { Icons } from '../../constants';
@@ -21,9 +22,7 @@ import { endOfDayTimestamp } from '../../utils/standard';
 // Components
 import WideCarousel, { WideCarouselRef } from '../../components/elements/WideCarousel';
 import SearchHeader from '../../components/nav/SearchHeader';
-import { YTPreviewSection } from '../../components/sections/Preview';
-
-// Components
+import { PreviewSection } from '../../components/sections/Preview';
 
 type SearchSessionData = {
 	type: MediaTypeWithChannels;
@@ -37,11 +36,13 @@ type SearchQuery = {
 };
 
 function Search() {
+	const { t } = useTranslation();
 	const sizes = useResponsiveSize();
 	const insets = useSafeAreaInsets();
 	const screenType = useResponsiveScreenType();
 	const { height, width } = useWindowDimensions();
 	const [state, dispatch] = useComponentStateReducer();
+	const [topResult, setTopResult] = useState<TvDetails | MovieDetails | undefined>();
 	const [searchQuery, setSearchQuery] = useState<SearchQuery>({
 		query: '',
 		type: 'movies',
@@ -49,15 +50,11 @@ function Search() {
 		category: undefined,
 	});
 
-	const { t } = useTranslation();
-
 	const fullCarouselRef = useRef<WideCarouselRef | null>(null);
-	const [topResult, setTopResult] = useState<TvDetails | MovieDetails | undefined>();
 	const availableSearchTypes = useMemo(
 		() => (window.application.features || ['movies', 'series']) as MediaTypeWithChannels[],
 		[],
 	);
-
 	const {
 		data: persistedSearchData,
 		updateData,
@@ -80,6 +77,12 @@ function Search() {
 				: availableSearchTypes[0] || 'movies',
 		[availableSearchTypes, persistedSearchData?.type],
 	);
+	// Calculate the height of the preview
+	const previewHeight = useMemo(() => {
+		if (screenType === 'mobile_landscape')
+			return height - sizes.topPadding - (width / sizes.wideCarouselItems) * 0.2 - insets.top - insets.bottom;
+		else return height - sizes.topPadding - (width / sizes.wideCarouselItems) * 1.5 - insets.top - insets.bottom;
+	}, [height, screenType, sizes.topPadding, sizes.wideCarouselItems, width, insets.top, insets.bottom]);
 
 	useEffect(() => {
 		if (!hydrated) return;
@@ -95,13 +98,6 @@ function Search() {
 		setSearchQuery((current) => ({ ...current, type: selectedSearchType }));
 	}, [searchQuery.query.length, searchQuery.type, selectedSearchType]);
 
-	// Calculate the height of the preview
-	const previewHeight = useMemo(() => {
-		if (screenType === 'mobile_landscape')
-			return height - sizes.topPadding - (width / sizes.wideCarouselItems) * 0.2 - insets.top - insets.bottom;
-		else return height - sizes.topPadding - (width / sizes.wideCarouselItems) * 1.5 - insets.top - insets.bottom;
-	}, [height, screenType, sizes.topPadding, sizes.wideCarouselItems, width, insets.top, insets.bottom]);
-
 	// Fetch TMDB video key and logo for the top result
 	useEffect(() => {
 		if (!topResult || !topResult.externalTmdbId) return;
@@ -115,14 +111,12 @@ function Search() {
 					getMediaLogo(topResult.externalTmdbId!, mediaType, currentLang),
 				]);
 
-				// Update the topResult with the fetched data
+				// Rebuild the class instance (not a plain spread) so `instanceof` guards in
+				// usePreviewActions keep passing — otherwise the preview play button stops navigating.
 				setTopResult((prev) => {
 					if (!prev || prev.externalTmdbId !== topResult.externalTmdbId) return prev;
-					return {
-						...prev,
-						ytKey: videoKey,
-						logo: logo,
-					};
+					const data = { ...prev, ytKey: videoKey, logo };
+					return prev.type === 'movies' ? new MovieDetails(data as MovieDetails) : new TvDetails(data as TvDetails);
 				});
 			} catch (e) {
 				Logger.error('[Search] Failed to fetch TMDB data:', e);
@@ -235,35 +229,44 @@ function Search() {
 		[updateData],
 	);
 
-	const preview = useMemo(() => {
+	const handlePreviewPress = useCallback((preview: MovieDetails | TvDetails) => {
+		Logger.info('Preview pressed:', preview.id);
+		window.application.navigate.navigate(preview.href as Href);
+	}, []);
+
+	// Stable reference so memo(SearchHeader) isn't re-rendered on every Search render
+	// (an inline arrow here would change identity each time).
+	const handleTypeChange = useCallback((type: MediaTypeWithChannels) => updateData({ type }), [updateData]);
+
+	const searchPreview = useMemo(() => {
 		return (
-			<View className={'search-hot'} style={{ height: previewHeight }}>
+			<View className={'search-hot'} style={{ height: previewHeight, width: '100%' }}>
 				<View className={'search-hot-ctn'}>
 					{topResult && (
-						<YTPreviewSection
-							className="!h-full"
+						<PreviewSection
+							className="!h-full "
 							key={topResult.id}
 							preview={topResult}
 							autoStart
 							ignoreVideo
-							showLabels={screenType !== 'mobile_landscape'}
+							showLabels={screenType == 'default'}
+							hideSections={screenType != 'default' ? ['summary', 'badges', 'genres', 'seasonDropdown'] : ['summary']}
 							floating
 							carouselPadding={false}
 							style={{ aspectRatio: 0 }}
+							onPress={handlePreviewPress}
 						/>
 					)}
 				</View>
 			</View>
 		);
-	}, [topResult, previewHeight, screenType]);
-	const messageWindow = useMemo(() => {
+	}, [topResult, previewHeight, screenType, handlePreviewPress]);
+
+	const emptySearchMessage = useMemo(() => {
 		return (
-			<Animated.View
-				entering={FadeIn}
-				exiting={FadeOut}
-				className={'search-empty'}
-				style={{ paddingTop: sizes.topPadding + insets.top }}
-			>
+			// No enter/exit animation: a transient empty frame on navigate-back would otherwise
+			// fade the "not found" message in/out for a visible flicker before the grid commits.
+			<View className={'search-empty'} style={{ paddingTop: sizes.topPadding + insets.top }}>
 				<View className={'search-empty-ctn'}>
 					{state.type != 'error' ? (
 						<>
@@ -293,7 +296,7 @@ function Search() {
 						</>
 					)}
 				</View>
-			</Animated.View>
+			</View>
 		);
 	}, [
 		insets.top,
@@ -305,9 +308,6 @@ function Search() {
 		selectedSearchType,
 		t,
 	]);
-	const carouselHeader = useMemo(() => {
-		return <View className={'search-header-spacer'} />;
-	}, []);
 
 	return (
 		<PageShell
@@ -324,7 +324,8 @@ function Search() {
 			<SearchHeader
 				onSearch={onSearch}
 				selectedType={selectedSearchType}
-				onTypeChange={(type) => updateData({ type })}
+				onTypeChange={handleTypeChange}
+				resultsLength={topResult ? 1 : 0}
 			/>
 
 			<WideCarousel
@@ -332,9 +333,14 @@ function Search() {
 				type={searchQuery.type === 'channels' ? 'channel' : 'media'}
 				ref={fullCarouselRef}
 				onLoadMore={handleMore}
-				ListEmptyComponent={messageWindow}
-				ListHeaderComponent={searchQuery.type !== 'channels' ? preview : carouselHeader}
-				customPadding={{ top: sizes.topPadding, bottom: sizes.topPadding }}
+				ListEmptyComponent={emptySearchMessage}
+				ListHeaderComponent={
+					searchQuery.type !== 'channels' ? searchPreview : <View className={'search-header-spacer'} />
+				}
+				// Bottom clears the tab bar's icon area (avatarSize ≈ bar height) plus the base gap,
+				// so the last row isn't hidden behind the bottom bar. insets.bottom is added inside
+				// WideCarousel on top of this.
+				customPadding={{ top: sizes.topPadding, bottom: -insets.bottom + sizes.topPadding }}
 			/>
 		</PageShell>
 	);

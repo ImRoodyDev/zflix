@@ -50,13 +50,15 @@ function AvatarButton(props: AvatarButtonProps) {
 	const focused = useSharedValue(false);
 
 	// Focus handlers (NO re-render)
+	// `focused` is a useSharedValue — its identity is stable for the component's life, so listing
+	// it changes nothing at runtime; it just satisfies exhaustive-deps (which can't tell).
 	const handleFocus = useCallback(() => {
 		focused.value = true;
-	}, []);
+	}, [focused]);
 
 	const handleBlur = useCallback(() => {
 		focused.value = false;
-	}, []);
+	}, [focused]);
 	const handleClick = useCallback(() => {
 		onSelect?.(avatarId);
 	}, [avatarId, onSelect]);

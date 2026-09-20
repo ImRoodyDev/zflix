@@ -8,9 +8,6 @@ import { IOScrollView } from '@imroodydev/rn-intersection-observer';
 import PageShell from '../../../components/main/PageShell';
 import { useMedias } from '../../../hooks/useMedias';
 import { useResponsiveSize } from '@/contexts/ResponsiveContext';
-
-// Components
-
 function Series() {
 	const scrollRef = useRef<Animated.ScrollView | null>(null);
 	const { handleScroll, previewsComponent, carousels } = useMedias({ type: 'series', scrollRef });
