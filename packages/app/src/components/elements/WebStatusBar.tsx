@@ -1,16 +1,14 @@
 // External imports
-import { StatusBarStyle } from 'expo-status-bar';
 import React, { memo, useEffect } from 'react';
 import { ColorValue, Platform } from 'react-native';
 
 type Props = {
 	id: string;
 	isFocused: boolean;
-	statusBarStyle: StatusBarStyle;
 	backgroundColor: ColorValue;
 };
 
-function WebStatusBar({ id, isFocused, statusBarStyle, backgroundColor }: Props) {
+function WebStatusBar({ id, isFocused, backgroundColor }: Props) {
 	// Manage global style element for web platform based on page focus
 	useEffect(() => {
 		if (Platform.OS !== 'web') return;
