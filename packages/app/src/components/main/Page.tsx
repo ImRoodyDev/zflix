@@ -2,7 +2,7 @@
 import { useIsFocused } from '@react-navigation/native';
 import clsx from 'clsx';
 import { StatusBar, StatusBarStyle } from 'expo-status-bar';
-import React, { memo, ReactNode, useMemo } from 'react';
+import React, { memo, ReactNode, useId, useMemo } from 'react';
 import { ColorValue, Platform, ScrollViewProps, StyleSheet, View } from 'react-native';
 import Animated, { BaseAnimationBuilder, EntryExitAnimationFunction } from 'react-native-reanimated';
 
@@ -12,6 +12,7 @@ import { useResponsiveVars } from '@/contexts/ResponsiveContext';
 // Components
 import AppHeader from '../nav/AppHeader';
 import ThemedScrollView from '../theme/ThemedScrollView';
+import WebStatusBar from '../elements/WebStatusBar';
 
 type Props = {
 	enableHeader?: boolean;
@@ -45,6 +46,7 @@ const Page = ({
 	const { style, className, contentContainerClassName, optimized, ...restScrollProps } = scrollProps;
 
 	// Page focus state
+	const id = useId();
 	const isFocused = useIsFocused();
 	const responsiveVars = useResponsiveVars();
 
@@ -54,6 +56,7 @@ const Page = ({
 
 	return (
 		<View style={[styles.fill]}>
+			<WebStatusBar id={id} isFocused={isFocused} statusBarStyle={statusBarStyle} backgroundColor={backgroundColor} />
 			<StatusBar style={statusBarStyle} />
 			{/*
 			  BUG (latent): same broken cssInterop pattern — a Reanimated component with BOTH `className`
