@@ -15,6 +15,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 // Components
 import Spinner from '../indicators/Spinner';
 import ThemedText from '../theme/ThemedText';
+import WebStatusBar from '../elements/WebStatusBar';
 
 // Maps each initialization phase to its localization key.
 const PHASE_TEXT_KEY: Record<InitPhase, string> = {
@@ -25,13 +26,15 @@ const PHASE_TEXT_KEY: Record<InitPhase, string> = {
 };
 
 const SplashScreen = ({ phase = 'server' }: { phase?: InitPhase }) => {
-	const { themeColors } = useTheme();
+	const { themeColors, themeScheme } = useTheme();
 	const { h3, outlineWidth } = useResponsiveSize();
 	const { t } = useTranslation();
 
 	return (
 		<ResponsiveRootThemedView color={themeColors.whiteBackground} className="app-splash-screen">
-			<StatusBar style="dark" />
+			<StatusBar style={themeScheme === 'dark' ? 'light' : 'dark'} />
+			<WebStatusBar id={'splash-screen'} isFocused={true} backgroundColor={themeColors.whiteBackground} />
+
 			<SafeAreaView className="app-splash-screen-ctn">
 				<View className="app-splash-screen-logo-ctn">
 					<Image

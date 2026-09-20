@@ -56,7 +56,7 @@ const Page = ({
 
 	return (
 		<View style={[styles.fill]}>
-			<WebStatusBar id={id} isFocused={isFocused} statusBarStyle={statusBarStyle} backgroundColor={backgroundColor} />
+			<WebStatusBar id={id} isFocused={isFocused} backgroundColor={backgroundColor} />
 			<StatusBar style={statusBarStyle} />
 			{/*
 			  BUG (latent): same broken cssInterop pattern — a Reanimated component with BOTH `className`

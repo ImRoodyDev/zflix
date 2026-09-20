@@ -48,7 +48,7 @@ function PageShell<T extends ComponentType<any>>({
 			className={clsx('w-full h-full', _useResponsiveVars && 'responsive-vars')}
 			style={[styles.fill, _useResponsiveVars && responsiveVars]}
 		>
-			<WebStatusBar id={id} isFocused={isFocused} statusBarStyle={statusBarStyle} backgroundColor={backgroundColor} />
+			<WebStatusBar id={id} isFocused={isFocused} backgroundColor={backgroundColor} />
 			<StatusBar style={statusBarStyle} />
 			<Component {...(props as React.ComponentProps<T>)}>{children}</Component>
 		</View>
