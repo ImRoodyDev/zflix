@@ -118,6 +118,7 @@ function AppAvatars(props: AppAvatarsProps) {
 			InteractionManager.runAfterInteractions(() => setReady(true));
 		}, 50);
 		return () => clearTimeout(id);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ready]);
 
 	const onStickyLayout = useCallback((event: LayoutChangeEvent) => {

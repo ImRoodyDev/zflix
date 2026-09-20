@@ -17,9 +17,6 @@ import { endOfDayTimestamp } from '../../utils/standard';
 
 // Components
 import WideCarousel from '../../components/elements/WideCarousel';
-
-// Components
-
 const OPTIONS = ['moviesandseries', 'channels'] as const;
 
 type WatchlistType = (typeof OPTIONS)[number];

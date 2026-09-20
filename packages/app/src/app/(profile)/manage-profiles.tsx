@@ -9,9 +9,6 @@ import logger from '../../utils/logger';
 // Components
 import AppProfiles from '../../components/sections/Profiles';
 
-
-// Components
-
 function ManageProfiles() {
 	const { switchProfile } = useRootContext();
 	const { t } = useTranslation();

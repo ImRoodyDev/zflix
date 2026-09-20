@@ -16,13 +16,11 @@ import type { IPTVCategory, IPTVCountry } from '../types/Channels';
 import { endOfDayTimestamp } from '../utils/standard';
 import { useCarouselWindow } from './useCarouselWindow';
 import { usePersistancePage } from './usePersistancePage';
+import { useResponsiveScreenType } from '@/contexts/ResponsiveContext';
 import logger from '@/utils/logger';
 
 // Components
 import Carousel from '../components/elements/Carousel';
-
-// Components
-
 type Props = {
 	scrollRef: React.RefObject<Animated.ScrollView | null>;
 	persistScroll?: boolean;
@@ -41,6 +39,7 @@ export const OPTIONS = ['categories', 'countries'] as const;
 
 export function useChannels(props: Props) {
 	const { t } = useTranslation();
+	const screenType = useResponsiveScreenType();
 
 	const { scrollRef, persistScroll = true, cacheItems = true } = props;
 
@@ -118,6 +117,7 @@ export function useChannels(props: Props) {
 	const totalFilters =
 		pageData?.browseMode === 'countries' ? (pageData?.countries?.length ?? 0) : (pageData?.categories?.length ?? 0);
 	const { visibleCount, handleScroll } = useCarouselWindow(totalFilters, persistScrollHandler, {
+		chunkSize: screenType == 'tablet' ? 7 : 6,
 		resetKey: pageData?.browseMode,
 	});
 
@@ -149,7 +149,7 @@ export function useChannels(props: Props) {
 				}}
 			/>
 		);
-	}, [favoriteChannelsCount, recentlyWatchedCount, t]);
+	}, [recentlyWatchedCount, t]);
 
 	const filterCarousels = useMemo(() => {
 		if (pageData?.browseMode === 'countries') {
@@ -177,14 +177,7 @@ export function useChannels(props: Props) {
 				}}
 			/>
 		));
-	}, [
-		favoriteChannelsCount,
-		pageData?.browseMode,
-		pageData?.categories,
-		pageData?.countries,
-		recentlyWatchedCount,
-		visibleCount,
-	]);
+	}, [pageData?.browseMode, pageData?.categories, pageData?.countries, visibleCount]);
 
 	return {
 		handleScroll,

@@ -8,9 +8,6 @@ import { useRootContext } from '../../contexts/AppRootContext';
 // Components
 import AppProfiles from '../../components/sections/Profiles';
 
-
-// Components
-
 export default function Profiles() {
 	const { switchProfile } = useRootContext();
 	const { t } = useTranslation();

@@ -1,6 +1,6 @@
 // External imports
 import React from 'react';
-import { StyleProp, View, ViewStyle } from 'react-native';
+import { StyleProp, ViewStyle } from 'react-native';
 import Animated, {
 	cancelAnimation,
 	Easing,

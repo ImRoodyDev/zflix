@@ -28,9 +28,6 @@ import logger from '../../../utils/logger';
 import BlurView from '../../../components/theme/BlurView';
 import Button from '../../../components/interactables/Button';
 import AppEpisodes from '../../../components/sections/Episodes';
-
-// Components
-
 function Serie() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const sizes = useResponsiveSize();
@@ -149,7 +146,7 @@ function Serie() {
 						height: 1,
 						width: '100%',
 
-						position: Platform.OS === 'web' ? 'sticky' : undefined, // Use CSS sticky only for web
+						position: Platform.OS === 'web' ? ('sticky' as any) : undefined, // Use CSS sticky only for web
 						top: Platform.OS === 'web' && stickyActivated ? -sizes.sidePadding : 0, // Apply dynamic top only for web; for native, top is 0
 						pointerEvents: 'box-none',
 						zIndex: 4,

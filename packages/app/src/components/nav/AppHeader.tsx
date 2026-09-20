@@ -60,7 +60,7 @@ const AppHeader = ({ style }: Props) => {
 			marginLeft: Math.max(insets.left - sizes.sidePadding, 0),
 			marginRight: Math.max(insets.right - sizes.sidePadding, 0),
 		},
-		web: { position: 'sticky' as const, top: 0, zIndex: 100 },
+		web: { position: 'sticky' as any, top: 0, zIndex: 100 },
 	});
 
 	// Shared value for animated container width

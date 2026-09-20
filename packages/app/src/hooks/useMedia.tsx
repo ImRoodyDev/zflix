@@ -14,7 +14,7 @@ import { useEpisodes } from './useEpisodes';
 
 // Components
 import AmbientGradient from '../components/elements/AmbientGradient';
-import { PreviewSectionRef, YTPreviewSection } from '../components/sections/Preview';
+import { PreviewSectionRef, PreviewSection } from '../components/sections/Preview';
 
 type MediaDetailsResult<T extends MediaType> = T extends 'movies' ? MovieDetails : TvDetails;
 
@@ -48,6 +48,11 @@ export function useMedia(
 	const { previousPathName, routeName, pathname } = useRootContext();
 	const previewRef = useRef<PreviewSectionRef | null>(null);
 	const changeSeasonRef = useRef<((season: number) => void) | null>(null);
+	// Tracks the id:type currently loading or loaded. Reset to null on failure so a
+	// re-focus can retry even though id/type stayed the same (e.g. null fetch + back nav).
+	const loadKeyRef = useRef<string | null>(null);
+	// Monotonic token used to invalidate in-flight loads when a newer one starts or on unmount.
+	const loadTokenRef = useRef(0);
 	const [mediaDetails, setMediaDetails] = useState<MovieDetails | TvDetails | undefined>(undefined);
 	const [isInitialized, setInitialized] = useState(false);
 	const [gradientColors, setGradientColors] = useState<string[]>([]);
@@ -85,9 +90,19 @@ export function useMedia(
 		setGradientColors([defaultColor, defaultColor, defaultColor]);
 	}, []);
 
-	// When user changes types or id reinitialize episodes and details
-	useEffect(() => {
-		let active = true;
+	// Fetch details + colors for the current id/type. Idempotent per id:type via loadKeyRef,
+	// so it can be safely called from both the id/type effect and the focus effect.
+	const initialize = useCallback(() => {
+		const key = `${type}:${id}`;
+
+		// Skip if this id:type is already loading or loaded.
+		if (loadKeyRef.current === key) {
+			return;
+		}
+
+		loadKeyRef.current = key;
+		const token = ++loadTokenRef.current;
+		const isActive = () => token === loadTokenRef.current;
 
 		// Reset local view state first so switching ids never shows stale content.
 		setMediaDetails(undefined);
@@ -100,30 +115,49 @@ export function useMedia(
 		void (async () => {
 			try {
 				const details = await fetchMediaDetails(type, id);
-				if (!active || !details) {
+				if (!isActive()) {
 					return;
 				}
+
+				if (!details) {
+					logger.error('Failed to fetch media details', { id, type });
+					// Clear the guard so a later focus can retry this same id.
+					loadKeyRef.current = null;
+					return;
+				}
+
+				logger.debug('Fetched media details', { id, type, details });
 				setMediaDetails(details);
 				await initializeColors(details);
-				if (!active) {
+				if (!isActive()) {
 					return;
 				}
 
 				setInitialized(true);
 			} catch (error) {
 				logger.error('Error initializing media', { error, id, type });
-				if (active) {
+				if (isActive()) {
+					// Clear the guard so a later focus can retry this same id.
+					loadKeyRef.current = null;
 					navigateBack();
 				}
 			}
 		})();
-
-		return () => {
-			active = false;
-		};
-
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [id, type]);
+
+	// When user changes types or id, (re)initialize episodes and details.
+	useEffect(() => {
+		initialize();
+
+		return () => {
+			// Invalidate any in-flight load so its late result can't apply after unmount/id change.
+			// We intentionally mutate the LIVE ref here, not a captured copy — copying it (as the
+			// lint rule suggests) would defeat the invalidation, so the warning is a false positive.
+			// eslint-disable-next-line react-hooks/exhaustive-deps
+			loadTokenRef.current++;
+		};
+	}, [initialize]);
 
 	// When user comes back at the details screen,
 	// Trigger preview trailer and update the last runtime to keep the preview active.
@@ -131,6 +165,10 @@ export function useMedia(
 	useFocusEffect(
 		useCallback(() => {
 			if (!isInitialized) {
+				// Not initialized yet: either the first load is still in flight (guard makes this a
+				// no-op) or a previous attempt failed and cleared the guard, in which case regaining
+				// focus retries. This is what fixes coming back to a same-id page after a null fetch.
+				initialize();
 				return () => {};
 			}
 
@@ -150,7 +188,7 @@ export function useMedia(
 			return () => {
 				previewRef.current?.stopPreview();
 			};
-		}, [id, isInitialized, type]),
+		}, [id, isInitialized, type, initialize]),
 	);
 
 	const previewElement = useMemo(() => {
@@ -168,7 +206,7 @@ export function useMedia(
 
 		if (type === 'series') {
 			return (
-				<YTPreviewSection
+				<PreviewSection
 					ref={previewRef}
 					// Series preview supports season changes, so expose that callback only here.
 					preview={mediaDetails as TvDetails}
@@ -185,7 +223,7 @@ export function useMedia(
 			);
 		} else {
 			return (
-				<YTPreviewSection
+				<PreviewSection
 					ref={previewRef}
 					preview={mediaDetails as MovieDetails}
 					loop

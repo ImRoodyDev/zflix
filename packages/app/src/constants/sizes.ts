@@ -105,6 +105,8 @@ export const sizes = {
 			midRatioMax: 2.5,
 			midRatioMinFloating: 1.3,
 		},
+
+		searchWidth: 0.24,
 	},
 	tablet: {
 		logoSizeW: 40,
@@ -157,6 +159,8 @@ export const sizes = {
 			midRatioMax: 2.5,
 			midRatioMinFloating: 1.3,
 		},
+
+		searchWidth: 0.54,
 	},
 	mobile: {
 		logoSizeW: 32,
@@ -209,6 +213,8 @@ export const sizes = {
 			midRatioMax: 2.5,
 			midRatioMinFloating: 0.8,
 		},
+
+		searchWidth: 0.46,
 	},
 	mobile_landscape: {
 		logoSizeW: 32,
@@ -261,6 +267,8 @@ export const sizes = {
 			midRatioMax: 2.5,
 			midRatioMinFloating: 1.3,
 		},
+
+		searchWidth: 0.24,
 	},
 };
 
@@ -312,5 +320,8 @@ export function sizeToCssVars(s: SizeValues, scale = 1): CssVars {
 
 		// hairline: clamp to ≥1px so it never vanishes when scaled down
 		'--outline-width': px(hairline(s.outlineWidth * scale)),
+
+		// Search width for search header
+		'--search-width': s.searchWidth,
 	};
 }

@@ -91,12 +91,15 @@ export type PreviewSectionProps<T extends MovieDetails | TvDetails> = (T extends
 
 	// Layout props
 	floating?: boolean;
+	/** Hide badges, genres, season dropdown  */
 	showLabels?: boolean;
 	carouselPadding?: boolean;
-	preferFocus?: boolean;
+	hideSections?: ('summary' | 'genres' | 'badges' | 'seasonDropdown')[];
+
 	// False removes the action buttons from the TV focus engine, keeping the
 	// pager's off-screen pages unreachable by the D-pad. Defaults to true.
 	focusable?: boolean;
+	preferFocus?: boolean;
 	// Event handlers
 	onFinished?: () => void;
 	// Reports when any of the preview action buttons gains/loses TV focus, so

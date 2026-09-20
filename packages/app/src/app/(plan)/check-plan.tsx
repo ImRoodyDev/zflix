@@ -11,9 +11,6 @@ import { delay } from '../../utils/standard';
 // Components
 import AppProcessing from '../../components/main/AppProcessing';
 
-
-// Components
-
 function CheckPlan() {
 	// State to store the processing status
 	const { hold } = useLocalSearchParams<{ hold: string }>(); // check if hold is true?

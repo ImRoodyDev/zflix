@@ -25,9 +25,6 @@ import ComponentStatus from '../../components/main/ComponentStatus';
 import Page from '../../components/main/Page';
 import ThemedText from '../../components/theme/ThemedText';
 import ThemedView from '../../components/theme/ThemedView';
-
-// Components
-
 function AccountInfo() {
 	const sizes = useResponsiveSize();
 	const { themeColors } = useTheme();

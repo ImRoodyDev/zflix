@@ -97,7 +97,7 @@ export function certificationIndexByCode(code?: string) {
 
 // Type guard to check if a value is not undefined or null
 export function isNotEmpty<T>(value: T | undefined): value is T {
-	return value !== undefined && value !== null;
+	return value !== undefined && value !== null && value !== '';
 }
 
 export function commaSplitter(input: string | undefined): string[] {

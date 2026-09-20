@@ -1,12 +1,15 @@
 // External imports
 import { useIsFocused } from '@react-navigation/native';
 import { StatusBar, StatusBarStyle } from 'expo-status-bar';
-import React, { ComponentType, memo } from 'react';
+import React, { ComponentType, memo, useId } from 'react';
 import { ColorValue, StyleSheet, View } from 'react-native';
 import clsx from 'clsx';
 
 // Internal imports
 import { useResponsiveVars } from '@/contexts/ResponsiveContext';
+
+// Components
+import WebStatusBar from '../elements/WebStatusBar';
 
 const styles = StyleSheet.create({
 	fill: { flex: 1, width: '100%', height: '100%' },
@@ -34,6 +37,7 @@ function PageShell<T extends ComponentType<any>>({
 	const Component = as || React.Fragment; // default fallback
 
 	// Page focus state
+	const id = useId();
 	const isFocused = useIsFocused();
 	const responsiveVars = useResponsiveVars();
 
@@ -44,6 +48,7 @@ function PageShell<T extends ComponentType<any>>({
 			className={clsx('w-full h-full', _useResponsiveVars && 'responsive-vars')}
 			style={[styles.fill, _useResponsiveVars && responsiveVars]}
 		>
+			<WebStatusBar id={id} isFocused={isFocused} statusBarStyle={statusBarStyle} backgroundColor={backgroundColor} />
 			<StatusBar style={statusBarStyle} />
 			<Component {...(props as React.ComponentProps<T>)}>{children}</Component>
 		</View>

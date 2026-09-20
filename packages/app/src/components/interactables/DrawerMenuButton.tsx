@@ -44,13 +44,15 @@ const DrawerMenuButton = (props: DrawerMenuButtonProps) => {
 		[profileVersion],
 	);
 
+	// `focused` is a useSharedValue — its identity is stable for the component's life, so listing
+	// it changes nothing at runtime; it just satisfies exhaustive-deps (which can't tell).
 	const handleFocus = useCallback(() => {
 		focused.value = true;
-	}, []);
+	}, [focused]);
 
 	const handleBlur = useCallback(() => {
 		focused.value = false;
-	}, []);
+	}, [focused]);
 
 	//  Focused animated style
 	const animatedStyle = useAnimatedStyle(() => {
