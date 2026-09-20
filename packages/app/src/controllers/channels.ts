@@ -9,12 +9,7 @@ import { appendQuery } from '../utils/standard';
 type ChannelSearchOptions = IPTVChannelFilters & {
 	page?: number;
 };
-
-type ChannelPlayOptions = {
-	scheme?: string;
-	country?: string;
-};
-
+ 
 function toChannelList(data?: IPTVChannel[] | null): IPTVChannel[] {
 	return (data || []).map((item) => new IPTVChannel(item));
 }
