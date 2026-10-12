@@ -124,7 +124,6 @@
 		},
 		"extra": {
 			"router": {},
-			"eas": {},
 			"typedRoutes": true
 		}
 	}
