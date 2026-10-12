@@ -30,7 +30,7 @@
 		},
 		"plugins": [
 			"expo-router",
- 			"react-native-video",
+			"react-native-video",
 			"expo-secure-store",
 			"expo-web-browser",
 			[
@@ -119,12 +119,13 @@
 		"experiments": {
 			"typedRoutes": true,
 			"reactCompiler": true,
-			"autolinkingModuleResolution": true
+			"autolinkingModuleResolution": true,
+			"baseUrl": "/zflix"
 		},
 		"extra": {
 			"router": {},
 			"eas": {},
 			"typedRoutes": true
- 		}
+		}
 	}
 }
